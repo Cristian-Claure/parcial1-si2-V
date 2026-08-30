@@ -1,0 +1,72 @@
+# ==========================================
+# VELORA - Global Git Ignore
+# ==========================================
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Operating System
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.idea/
+*.iml
+
+# VS Code local configuration
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# ==========================================
+# BACKEND - Spring Boot / Java
+# ==========================================
+back_velora/target/
+back_velora/.classpath
+back_velora/.project
+back_velora/.settings/
+
+# ==========================================
+# FRONTEND - Angular
+# ==========================================
+front_velora/node_modules/
+front_velora/dist/
+front_velora/.angular/
+front_velora/coverage/
+front_velora/.cache/
+
+# ==========================================
+# MOBILE - Android / Kotlin
+# ==========================================
+mobile_velora/.gradle/
+mobile_velora/.idea/
+mobile_velora/build/
+mobile_velora/app/build/
+mobile_velora/local.properties
+mobile_velora/captures/
+mobile_velora/*.jks
+mobile_velora/*.keystore
+
+# ==========================================
+# AI - Python
+# ==========================================
+ai_velora/.venv/
+ai_velora/venv/
+ai_velora/__pycache__/
+ai_velora/.pytest_cache/
+ai_velora/.mypy_cache/
+ai_velora/*.pyc
+ai_velora/*.pyo
+
+# ==========================================
+# Temporary files
+# ==========================================
+*.tmp
+*.temp
+*.bak
+*.swp
