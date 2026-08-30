@@ -1,0 +1,161 @@
+:host {
+  display: block;
+}
+
+.account-heading > span,
+.account-grid article > span,
+.collection-heading span {
+  color: #98725f;
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.account-heading h1 {
+  margin: 8px 0;
+  font-family: Georgia, serif;
+  font-size: 52px;
+  font-weight: 400;
+}
+
+.account-heading p {
+  color: #75665e;
+  max-width: 650px;
+}
+
+.account-grid {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.account-grid article {
+  background: #fffdfa;
+  border: 1px solid #dfd4ca;
+  padding: 22px;
+  min-height: 160px;
+}
+
+.account-grid h2 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+
+.account-grid p {
+  color: #75675f;
+}
+
+.account-grid small {
+  color: #9a8172;
+}
+
+.account-grid .future {
+  opacity: .65;
+}
+
+.collection {
+  margin-top: 45px;
+}
+
+.collection-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.collection-heading h2 {
+  margin: 5px 0;
+  font-family: Georgia, serif;
+  font-size: 36px;
+  font-weight: 400;
+}
+
+.collection-heading a {
+  color: #765a49;
+  text-decoration: none;
+}
+
+.product-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(250px, 1fr)
+  );
+  gap: 18px;
+}
+
+.product-card {
+  background: #fffdfa;
+  border: 1px solid #dfd4ca;
+}
+
+.visual {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(
+    145deg,
+    #211d1c,
+    #493a33
+  );
+  color: #c9aa8a;
+  letter-spacing: .2em;
+}
+
+.visual img {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+}
+
+.product-copy {
+  padding: 18px;
+}
+
+.product-copy small {
+  color: #97735f;
+}
+
+.product-copy h3 {
+  margin: 6px 0 12px;
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: 22px;
+}
+
+.product-copy strong {
+  display: block;
+}
+
+.variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.variants span {
+  border: 1px solid #d8cabf;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+@media (max-width: 1100px) {
+  .account-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 650px) {
+  .account-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .collection-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+}

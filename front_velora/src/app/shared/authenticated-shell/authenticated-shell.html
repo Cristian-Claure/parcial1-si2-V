@@ -1,0 +1,61 @@
+<div class="shell">
+  <aside class="sidebar">
+    <a routerLink="/" class="brand">
+      <span class="brand-mark">V</span>
+
+      <span>
+        <strong>VÉLORA</strong>
+        <small>Moda que te define.</small>
+      </span>
+    </a>
+
+    <div class="identity">
+      <small>{{ subtitle }}</small>
+      <strong>{{ title }}</strong>
+
+      @if (userLabel) {
+        <span>{{ userLabel }}</span>
+      }
+    </div>
+
+    <nav>
+      @for (item of navItems; track item.label) {
+
+        @if (item.disabled) {
+          <span class="nav-item disabled">
+            {{ item.label }}
+            <small>Próximamente</small>
+          </span>
+        }
+        @else if (item.route) {
+          <a
+            class="nav-item"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+          >
+            {{ item.label }}
+          </a>
+        }
+
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <a routerLink="/" class="back-home">
+        ← Volver a VÉLORA
+      </a>
+
+      <button
+        type="button"
+        class="logout"
+        (click)="logoutRequested.emit()"
+      >
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <main class="shell-content">
+    <ng-content />
+  </main>
+</div>

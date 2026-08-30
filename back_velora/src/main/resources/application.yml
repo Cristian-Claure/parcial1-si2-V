@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: velora-backend
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      base-path: /api
+      exposure:
+        include: health,info
+
+  endpoint:
+    health:
+      show-details: never
+
+velora:
+  security:
+    jwt-secret: ${VELORA_JWT_SECRET:velora-local-development-secret-change-me-2026}
+    jwt-expiration-minutes: 120
+  bootstrap:
+    admin:
+      email: ${VELORA_ADMIN_EMAIL:}
+      password: ${VELORA_ADMIN_PASSWORD:}
+      first-name: ${VELORA_ADMIN_FIRST_NAME:Admin}
+      last-name: ${VELORA_ADMIN_LAST_NAME:Velora}

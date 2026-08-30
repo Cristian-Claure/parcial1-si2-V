@@ -70,3 +70,12 @@ ai_velora/*.pyo
 *.temp
 *.bak
 *.swp
+# Local environment
+# Project backups
+.project-backups/
+front_velora/angular.json.backup
+front_velora/backup-angular-*/
+front_velora/src/app/app.ts.backup-route-fix
+# Build output
+# IDE
+mobile_velora/app/google-services.json

@@ -1,0 +1,188 @@
+<app-role-shell>
+<section class="page-heading">
+  <span>CATÁLOGO GLOBAL</span>
+  <h1>Gestión de catálogo</h1>
+  <p>
+    Productos y variantes pertenecen al catálogo global de VÉLORA.
+  </p>
+</section>
+
+@if (message()) {
+  <div class="feedback success">{{ message() }}</div>
+}
+
+@if (error()) {
+  <div class="feedback error">{{ error() }}</div>
+}
+
+<div class="management-grid">
+
+  <section class="panel">
+    <span class="index">01 · CATEGORÍAS</span>
+    <h2>Nueva categoría</h2>
+
+    <form
+      [formGroup]="categoryForm"
+      (ngSubmit)="createCategory()"
+    >
+      <input
+        formControlName="name"
+        placeholder="Nombre"
+      />
+
+      <input
+        formControlName="slug"
+        placeholder="Slug"
+      />
+
+      <textarea
+        formControlName="description"
+        placeholder="Descripción"
+      ></textarea>
+
+      <select formControlName="parentId">
+        <option value="">Sin categoría superior</option>
+
+        @for (category of categories(); track category.id) {
+          <option [value]="category.id">
+            {{ category.name }}
+          </option>
+        }
+      </select>
+
+      <button type="submit">
+        Crear categoría
+      </button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <span class="index">02 · PRODUCTOS</span>
+    <h2>Nuevo producto</h2>
+
+    <form
+      [formGroup]="productForm"
+      (ngSubmit)="createProduct()"
+    >
+      <select formControlName="categoryId">
+        <option value="">Seleccione categoría</option>
+
+        @for (category of categories(); track category.id) {
+          <option [value]="category.id">
+            {{ category.name }}
+          </option>
+        }
+      </select>
+
+      <input formControlName="name" placeholder="Nombre" />
+      <input formControlName="slug" placeholder="Slug" />
+      <input formControlName="brand" placeholder="Marca" />
+
+      <textarea
+        formControlName="description"
+        placeholder="Descripción"
+      ></textarea>
+
+      <input
+        formControlName="composition"
+        placeholder="Composición"
+      />
+
+      <input
+        formControlName="careInstructions"
+        placeholder="Cuidados"
+      />
+
+      <input
+        formControlName="fitNotes"
+        placeholder="Notas de calce"
+      />
+
+      <button type="submit">
+        Crear producto
+      </button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <span class="index">03 · VARIANTES</span>
+    <h2>Nueva variante</h2>
+
+    <form
+      [formGroup]="variantForm"
+      (ngSubmit)="createVariant()"
+    >
+      <select formControlName="productId">
+        <option value="">Seleccione producto</option>
+
+        @for (product of products(); track product.id) {
+          <option [value]="product.id">
+            {{ product.name }}
+          </option>
+        }
+      </select>
+
+      <input formControlName="sku" placeholder="SKU" />
+      <input formControlName="barcode" placeholder="Código de barras" />
+
+      <div class="two">
+        <input formControlName="size" placeholder="Talla" />
+        <input formControlName="color" placeholder="Color" />
+      </div>
+
+      <input
+        formControlName="colorHex"
+        placeholder="#D6C3A5"
+      />
+
+      <div class="two">
+        <input
+          type="number"
+          formControlName="price"
+          placeholder="Precio"
+        />
+
+        <input
+          type="number"
+          formControlName="compareAtPrice"
+          placeholder="Precio anterior"
+        />
+      </div>
+
+      <button type="submit">
+        Crear variante
+      </button>
+    </form>
+  </section>
+</div>
+
+<section class="products-panel">
+  <div class="section-title">
+    <span>CATÁLOGO ACTUAL</span>
+    <strong>{{ products().length }} productos</strong>
+  </div>
+
+  <div class="product-list">
+    @for (product of products(); track product.id) {
+      <article>
+        <div>
+          <span>{{ product.categoryName }}</span>
+          <h3>{{ product.name }}</h3>
+          <p>{{ product.description }}</p>
+        </div>
+
+        <div class="variant-list">
+          @for (variant of product.variants; track variant.id) {
+            <span>
+              {{ variant.sku }}
+              · {{ variant.color }}
+              · {{ variant.size }}
+              · Bs {{ variant.price }}
+            </span>
+          }
+        </div>
+      </article>
+    }
+  </div>
+</section>
+</app-role-shell>

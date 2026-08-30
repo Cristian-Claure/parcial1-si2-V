@@ -1,0 +1,360 @@
+@if (isHome()) {
+  <div class="page-shell">
+    <header class="navbar">
+      <a class="brand" routerLink="/">
+        <span class="brand-mark">V</span>
+        <span class="brand-copy">
+          <strong>VÉLORA</strong>
+          <small>Moda que te define.</small>
+        </span>
+      </a>
+
+      <nav class="navigation" aria-label="Navegación principal">
+        <a href="#colecciones">Colecciones</a>
+        <a href="#experiencia">Experiencia</a>
+        <a href="#tiendas">Tiendas</a>
+      </nav>
+
+      <div class="navbar-actions">
+        <a class="text-action search-action" routerLink="/catalogo">Buscar</a>
+
+        @if (auth.currentUser(); as user) {
+          <a
+            class="account-link"
+            [routerLink]="
+              user.role === 'ADMIN'
+                ? '/admin'
+                : user.role === 'STORE_MANAGER'
+                  ? '/sucursal'
+                  : '/mi-cuenta'
+            "
+          >
+            {{
+              user.role === 'CUSTOMER'
+                ? 'Mi cuenta'
+                : user.role === 'ADMIN'
+                  ? 'Administración'
+                  : 'Sucursal'
+            }}
+          </a>
+
+          <button
+            class="logout-action"
+            type="button"
+            (click)="logout()"
+          >
+            Cerrar sesión
+          </button>
+        } @else {
+          <a class="account-link" routerLink="/login">
+            Cuenta
+          </a>
+        }
+
+        <button
+          class="bag-button bag-button--disabled"
+          type="button"
+          disabled
+          title="Disponible próximamente"
+        >
+          Bolsa
+          <span>0</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" id="colecciones">
+        <div class="hero-copy">
+          <div class="eyebrow">Nueva colección · 2026</div>
+
+          <h1>
+            La elegancia no se sigue.
+            <em>Se define.</em>
+          </h1>
+
+          <p class="hero-description">
+            Descubra una selección diseñada para acompañar cada versión de usted:
+            prendas, calzado y accesorios que convierten cada ocasión en una expresión personal.
+          </p>
+
+          <div class="hero-actions">
+            <a
+              class="primary-button"
+              routerLink="/catalogo"
+            >
+              Explorar colección
+              <span>→</span>
+            </a>
+
+            <a
+              class="secondary-button"
+              href="#experiencia"
+            >
+              Conocer VÉLORA
+            </a>
+          </div>
+
+          <div class="hero-meta">
+            <div>
+              <strong>03</strong>
+              <span>Tiendas iniciales</span>
+            </div>
+            <div>
+              <strong>24/7</strong>
+              <span>Experiencia digital</span>
+            </div>
+            <div>
+              <strong>AR</strong>
+              <span>Probador virtual</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="visual-frame">
+            <div class="visual-glow"></div>
+
+            <div class="fashion-card fashion-card--back">
+              <span>02</span>
+            </div>
+
+            <div class="fashion-card fashion-card--main">
+              <div class="silhouette">
+                <div class="silhouette-head"></div>
+                <div class="silhouette-body"></div>
+                <div class="silhouette-skirt"></div>
+              </div>
+
+              <div class="fashion-label">
+                <small>VÉLORA EDIT</small>
+                <strong>NOIR · 01</strong>
+              </div>
+            </div>
+
+            <div class="collection-tag">
+              <span>Selected</span>
+              <strong>AW · 26</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="featured-section" id="destacados">
+        <div class="featured-heading">
+          <div>
+            <span>COLECCIÓN VÉLORA</span>
+
+            <h2>
+              Piezas seleccionadas
+              <em>para usted.</em>
+            </h2>
+          </div>
+
+          <a routerLink="/catalogo">
+            Explorar catálogo completo →
+          </a>
+        </div>
+
+        @if (activeCategories().length) {
+          <div class="category-strip">
+            @for (
+              category of activeCategories();
+              track category.id
+            ) {
+              <span>{{ category.name }}</span>
+            }
+          </div>
+        }
+
+        @if (catalogLoading()) {
+          <div class="catalog-loading">
+            Preparando la colección...
+          </div>
+        }
+
+        <div class="featured-products">
+          @for (
+            product of featuredProducts();
+            track product.id
+          ) {
+            <article class="featured-product">
+              <div class="featured-product__visual">
+                @if (
+                  product.images.length &&
+                  product.images[0].imageUrl
+                ) {
+                  <img
+                    [src]="product.images[0].imageUrl"
+                    [alt]="product.images[0].altText || product.name"
+                  />
+                }
+                @else {
+                  <div class="product-placeholder">
+                    <span>V</span>
+                    <small>VÉLORA</small>
+                  </div>
+                }
+
+                <span class="product-category">
+                  {{ product.categoryName }}
+                </span>
+              </div>
+
+              <div class="featured-product__copy">
+                <span class="product-brand">
+                  {{ product.brand }}
+                </span>
+
+                <h3>{{ product.name }}</h3>
+
+                @if (lowestPrice(product); as price) {
+                  <strong>Bs {{ price }}</strong>
+                }
+
+                <div class="product-variants">
+                  @for (
+                    variant of product.variants;
+                    track variant.id
+                  ) {
+                    @if (variant.active) {
+                      <span>
+                        {{ variant.color }} · {{ variant.size }}
+                      </span>
+                    }
+                  }
+                </div>
+              </div>
+            </article>
+          } @empty {
+            @if (!catalogLoading()) {
+              <div class="empty-catalog">
+                La nueva colección estará disponible próximamente.
+              </div>
+            }
+          }
+        </div>
+      </section>
+      <section class="experience-section" id="experiencia">
+        <div class="section-heading">
+          <span>Una experiencia diferente</span>
+          <h2>
+            Moda física y digital,
+            <em>en un mismo lugar.</em>
+          </h2>
+        </div>
+
+        <div class="experience-grid">
+          <article class="experience-card">
+            <span class="card-index">01</span>
+            <div>
+              <h3>Colecciones seleccionadas</h3>
+              <p>
+                Explore prendas y accesorios organizados por estilo, ocasión,
+                categoría, color y talla.
+              </p>
+            </div>
+            <span class="card-arrow">↗</span>
+          </article>
+
+          <article class="experience-card experience-card--accent">
+            <span class="card-index">02</span>
+            <div>
+              <h3>Probador virtual</h3>
+              <p>
+                Visualice prendas mediante cámara, realidad aumentada
+                y experiencias digitales desarrolladas para VÉLORA.
+              </p>
+            </div>
+            <span class="card-arrow">↗</span>
+          </article>
+
+          <article class="experience-card">
+            <span class="card-index">03</span>
+            <div>
+              <h3>Compra omnicanal</h3>
+              <p>
+                Web, aplicación móvil y tiendas físicas conectadas
+                mediante inventario y ventas centralizadas.
+              </p>
+            </div>
+            <span class="card-arrow">↗</span>
+          </article>
+        </div>
+      </section>
+      <section class="stores-section" id="tiendas">
+        <div class="stores-heading">
+          <span>PRESENCIA VÉLORA</span>
+
+          <h2>
+            Una experiencia cercana,
+            <em>donde usted esté.</em>
+          </h2>
+
+          <p>
+            VÉLORA inicia su operación en Santa Cruz de la Sierra,
+            integrando atención física y experiencia digital.
+          </p>
+        </div>
+
+        <div class="stores-grid">
+          <article>
+            <span>01</span>
+            <h3>VÉLORA Equipetrol</h3>
+            <p>Santa Cruz de la Sierra</p>
+          </article>
+
+          <article>
+            <span>02</span>
+            <h3>VÉLORA Urubó</h3>
+            <p>Santa Cruz de la Sierra</p>
+          </article>
+
+          <article>
+            <span>03</span>
+            <h3>VÉLORA Zona Norte</h3>
+            <p>Santa Cruz de la Sierra</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="public-footer">
+      <div class="footer-brand">
+        <strong>VÉLORA</strong>
+        <span>Moda que te define.</span>
+      </div>
+
+      <nav aria-label="Navegación secundaria">
+        <a routerLink="/catalogo">
+          Colección
+        </a>
+
+        @if (auth.currentUser(); as user) {
+          <a
+            [routerLink]="
+              user.role === 'ADMIN'
+                ? '/admin'
+                : user.role === 'STORE_MANAGER'
+                  ? '/sucursal'
+                  : '/mi-cuenta'
+            "
+          >
+            Mi espacio
+          </a>
+        }
+        @else {
+          <a routerLink="/login">
+            Iniciar sesión
+          </a>
+        }
+      </nav>
+
+      <small>
+        VÉLORA · Santa Cruz de la Sierra · 2026
+      </small>
+    </footer>
+  </div>
+} @else {
+  <router-outlet />
+}

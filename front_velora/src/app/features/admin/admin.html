@@ -1,0 +1,156 @@
+<app-authenticated-shell
+  title="Administración central"
+  subtitle="Backoffice VÉLORA"
+  [navItems]="navItems"
+  [userLabel]="userLabel()"
+  (logoutRequested)="logout()"
+>
+  <section class="dashboard-heading">
+    <span>CONTROL CENTRAL</span>
+    <h1>Panel administrativo</h1>
+    <p>
+      Gestión global de sucursales, encargados, catálogo e inventario.
+    </p>
+  </section>
+
+  <div class="metrics">
+    <article>
+      <span>Sucursales</span>
+      <strong>{{ stores().length }}</strong>
+    </article>
+
+    <article>
+      <span>Encargados</span>
+      <strong>{{ managers().length }}</strong>
+    </article>
+
+    <article>
+      <span>Catálogo</span>
+      <strong>Global</strong>
+    </article>
+
+    <article>
+      <span>Inventario</span>
+      <strong>Operativo</strong>
+    </article>
+  </div>
+
+  @if (message()) {
+    <div class="feedback success">
+      {{ message() }}
+    </div>
+  }
+
+  @if (error()) {
+    <div class="feedback error">
+      {{ error() }}
+    </div>
+  }
+
+  <div class="workspace">
+    <section class="panel">
+      <span class="index">01 · SUCURSALES</span>
+      <h2>Nueva sucursal</h2>
+
+      <form
+        [formGroup]="storeForm"
+        (ngSubmit)="createStore()"
+      >
+        <input
+          formControlName="code"
+          placeholder="Código · SCZ-01"
+        />
+
+        <input
+          formControlName="name"
+          placeholder="Nombre de sucursal"
+        />
+
+        <input
+          formControlName="address"
+          placeholder="Dirección"
+        />
+
+        <button type="submit">
+          Crear sucursal
+        </button>
+      </form>
+
+      <div class="list">
+        @for (store of stores(); track store.id) {
+          <article>
+            <strong>{{ store.name }}</strong>
+            <span>{{ store.code }}</span>
+            <small>
+              {{ store.address || 'Sin dirección registrada' }}
+            </small>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="panel">
+      <span class="index">02 · ENCARGADOS</span>
+      <h2>Asignar encargado</h2>
+
+      <form
+        [formGroup]="managerForm"
+        (ngSubmit)="createManager()"
+      >
+        <div class="two">
+          <input
+            formControlName="firstName"
+            placeholder="Nombre"
+          />
+
+          <input
+            formControlName="lastName"
+            placeholder="Apellido"
+          />
+        </div>
+
+        <input
+          formControlName="email"
+          type="email"
+          placeholder="Correo"
+        />
+
+        <input
+          formControlName="password"
+          type="password"
+          placeholder="Contraseña temporal"
+        />
+
+        <select formControlName="storeId">
+          <option value="">
+            Seleccione una sucursal
+          </option>
+
+          @for (store of stores(); track store.id) {
+            <option [value]="store.id">
+              {{ store.name }}
+            </option>
+          }
+        </select>
+
+        <button type="submit">
+          Crear encargado
+        </button>
+      </form>
+
+      <div class="list">
+        @for (manager of managers(); track manager.id) {
+          <article>
+            <strong>
+              {{ manager.firstName }}
+              {{ manager.lastName }}
+            </strong>
+
+            <span>{{ manager.storeName }}</span>
+            <small>{{ manager.email }}</small>
+          </article>
+        }
+      </div>
+    </section>
+  </div>
+</app-authenticated-shell>

@@ -1,0 +1,67 @@
+<div class="catalog-page">
+  <header>
+    <a routerLink="/" class="brand">VÉLORA</a>
+    <nav>
+      <a routerLink="/">Inicio</a>
+      <a routerLink="/catalogo">Colección</a>
+      <a routerLink="/mi-cuenta">Mi cuenta</a>
+    </nav>
+  </header>
+
+  <main>
+    <span class="eyebrow">Colección VÉLORA</span>
+    <h1>Encuentre la pieza que define su estilo.</h1>
+    <p class="lead">
+      Explore productos, colores, tallas y precios disponibles en nuestro catálogo.
+    </p>
+
+    @if (loading()) {
+      <p>Cargando colección...</p>
+    }
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <div class="products">
+      @for (product of products(); track product.id) {
+        <article class="product-card">
+          <div class="visual">
+            @if (product.images.length && product.images[0].imageUrl) {
+              <img
+                [src]="product.images[0].imageUrl"
+                [alt]="product.images[0].altText || product.name"
+              />
+            } @else {
+              <span>VÉLORA</span>
+            }
+          </div>
+
+          <div class="product-copy">
+            <span>{{ product.categoryName }}</span>
+            <h2>{{ product.name }}</h2>
+            <p>{{ product.description }}</p>
+
+            @if (lowestPrice(product); as price) {
+              <strong>Desde Bs {{ price }}</strong>
+            }
+
+            <div class="variants">
+              @for (variant of product.variants; track variant.id) {
+                @if (variant.active) {
+                  <span>
+                    {{ variant.color }} · {{ variant.size }}
+                  </span>
+                }
+              }
+            </div>
+          </div>
+        </article>
+      } @empty {
+        @if (!loading()) {
+          <p>Aún no existen productos publicados.</p>
+        }
+      }
+    </div>
+  </main>
+</div>

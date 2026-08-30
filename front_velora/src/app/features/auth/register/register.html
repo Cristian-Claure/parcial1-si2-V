@@ -1,0 +1,70 @@
+<div class="auth-page">
+  <a class="auth-brand" routerLink="/">
+    <span class="auth-brand__mark">V</span>
+    <span>
+      <strong>VÉLORA</strong>
+      <small>Moda que te define.</small>
+    </span>
+  </a>
+
+  <section class="auth-card auth-card--wide">
+    <div class="auth-kicker">Nueva cuenta</div>
+    <h1>Su experiencia comienza aquí.</h1>
+    <p class="auth-intro">
+      El registro público crea exclusivamente una cuenta de cliente VÉLORA.
+    </p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="auth-grid">
+        <label>
+          <span>Nombre</span>
+          <input type="text" formControlName="firstName" autocomplete="given-name" />
+        </label>
+
+        <label>
+          <span>Apellido</span>
+          <input type="text" formControlName="lastName" autocomplete="family-name" />
+        </label>
+      </div>
+
+      <label>
+        <span>Correo electrónico</span>
+        <input type="email" formControlName="email" autocomplete="email" />
+      </label>
+
+      <div class="auth-grid">
+        <label>
+          <span>Contraseña</span>
+          <input type="password" formControlName="password" autocomplete="new-password" />
+        </label>
+
+        <label>
+          <span>Confirmar contraseña</span>
+          <input type="password" formControlName="confirmPassword" autocomplete="new-password" />
+        </label>
+      </div>
+
+      <p class="password-hint">
+        Mínimo 8 caracteres, con mayúscula, minúscula y número.
+      </p>
+
+      @if (errorMessage()) {
+        <div class="auth-error">{{ errorMessage() }}</div>
+      }
+
+      <button class="auth-primary" type="submit" [disabled]="loading()">
+        {{ loading() ? 'Creando cuenta...' : 'Crear cuenta' }}
+        <span>→</span>
+      </button>
+    </form>
+
+    <p class="auth-switch">
+      ¿Ya tiene una cuenta?
+      <a routerLink="/login">Iniciar sesión</a>
+    </p>
+  </section>
+
+  <p class="auth-note">
+    El rol de cliente se asigna automáticamente y no puede modificarse desde el registro público.
+  </p>
+</div>
