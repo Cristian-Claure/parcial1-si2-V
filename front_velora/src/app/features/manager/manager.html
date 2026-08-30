@@ -1,0 +1,58 @@
+<app-authenticated-shell
+  [title]="context()?.storeName || 'Sucursal asignada'"
+  subtitle="Operación de sucursal"
+  [navItems]="navItems"
+  [userLabel]="userLabel()"
+  (logoutRequested)="logout()"
+>
+  <section class="dashboard-heading">
+    <span>OPERACIÓN LOCAL</span>
+
+    @if (context(); as user) {
+      <h1>{{ user.storeName }}</h1>
+
+      <p>
+        Encargado:
+        {{ user.firstName }}
+        {{ user.lastName }}
+      </p>
+    }
+    @else {
+      <h1>Preparando espacio operativo...</h1>
+    }
+  </section>
+
+  <div class="manager-cards">
+    <article>
+      <span>01</span>
+      <h2>Catálogo</h2>
+      <p>
+        Gestión operativa del catálogo global VÉLORA.
+      </p>
+    </article>
+
+    <article>
+      <span>02</span>
+      <h2>Inventario</h2>
+      <p>
+        Control limitado a los almacenes de la sucursal asignada.
+      </p>
+    </article>
+
+    <article class="future">
+      <span>03</span>
+      <h2>Pedidos y ventas</h2>
+      <p>
+        Disponible en el siguiente ciclo.
+      </p>
+    </article>
+
+    <article class="future">
+      <span>04</span>
+      <h2>POS y caja</h2>
+      <p>
+        Disponible en el siguiente ciclo.
+      </p>
+    </article>
+  </div>
+</app-authenticated-shell>

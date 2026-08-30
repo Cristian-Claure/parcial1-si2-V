@@ -1,0 +1,9 @@
+<app-authenticated-shell
+  [title]="title()"
+  [subtitle]="subtitle()"
+  [navItems]="navItems()"
+  [userLabel]="userLabel()"
+  (logoutRequested)="logout()"
+>
+  <ng-content />
+</app-authenticated-shell>

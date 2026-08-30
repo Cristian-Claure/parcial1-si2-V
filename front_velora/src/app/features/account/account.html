@@ -1,0 +1,151 @@
+<app-authenticated-shell
+  title="Mi espacio VÉLORA"
+  subtitle="Cliente"
+  [navItems]="navItems"
+  [userLabel]="userLabel()"
+  (logoutRequested)="logout()"
+>
+  @if (auth.currentUser(); as user) {
+
+    <section class="account-heading">
+      <span>MI CUENTA</span>
+
+      <h1>
+        Hola, {{ user.firstName }}.
+      </h1>
+
+      <p>
+        Descubra la colección VÉLORA y gestione su experiencia personal.
+      </p>
+    </section>
+
+    <div class="account-grid">
+
+      <article>
+        <span>01 · PERFIL</span>
+
+        <h2>
+          {{ user.firstName }}
+          {{ user.lastName }}
+        </h2>
+
+        <p>{{ user.email }}</p>
+
+        <small>
+          Cliente VÉLORA · {{ user.customerType }}
+        </small>
+      </article>
+
+      <article class="future">
+        <span>02 · PEDIDOS</span>
+
+        <h2>Mis pedidos</h2>
+
+        <p>
+          El historial y seguimiento de pedidos estará disponible con el flujo comercial.
+        </p>
+
+        <small>Ciclo 2</small>
+      </article>
+
+      <article class="future">
+        <span>03 · FAVORITOS</span>
+
+        <h2>Mi estilo</h2>
+
+        <p>
+          Guarde prendas y variantes favoritas.
+        </p>
+
+        <small>Ciclo 2</small>
+      </article>
+
+      <article class="future">
+        <span>04 · PROBADOR VIRTUAL</span>
+
+        <h2>Pruebe antes de elegir</h2>
+
+        <p>
+          Experiencia con cámara, realidad aumentada y contenido 3D.
+        </p>
+
+        <small>Ciclo 3</small>
+      </article>
+
+    </div>
+
+    <section class="collection">
+      <div class="collection-heading">
+        <div>
+          <span>COLECCIÓN ACTUAL</span>
+          <h2>Explore VÉLORA</h2>
+        </div>
+
+        <a href="/catalogo">
+          Ver colección completa →
+        </a>
+      </div>
+
+      @if (loading()) {
+        <p>Cargando colección...</p>
+      }
+
+      <div class="product-grid">
+        @for (product of products(); track product.id) {
+
+          <article class="product-card">
+
+            <div class="visual">
+              @if (
+                product.images.length &&
+                product.images[0].imageUrl
+              ) {
+                <img
+                  [src]="product.images[0].imageUrl"
+                  [alt]="product.images[0].altText || product.name"
+                />
+              }
+              @else {
+                <span>VÉLORA</span>
+              }
+            </div>
+
+            <div class="product-copy">
+              <small>
+                {{ product.categoryName }}
+              </small>
+
+              <h3>
+                {{ product.name }}
+              </h3>
+
+              @if (lowestPrice(product); as price) {
+                <strong>
+                  Desde Bs {{ price }}
+                </strong>
+              }
+
+              <div class="variants">
+                @for (
+                  variant of product.variants;
+                  track variant.id
+                ) {
+                  @if (variant.active) {
+                    <span>
+                      {{ variant.color }}
+                      ·
+                      {{ variant.size }}
+                    </span>
+                  }
+                }
+              </div>
+            </div>
+
+          </article>
+
+        }
+      </div>
+    </section>
+
+  }
+</app-authenticated-shell>

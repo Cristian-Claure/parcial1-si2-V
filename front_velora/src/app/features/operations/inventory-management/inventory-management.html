@@ -1,0 +1,146 @@
+<app-role-shell>
+<section class="page-heading">
+  <span>CONTROL DE EXISTENCIAS</span>
+  <h1>Inventario</h1>
+  <p>
+    Stock físico, comprometido y disponible por almacén.
+  </p>
+</section>
+
+@if (message()) {
+  <div class="feedback success">{{ message() }}</div>
+}
+
+@if (error()) {
+  <div class="feedback error">{{ error() }}</div>
+}
+
+<section class="warehouse-selector">
+  <span>Almacén</span>
+
+  <div class="warehouse-list">
+    @for (warehouse of warehouses(); track warehouse.id) {
+      <button
+        type="button"
+        [class.active]="selectedWarehouseId() === warehouse.id"
+        (click)="selectWarehouse(warehouse.id)"
+      >
+        <strong>{{ warehouse.name }}</strong>
+        <small>{{ warehouse.storeName }}</small>
+      </button>
+    }
+  </div>
+</section>
+
+<div class="inventory-grid">
+
+  <section class="panel">
+    <span class="index">01 · STOCK ACTUAL</span>
+
+    <div class="stock-table">
+      <div class="row header">
+        <span>Producto</span>
+        <span>SKU</span>
+        <span>Físico</span>
+        <span>Comprometido</span>
+        <span>Disponible</span>
+      </div>
+
+      @for (item of stock(); track item.id) {
+        <div class="row">
+          <span>
+            {{ item.productName }}
+            <small>
+              {{ item.color }} · {{ item.size }}
+            </small>
+          </span>
+
+          <span>{{ item.sku }}</span>
+          <strong>{{ item.physicalQuantity }}</strong>
+          <strong>{{ item.committedQuantity }}</strong>
+          <strong>{{ item.availableQuantity }}</strong>
+        </div>
+      } @empty {
+        <p>Este almacén todavía no tiene existencias registradas.</p>
+      }
+    </div>
+  </section>
+
+  <section class="panel">
+    <span class="index">02 · MOVIMIENTO</span>
+    <h2>Registrar movimiento</h2>
+
+    <form
+      [formGroup]="movementForm"
+      (ngSubmit)="registerMovement()"
+    >
+      <select formControlName="warehouseId">
+        <option value="">Seleccione almacén</option>
+
+        @for (warehouse of warehouses(); track warehouse.id) {
+          <option [value]="warehouse.id">
+            {{ warehouse.name }}
+          </option>
+        }
+      </select>
+
+      <select formControlName="variantId">
+        <option value="">Seleccione variante</option>
+
+        @for (variant of allVariants(); track variant.id) {
+          <option [value]="variant.id">
+            {{ variant.label }}
+          </option>
+        }
+      </select>
+
+      <select formControlName="movementType">
+        <option value="ENTRY">Entrada</option>
+        <option value="ADJUSTMENT_IN">Ajuste de entrada</option>
+        <option value="ADJUSTMENT_OUT">Ajuste de salida</option>
+        <option value="RETURN">Devolución</option>
+      </select>
+
+      <input
+        type="number"
+        min="1"
+        formControlName="quantity"
+        placeholder="Cantidad"
+      />
+
+      <textarea
+        formControlName="reason"
+        placeholder="Motivo"
+      ></textarea>
+
+      <button type="submit">
+        Registrar movimiento
+      </button>
+    </form>
+  </section>
+</div>
+
+<section class="history panel">
+  <span class="index">03 · HISTORIAL</span>
+
+  @for (movement of movements(); track movement.id) {
+    <article>
+      <strong>{{ movement.movementType }}</strong>
+
+      <span>{{ movement.sku }}</span>
+
+      <span>
+        {{ movement.physicalBefore }}
+        →
+        {{ movement.physicalAfter }}
+      </span>
+
+      <span>{{ movement.performedBy }}</span>
+
+      <small>{{ movement.reason }}</small>
+    </article>
+  } @empty {
+    <p>No hay movimientos registrados.</p>
+  }
+</section>
+</app-role-shell>

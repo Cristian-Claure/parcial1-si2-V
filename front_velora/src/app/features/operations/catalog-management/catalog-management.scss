@@ -1,0 +1,148 @@
+:host {
+  display: block;
+}
+
+.page-heading span,
+.index,
+.section-title span {
+  color: #96725e;
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.page-heading h1 {
+  margin: 8px 0;
+  font-family: Georgia, serif;
+  font-size: 44px;
+  font-weight: 400;
+}
+
+.page-heading p {
+  color: #74655d;
+}
+
+.feedback {
+  margin: 24px 0;
+  padding: 14px 18px;
+  border-radius: 10px;
+}
+
+.feedback.success {
+  background: #e7f0e8;
+}
+
+.feedback.error {
+  background: #f5dfdf;
+}
+
+.management-grid {
+  margin-top: 35px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.panel,
+.products-panel {
+  background: #fffdfa;
+  border: 1px solid #dfd4ca;
+  padding: 24px;
+}
+
+.panel h2 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+
+form {
+  display: grid;
+  gap: 11px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d6c9be;
+  background: #ffffff;
+  padding: 11px 12px;
+  font: inherit;
+}
+
+textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+button {
+  border: 0;
+  background: #211d1c;
+  color: white;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.products-panel {
+  margin-top: 24px;
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+}
+
+.product-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.product-list article {
+  border-top: 1px solid #e5dbd2;
+  padding-top: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 20px;
+}
+
+.product-list h3 {
+  margin: 5px 0;
+}
+
+.product-list p {
+  color: #776861;
+}
+
+.variant-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: start;
+}
+
+.variant-list span {
+  border: 1px solid #d7c9bd;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .management-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .product-list article,
+  .two {
+    grid-template-columns: 1fr;
+  }
+}

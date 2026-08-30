@@ -1,0 +1,58 @@
+:host {
+  display: block;
+}
+
+.dashboard-heading span {
+  color: #98725f;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .18em;
+}
+
+.dashboard-heading h1 {
+  margin: 8px 0;
+  font-family: Georgia, serif;
+  font-size: 46px;
+  font-weight: 400;
+}
+
+.dashboard-heading p {
+  color: #75665e;
+}
+
+.manager-cards {
+  margin-top: 32px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.manager-cards article {
+  min-height: 155px;
+  background: #fffdfa;
+  border: 1px solid #dfd4ca;
+  padding: 24px;
+}
+
+.manager-cards article > span {
+  color: #a3816d;
+}
+
+.manager-cards h2 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+
+.manager-cards p {
+  color: #75675f;
+}
+
+.manager-cards .future {
+  opacity: .55;
+}
+
+@media (max-width: 750px) {
+  .manager-cards {
+    grid-template-columns: 1fr;
+  }
+}
