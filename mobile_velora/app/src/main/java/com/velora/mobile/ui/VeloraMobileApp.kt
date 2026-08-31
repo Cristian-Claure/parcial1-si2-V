@@ -1,6 +1,9 @@
 package com.velora.mobile.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -23,6 +26,7 @@ private enum class AuthScreen {
 
 private enum class CustomerScreen {
     CATALOG,
+    ORDERS,
     CART,
     CHECKOUT,
     PAYMENT
@@ -225,7 +229,8 @@ private fun CustomerHome(
     email: String,
     onLogout: () -> Unit,
     cartViewModel: CartViewModel = viewModel(),
-    checkoutViewModel: CheckoutViewModel = viewModel()
+    checkoutViewModel: CheckoutViewModel = viewModel(),
+    ordersViewModel: OrdersViewModel = viewModel()
 ) {
     val cartState by
         cartViewModel.state.collectAsState()
@@ -303,9 +308,15 @@ private fun CustomerHome(
                     CustomerTile(
                         title = "PEDIDOS",
                         subtitle =
-                            "Disponible próximamente",
+                            "Ver historial y estado",
                         modifier =
-                            Modifier.weight(1f)
+                            Modifier.weight(1f),
+                        onClick = {
+                            ordersViewModel.load()
+
+                            customerScreen =
+                                CustomerScreen.ORDERS
+                        }
                     )
 
                     CustomerTile(
@@ -354,6 +365,18 @@ private fun CustomerHome(
                             "VER BOLSA (${cartState.cart.totalItems})"
                     )
                 }
+            }
+
+            CustomerScreen.ORDERS -> {
+
+                CustomerOrdersSection(
+                    viewModel =
+                        ordersViewModel,
+                    onBackToCatalog = {
+                        customerScreen =
+                            CustomerScreen.CATALOG
+                    }
+                )
             }
 
             CustomerScreen.CART -> {
@@ -493,9 +516,10 @@ private fun CustomerHome(
                                 null
 
                             cartViewModel.load()
+                            ordersViewModel.load()
 
                             customerScreen =
-                                CustomerScreen.CATALOG
+                                CustomerScreen.ORDERS
                         }
                     )
                 }
@@ -536,17 +560,56 @@ private fun CustomerHome(
 private fun CustomerTile(
     title: String,
     subtitle: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
+
+    val tileModifier =
+        if (onClick == null) {
+            modifier
+                .background(
+                    VeloraColors.Card
+                )
+                .padding(
+                    18.dp
+                )
+        } else {
+            modifier
+                .background(
+                    VeloraColors.Card
+                )
+                .clickable(
+                    onClick = onClick
+                )
+                .padding(
+                    18.dp
+                )
+        }
+
     Box(
-        modifier = modifier
-            .background(VeloraColors.Card)
-            .padding(18.dp)
+        modifier =
+            tileModifier
     ) {
         Column {
-            Text(title, color = VeloraColors.Ink, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(6.dp))
-            Text(subtitle, color = VeloraColors.Muted)
+            Text(
+                title,
+                color =
+                    VeloraColors.Ink,
+                fontWeight =
+                    FontWeight.Bold
+            )
+
+            Spacer(
+                Modifier.height(
+                    6.dp
+                )
+            )
+
+            Text(
+                subtitle,
+                color =
+                    VeloraColors.Muted
+            )
         }
     }
 }
@@ -580,7 +643,11 @@ private fun AuthCanvas(content: @Composable ColumnScope.() -> Unit) {
         contentAlignment = Alignment.TopCenter
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(
+                    rememberScrollState()
+                ),
             content = content
         )
     }
