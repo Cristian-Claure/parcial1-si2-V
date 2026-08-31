@@ -9,6 +9,9 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   customerType: CustomerType;
+  phone: string | null;
+  businessName: string | null;
+  taxId: string | null;
   status: UserStatus;
   storeId: string | null;
   storeName: string | null;

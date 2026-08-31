@@ -5,147 +5,573 @@
   [userLabel]="userLabel()"
   (logoutRequested)="logout()"
 >
-  @if (auth.currentUser(); as user) {
+  <section class="account-heading">
+    <span>MI CUENTA</span>
 
-    <section class="account-heading">
-      <span>MI CUENTA</span>
-
-      <h1>
+    <h1>
+      @if (auth.currentUser(); as user) {
         Hola, {{ user.firstName }}.
-      </h1>
+      }
+      @else {
+        Mi espacio VÉLORA
+      }
+    </h1>
 
+    <p>
+      Administre sus datos, preferencias comerciales
+      y direcciones para sus próximas compras.
+    </p>
+  </section>
+
+  @if (successMessage()) {
+    <div class="message success">
+      {{ successMessage() }}
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="message error">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <section class="commerce-grid">
+
+    <article class="panel profile-panel">
+
+      <header class="panel-heading">
+        <div>
+          <span>01 · PERFIL</span>
+          <h2>Datos personales</h2>
+        </div>
+
+        @if (auth.currentUser(); as user) {
+          <small>{{ user.email }}</small>
+        }
+      </header>
+
+      @if (loadingProfile()) {
+        <p class="loading-copy">
+          Cargando perfil...
+        </p>
+      }
+      @else {
+        <form
+          class="form-grid"
+          [formGroup]="profileForm"
+          (ngSubmit)="saveProfile()"
+        >
+          <label>
+            <span>Nombre</span>
+
+            <input
+              type="text"
+              formControlName="firstName"
+              maxlength="80"
+              autocomplete="given-name"
+            />
+          </label>
+
+          <label>
+            <span>Apellido</span>
+
+            <input
+              type="text"
+              formControlName="lastName"
+              maxlength="100"
+              autocomplete="family-name"
+            />
+          </label>
+
+          <label class="full">
+            <span>Teléfono</span>
+
+            <input
+              type="tel"
+              formControlName="phone"
+              maxlength="40"
+              autocomplete="tel"
+              placeholder="+591 ..."
+            />
+          </label>
+
+          <div class="customer-type full">
+            <span class="field-title">
+              Tipo de cliente
+            </span>
+
+            <div class="type-options">
+              <label class="type-card">
+                <input
+                  type="radio"
+                  formControlName="customerType"
+                  value="B2C"
+                />
+
+                <span>
+                  <strong>Personal</strong>
+                  <small>B2C · Compra para uso personal</small>
+                </span>
+              </label>
+
+              <label class="type-card">
+                <input
+                  type="radio"
+                  formControlName="customerType"
+                  value="B2B"
+                />
+
+                <span>
+                  <strong>Empresa</strong>
+                  <small>B2B · Compra con datos fiscales</small>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          @if (isBusinessCustomer()) {
+            <div class="business-fields full">
+
+              <label>
+                <span>Razón social</span>
+
+                <input
+                  type="text"
+                  formControlName="businessName"
+                  maxlength="160"
+                  autocomplete="organization"
+                />
+              </label>
+
+              <label>
+                <span>NIT</span>
+
+                <input
+                  type="text"
+                  formControlName="taxId"
+                  maxlength="40"
+                />
+              </label>
+
+            </div>
+          }
+
+          <div class="form-actions full">
+            <button
+              type="submit"
+              class="primary-button"
+              [disabled]="profileSaving()"
+            >
+              @if (profileSaving()) {
+                Guardando...
+              }
+              @else {
+                Guardar cambios
+              }
+            </button>
+          </div>
+        </form>
+      }
+
+    </article>
+
+    <article class="panel addresses-panel">
+
+      <header class="panel-heading address-heading">
+        <div>
+          <span>02 · DIRECCIONES</span>
+          <h2>Mis direcciones</h2>
+        </div>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="newAddress()"
+        >
+          + Nueva dirección
+        </button>
+      </header>
+
+      @if (showAddressForm()) {
+        <form
+          class="address-form"
+          [formGroup]="addressForm"
+          (ngSubmit)="saveAddress()"
+        >
+          <div class="address-form-heading">
+            <div>
+              <small>
+                {{
+                  editingAddressId()
+                    ? 'EDITAR DIRECCIÓN'
+                    : 'NUEVA DIRECCIÓN'
+                }}
+              </small>
+
+              <strong>
+                Datos de entrega
+              </strong>
+            </div>
+
+            <button
+              type="button"
+              class="close-button"
+              (click)="cancelAddressEdit()"
+              aria-label="Cerrar formulario"
+            >
+              ×
+            </button>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              <span>Alias</span>
+
+              <input
+                type="text"
+                formControlName="label"
+                maxlength="60"
+                placeholder="Casa, oficina..."
+              />
+            </label>
+
+            <label>
+              <span>Destinatario</span>
+
+              <input
+                type="text"
+                formControlName="recipientName"
+                maxlength="180"
+                autocomplete="name"
+              />
+            </label>
+
+            <label>
+              <span>Teléfono</span>
+
+              <input
+                type="tel"
+                formControlName="recipientPhone"
+                maxlength="40"
+                autocomplete="tel"
+              />
+            </label>
+
+            <label>
+              <span>Departamento</span>
+
+              <input
+                type="text"
+                formControlName="department"
+                maxlength="100"
+                placeholder="Santa Cruz"
+              />
+            </label>
+
+            <label>
+              <span>Ciudad</span>
+
+              <input
+                type="text"
+                formControlName="city"
+                maxlength="100"
+                placeholder="Santa Cruz de la Sierra"
+              />
+            </label>
+
+            <label>
+              <span>Zona</span>
+
+              <input
+                type="text"
+                formControlName="zone"
+                maxlength="120"
+                placeholder="Equipetrol"
+              />
+            </label>
+
+            <label class="full">
+              <span>Dirección</span>
+
+              <input
+                type="text"
+                formControlName="addressLine"
+                maxlength="240"
+                autocomplete="street-address"
+                placeholder="Calle, avenida, número..."
+              />
+            </label>
+
+            <label class="full">
+              <span>Referencia</span>
+
+              <textarea
+                formControlName="reference"
+                maxlength="300"
+                rows="3"
+                placeholder="Indicaciones adicionales para la entrega"
+              ></textarea>
+            </label>
+
+            <label class="default-control full">
+              <input
+                type="checkbox"
+                formControlName="defaultAddress"
+              />
+
+              <span>
+                Usar como dirección predeterminada
+              </span>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="text-button"
+              (click)="cancelAddressEdit()"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              class="primary-button"
+              [disabled]="addressSaving()"
+            >
+              @if (addressSaving()) {
+                Guardando...
+              }
+              @else if (editingAddressId()) {
+                Actualizar dirección
+              }
+              @else {
+                Guardar dirección
+              }
+            </button>
+          </div>
+        </form>
+      }
+
+      @if (loadingAddresses()) {
+        <p class="loading-copy">
+          Cargando direcciones...
+        </p>
+      }
+      @else if (addresses().length === 0) {
+        <div class="empty-state">
+          <span>V</span>
+
+          <h3>Aún no hay direcciones registradas</h3>
+
+          <p>
+            Agregue una dirección para agilizar
+            el proceso de compra y entrega.
+          </p>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="newAddress()"
+          >
+            Registrar primera dirección
+          </button>
+        </div>
+      }
+      @else {
+        <div class="address-list">
+
+          @for (
+            address of addresses();
+            track address.id
+          ) {
+            <article
+              class="address-card"
+              [class.default-address]="address.defaultAddress"
+            >
+              <div class="address-top">
+                <div>
+                  <span class="address-label">
+                    {{ address.label }}
+                  </span>
+
+                  @if (address.defaultAddress) {
+                    <small class="default-badge">
+                      Predeterminada
+                    </small>
+                  }
+                </div>
+
+                <div class="address-actions">
+                  <button
+                    type="button"
+                    (click)="editAddress(address)"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    class="danger"
+                    (click)="deleteAddress(address)"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+
+              <strong>
+                {{ address.recipientName }}
+              </strong>
+
+              <p>
+                {{ address.addressLine }}
+              </p>
+
+              <p>
+                @if (address.zone) {
+                  {{ address.zone }} ·
+                }
+
+                {{ address.city }},
+                {{ address.department }}
+              </p>
+
+              <small class="phone">
+                {{ address.recipientPhone }}
+              </small>
+
+              @if (address.reference) {
+                <small class="reference">
+                  Ref. {{ address.reference }}
+                </small>
+              }
+            </article>
+          }
+
+        </div>
+      }
+
+    </article>
+
+  </section>
+
+  <section class="next-features">
+
+    <article>
+      <span>03 · PEDIDOS</span>
+      <h2>Mis pedidos</h2>
       <p>
-        Descubra la colección VÉLORA y gestione su experiencia personal.
+        El siguiente bloque conectará historial,
+        seguimiento y estados de compra.
       </p>
-    </section>
+      <small>En implementación · Ciclo 2</small>
+    </article>
 
-    <div class="account-grid">
+    <article>
+      <span>04 · FAVORITOS</span>
+      <h2>Mi estilo</h2>
+      <p>
+        Las prendas favoritas se incorporarán
+        después del flujo comercial principal.
+      </p>
+      <small>Ciclo 2</small>
+    </article>
 
-      <article>
-        <span>01 · PERFIL</span>
+    <article>
+      <span>05 · PROBADOR VIRTUAL</span>
+      <h2>Pruebe antes de elegir</h2>
+      <p>
+        Cámara, realidad aumentada
+        y contenido tridimensional.
+      </p>
+      <small>Ciclo 3</small>
+    </article>
 
-        <h2>
-          {{ user.firstName }}
-          {{ user.lastName }}
-        </h2>
+  </section>
 
-        <p>{{ user.email }}</p>
+  <section class="collection">
 
-        <small>
-          Cliente VÉLORA · {{ user.customerType }}
-        </small>
-      </article>
+    <div class="collection-heading">
+      <div>
+        <span>COLECCIÓN ACTUAL</span>
+        <h2>Explore VÉLORA</h2>
+      </div>
 
-      <article class="future">
-        <span>02 · PEDIDOS</span>
+      <a href="/catalogo">
+        Ver colección completa →
+      </a>
+    </div>
 
-        <h2>Mis pedidos</h2>
+    @if (loadingProducts()) {
+      <p>Cargando colección...</p>
+    }
 
-        <p>
-          El historial y seguimiento de pedidos estará disponible con el flujo comercial.
-        </p>
+    <div class="product-grid">
 
-        <small>Ciclo 2</small>
-      </article>
+      @for (
+        product of products();
+        track product.id
+      ) {
+        <article class="product-card">
 
-      <article class="future">
-        <span>03 · FAVORITOS</span>
+          <div class="visual">
+            @if (
+              product.images.length &&
+              product.images[0].imageUrl
+            ) {
+              <img
+                [src]="product.images[0].imageUrl"
+                [alt]="
+                  product.images[0].altText ||
+                  product.name
+                "
+              />
+            }
+            @else {
+              <span>VÉLORA</span>
+            }
+          </div>
 
-        <h2>Mi estilo</h2>
+          <div class="product-copy">
+            <small>
+              {{ product.categoryName }}
+            </small>
 
-        <p>
-          Guarde prendas y variantes favoritas.
-        </p>
+            <h3>
+              {{ product.name }}
+            </h3>
 
-        <small>Ciclo 2</small>
-      </article>
+            @if (
+              lowestPrice(product);
+              as price
+            ) {
+              <strong>
+                Desde Bs {{ price }}
+              </strong>
+            }
 
-      <article class="future">
-        <span>04 · PROBADOR VIRTUAL</span>
+            <div class="variants">
+              @for (
+                variant of product.variants;
+                track variant.id
+              ) {
+                @if (variant.active) {
+                  <span>
+                    {{ variant.color }}
+                    ·
+                    {{ variant.size }}
+                  </span>
+                }
+              }
+            </div>
+          </div>
 
-        <h2>Pruebe antes de elegir</h2>
-
-        <p>
-          Experiencia con cámara, realidad aumentada y contenido 3D.
-        </p>
-
-        <small>Ciclo 3</small>
-      </article>
+        </article>
+      }
 
     </div>
 
-    <section class="collection">
-      <div class="collection-heading">
-        <div>
-          <span>COLECCIÓN ACTUAL</span>
-          <h2>Explore VÉLORA</h2>
-        </div>
+  </section>
 
-        <a href="/catalogo">
-          Ver colección completa →
-        </a>
-      </div>
-
-      @if (loading()) {
-        <p>Cargando colección...</p>
-      }
-
-      <div class="product-grid">
-        @for (product of products(); track product.id) {
-
-          <article class="product-card">
-
-            <div class="visual">
-              @if (
-                product.images.length &&
-                product.images[0].imageUrl
-              ) {
-                <img
-                  [src]="product.images[0].imageUrl"
-                  [alt]="product.images[0].altText || product.name"
-                />
-              }
-              @else {
-                <span>VÉLORA</span>
-              }
-            </div>
-
-            <div class="product-copy">
-              <small>
-                {{ product.categoryName }}
-              </small>
-
-              <h3>
-                {{ product.name }}
-              </h3>
-
-              @if (lowestPrice(product); as price) {
-                <strong>
-                  Desde Bs {{ price }}
-                </strong>
-              }
-
-              <div class="variants">
-                @for (
-                  variant of product.variants;
-                  track variant.id
-                ) {
-                  @if (variant.active) {
-                    <span>
-                      {{ variant.color }}
-                      ·
-                      {{ variant.size }}
-                    </span>
-                  }
-                }
-              </div>
-            </div>
-
-          </article>
-
-        }
-      </div>
-    </section>
-
-  }
 </app-authenticated-shell>

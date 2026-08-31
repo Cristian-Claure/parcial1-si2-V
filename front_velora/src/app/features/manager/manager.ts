@@ -27,8 +27,8 @@ export class Manager {
     { label: 'Dashboard', route: '/sucursal' },
     { label: 'Catálogo', route: '/sucursal/catalogo' },
     { label: 'Inventario', route: '/sucursal/inventario' },
-    { label: 'Pedidos y ventas', disabled: true },
-    { label: 'POS y caja', disabled: true },
+    { label: 'Pedidos y ventas', route: '/sucursal/pedidos' },
+    { label: 'POS y caja', route: '/sucursal/pos' },
     { label: 'Reportes', disabled: true }
   ];
 

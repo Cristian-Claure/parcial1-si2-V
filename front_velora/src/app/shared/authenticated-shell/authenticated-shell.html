@@ -1,7 +1,14 @@
 <div class="shell">
+
   <aside class="sidebar">
-    <a routerLink="/" class="brand">
-      <span class="brand-mark">V</span>
+
+    <a
+      routerLink="/"
+      class="brand"
+    >
+      <span class="brand-mark">
+        V
+      </span>
 
       <span>
         <strong>VÉLORA</strong>
@@ -19,7 +26,10 @@
     </div>
 
     <nav>
-      @for (item of navItems; track item.label) {
+      @for (
+        item of navItems;
+        track item.label
+      ) {
 
         @if (item.disabled) {
           <span class="nav-item disabled">
@@ -41,8 +51,20 @@
     </nav>
 
     <div class="sidebar-footer">
-      <a routerLink="/" class="back-home">
-        ← Volver a VÉLORA
+
+      <button
+        type="button"
+        class="back-button"
+        (click)="goBack()"
+      >
+        ← Volver
+      </button>
+
+      <a
+        routerLink="/"
+        class="back-home"
+      >
+        Volver a VÉLORA
       </a>
 
       <button
@@ -52,10 +74,13 @@
       >
         Cerrar sesión
       </button>
+
     </div>
+
   </aside>
 
   <main class="shell-content">
     <ng-content />
   </main>
+
 </div>

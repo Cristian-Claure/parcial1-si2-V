@@ -1,0 +1,460 @@
+<app-authenticated-shell
+  title="Mis pedidos VÉLORA"
+  subtitle="Cliente"
+  [navItems]="navItems"
+  [userLabel]="userLabel()"
+  (logoutRequested)="logout()"
+>
+
+  <section class="orders-heading">
+    <span>MIS PEDIDOS</span>
+
+    <h1>
+      Compras y pagos.
+    </h1>
+
+    <p>
+      Consulte sus pedidos, seleccione el método
+      de pago y gestione operaciones pendientes.
+    </p>
+  </section>
+
+  @if (successMessage()) {
+    <div class="feedback success">
+      <span>✓</span>
+      <p>{{ successMessage() }}</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="feedback error">
+      <span>!</span>
+      <p>{{ errorMessage() }}</p>
+    </div>
+  }
+
+  @if (loading()) {
+
+    <section class="loading-panel">
+      Cargando sus pedidos...
+    </section>
+
+  }
+  @else if (orders().length === 0) {
+
+    <section class="empty-orders">
+
+      <div class="empty-mark">
+        V
+      </div>
+
+      <span>
+        AÚN NO HAY PEDIDOS
+      </span>
+
+      <h2>
+        Su próxima pieza VÉLORA
+        puede comenzar aquí.
+      </h2>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="goToCatalog()"
+      >
+        Explorar colección →
+      </button>
+
+    </section>
+
+  }
+  @else {
+
+    <section class="orders-list">
+
+      @for (
+        order of orders();
+        track order.id
+      ) {
+
+        <article class="order-card">
+
+          <header class="order-header">
+
+            <div>
+              <span class="order-number">
+                {{ order.orderNumber }}
+              </span>
+
+              <small>
+                {{
+                  order.createdAt
+                    | date:'dd/MM/yyyy HH:mm'
+                }}
+              </small>
+            </div>
+
+            <span
+              class="status"
+              [class.reserved]="
+                order.status ===
+                  'RESERVED'
+              "
+              [class.fulfilled]="
+                order.status ===
+                  'FULFILLED'
+              "
+              [class.cancelled]="
+                order.status ===
+                  'CANCELLED'
+              "
+            >
+              {{
+                orderStatusLabel(order)
+              }}
+            </span>
+
+          </header>
+
+          <div class="order-body">
+
+            <section class="order-products">
+
+              @for (
+                item of order.items;
+                track item.id
+              ) {
+
+                <div class="order-item">
+
+                  <div>
+                    <strong>
+                      {{ item.productName }}
+                    </strong>
+
+                    <small>
+                      {{ item.color }}
+                      · Talla {{ item.size }}
+                      · {{ item.sku }}
+                    </small>
+                  </div>
+
+                  <span>
+                    x{{ item.quantity }}
+                  </span>
+
+                  <strong>
+                    Bs {{ item.subtotal }}
+                  </strong>
+
+                </div>
+
+              }
+
+            </section>
+
+            <aside class="order-facts">
+
+              <div>
+                <span>Entrega</span>
+
+                <strong>
+                  {{
+                    order.fulfillmentType ===
+                      'DELIVERY'
+                      ? 'Envío'
+                      : order.fulfillmentType ===
+                          'PICKUP'
+                        ? 'Recojo'
+                        : 'En tienda'
+                  }}
+                </strong>
+              </div>
+
+              <div>
+                <span>Sucursal</span>
+                <strong>
+                  {{ order.storeName }}
+                </strong>
+              </div>
+
+              <div class="total">
+                <span>Total</span>
+                <strong>
+                  Bs {{ order.total }}
+                </strong>
+              </div>
+
+            </aside>
+
+          </div>
+
+          <section class="payment-section">
+
+            <div class="payment-heading">
+              <div>
+                <span>PAGO</span>
+
+                <h3>
+                  Estado financiero
+                </h3>
+              </div>
+
+              @if (
+                latestPayment(order.id);
+                as latest
+              ) {
+                <small>
+                  Último intento:
+                  {{
+                    paymentMethodLabel(
+                      latest.method
+                    )
+                  }}
+                  ·
+                  {{
+                    paymentStatusLabel(
+                      latest
+                    )
+                  }}
+                </small>
+              }
+            </div>
+
+            @if (
+              activePayment(order.id);
+              as payment
+            ) {
+
+              <div
+                class="active-payment"
+                [class.paid]="
+                  payment.status === 'PAID'
+                "
+              >
+
+                <div>
+                  <span>
+                    {{
+                      paymentMethodLabel(
+                        payment.method
+                      )
+                    }}
+                  </span>
+
+                  <strong>
+                    {{
+                      paymentStatusLabel(
+                        payment
+                      )
+                    }}
+                  </strong>
+
+                  <small>
+                    Bs {{ payment.amount }}
+                  </small>
+                </div>
+
+                @if (
+                  payment.status ===
+                    'PENDING'
+                ) {
+
+                  <p>
+                    @if (
+                      payment.method ===
+                        'CARD' ||
+                      payment.method ===
+                        'QR' ||
+                      payment.method ===
+                        'WEB'
+                    ) {
+                      Solicitud registrada.
+                      La integración con el
+                      proveedor externo aún debe
+                      confirmar la transacción.
+                    }
+                    @else if (
+                      payment.method === 'COD'
+                    ) {
+                      Se confirmará al realizar
+                      la entrega.
+                    }
+                    @else {
+                      Se confirmará durante la
+                      operación en sucursal.
+                    }
+                  </p>
+
+                  <button
+                    type="button"
+                    class="danger-button"
+                    [disabled]="
+                      busyPaymentId() ===
+                        payment.id
+                    "
+                    (click)="
+                      cancelPayment(payment)
+                    "
+                  >
+                    {{
+                      busyPaymentId() ===
+                        payment.id
+                        ? 'Cancelando...'
+                        : 'Cancelar pago'
+                    }}
+                  </button>
+
+                }
+                @else {
+
+                  <p>
+                    Pago confirmado.
+                    El pedido puede continuar
+                    al proceso de entrega.
+                  </p>
+
+                }
+
+              </div>
+
+            }
+            @else if (
+              order.status === 'RESERVED'
+            ) {
+
+              <div class="new-payment">
+
+                <label>
+                  <span>
+                    Método de pago
+                  </span>
+
+                  <select
+                    [value]="
+                      selectedMethod(order)
+                    "
+                    (change)="
+                      chooseMethod(
+                        order.id,
+                        $any($event.target).value
+                      )
+                    "
+                  >
+
+                    @for (
+                      option of
+                        paymentOptions(order);
+                      track option.value
+                    ) {
+
+                      <option
+                        [value]="
+                          option.value
+                        "
+                      >
+                        {{ option.label }}
+                      </option>
+
+                    }
+
+                  </select>
+                </label>
+
+                <p>
+                  {{
+                    paymentDescription(
+                      order
+                    )
+                  }}
+                </p>
+
+                @if (
+                  selectedMethod(order) ===
+                    'CARD' ||
+                  selectedMethod(order) ===
+                    'QR' ||
+                  selectedMethod(order) ===
+                    'WEB'
+                ) {
+                  <div class="provider-warning">
+                    Esta modalidad se registrará
+                    como pendiente. La conexión
+                    con una pasarela bancaria
+                    externa todavía no está
+                    habilitada.
+                  </div>
+                }
+
+                <button
+                  type="button"
+                  class="pay-button"
+                  [disabled]="
+                    busyOrderId() ===
+                      order.id
+                  "
+                  (click)="
+                    createPayment(order)
+                  "
+                >
+                  {{
+                    busyOrderId() ===
+                      order.id
+                      ? 'Registrando...'
+                      : 'Registrar método de pago →'
+                  }}
+                </button>
+
+              </div>
+
+            }
+
+          </section>
+
+          @if (
+            order.status ===
+              'RESERVED'
+          ) {
+
+            <footer class="order-footer">
+
+              @if (
+                !activePayment(order.id)
+              ) {
+
+                <button
+                  type="button"
+                  class="cancel-order-button"
+                  [disabled]="
+                    busyOrderId() ===
+                      order.id
+                  "
+                  (click)="
+                    cancelOrder(order)
+                  "
+                >
+                  Cancelar pedido
+                </button>
+
+              }
+              @else {
+                <small>
+                  Para cancelar el pedido,
+                  primero debe resolver el
+                  pago pendiente.
+                </small>
+              }
+
+            </footer>
+
+          }
+
+        </article>
+
+      }
+
+    </section>
+
+  }
+
+</app-authenticated-shell>

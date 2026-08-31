@@ -1,0 +1,638 @@
+<app-authenticated-shell
+  title="Checkout VÉLORA"
+  subtitle="Cliente"
+  [navItems]="navItems"
+  [userLabel]="userLabel()"
+  (logoutRequested)="logout()"
+>
+  @if (createdOrder(); as order) {
+
+    <section class="order-success">
+
+      <div class="success-mark">
+        ✓
+      </div>
+
+      <span>PEDIDO CREADO</span>
+
+      <h1>
+        Su selección quedó reservada.
+      </h1>
+
+      <p>
+        El pedido
+        <strong>
+          {{ order.orderNumber }}
+        </strong>
+        fue registrado correctamente.
+      </p>
+
+      <div class="order-facts">
+
+        <article>
+          <span>Estado</span>
+          <strong>
+            Reservado
+          </strong>
+        </article>
+
+        <article>
+          <span>Total</span>
+          <strong>
+            Bs {{ order.total }}
+          </strong>
+        </article>
+
+        <article>
+          <span>Entrega</span>
+          <strong>
+            {{
+              order.fulfillmentType ===
+                'DELIVERY'
+                ? 'Envío'
+                : 'Recojo en sucursal'
+            }}
+          </strong>
+        </article>
+
+        <article>
+          <span>Sucursal</span>
+          <strong>
+            {{ order.storeName }}
+          </strong>
+        </article>
+
+      </div>
+
+      <div class="success-note">
+        <strong>
+          Inventario reservado
+        </strong>
+
+        <p>
+          Las unidades del pedido ya están
+          comprometidas y no pueden ser tomadas
+          por otra venta.
+        </p>
+      </div>
+
+      <app-online-payment-panel
+        [order]="order"
+      />
+
+      <div class="success-actions">
+
+        <button
+          type="button"
+          class="primary-button"
+          (click)="goToOrders()"
+        >
+          Ver mis pedidos
+        </button>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="goToCatalog()"
+        >
+          Seguir explorando
+        </button>
+
+      </div>
+
+      <p class="payment-next">
+        También puede revisar el pedido,
+        el pago y su historial desde
+        Mis pedidos.
+      </p>
+
+    </section>
+
+  }
+  @else {
+
+    <section class="checkout-heading">
+
+      <span>FINALIZAR COMPRA</span>
+
+      <h1>
+        Entrega y confirmación.
+      </h1>
+
+      <p>
+        Seleccione cómo desea recibir su compra
+        y la sucursal desde la que será abastecida.
+      </p>
+
+    </section>
+
+    @if (errorMessage()) {
+      <div class="checkout-feedback">
+        <strong>
+          Revise su compra
+        </strong>
+
+        <span>
+          {{ errorMessage() }}
+        </span>
+      </div>
+    }
+
+    @if (loading()) {
+      <section class="loading-panel">
+        Preparando checkout...
+      </section>
+    }
+    @else if (
+      cart.cart().items.length > 0
+    ) {
+
+      <form
+        class="checkout-layout"
+        [formGroup]="form"
+        (ngSubmit)="placeOrder()"
+      >
+
+        <div class="checkout-main">
+
+          <section class="checkout-panel">
+
+            <div class="section-number">
+              01
+            </div>
+
+            <div class="section-heading">
+              <span>
+                FORMA DE ENTREGA
+              </span>
+
+              <h2>
+                ¿Cómo desea recibirlo?
+              </h2>
+            </div>
+
+            <div class="fulfillment-options">
+
+              <button
+                type="button"
+                class="fulfillment-card"
+                [class.active]="
+                  fulfillmentType() ===
+                    'DELIVERY'
+                "
+                (click)="
+                  selectFulfillment(
+                    'DELIVERY'
+                  )
+                "
+              >
+                <span class="option-icon">
+                  →□
+                </span>
+
+                <strong>
+                  Envío
+                </strong>
+
+                <small>
+                  Entrega en una dirección
+                  registrada.
+                </small>
+              </button>
+
+              <button
+                type="button"
+                class="fulfillment-card"
+                [class.active]="
+                  fulfillmentType() ===
+                    'PICKUP'
+                "
+                (click)="
+                  selectFulfillment(
+                    'PICKUP'
+                  )
+                "
+              >
+                <span class="option-icon">
+                  V
+                </span>
+
+                <strong>
+                  Recojo
+                </strong>
+
+                <small>
+                  Retiro directo en una
+                  sucursal VÉLORA.
+                </small>
+              </button>
+
+            </div>
+
+          </section>
+
+          @if (
+            fulfillmentType() ===
+              'DELIVERY'
+          ) {
+
+            <section class="checkout-panel">
+
+              <div class="section-number">
+                02
+              </div>
+
+              <div class="section-heading">
+                <span>
+                  DIRECCIÓN
+                </span>
+
+                <h2>
+                  ¿Dónde realizamos la entrega?
+                </h2>
+              </div>
+
+              @if (
+                addresses().length === 0
+              ) {
+
+                <div class="empty-info">
+                  <strong>
+                    No tiene direcciones registradas.
+                  </strong>
+
+                  <p>
+                    Agregue una dirección desde
+                    Mi cuenta antes de continuar.
+                  </p>
+
+                  <button
+                    type="button"
+                    class="secondary-button"
+                    (click)="goToAccount()"
+                  >
+                    Ir a Mi cuenta
+                  </button>
+                </div>
+
+              }
+              @else {
+
+                <div class="address-options">
+
+                  @for (
+                    address of addresses();
+                    track address.id
+                  ) {
+
+                    <label
+                      class="address-option"
+                      [class.active]="
+                        form.controls
+                          .addressId.value ===
+                            address.id
+                      "
+                    >
+                      <input
+                        type="radio"
+                        formControlName="addressId"
+                        [value]="address.id"
+                      />
+
+                      <span class="address-copy">
+
+                        <span class="address-top">
+                          <strong>
+                            {{ address.label }}
+                          </strong>
+
+                          @if (
+                            address.defaultAddress
+                          ) {
+                            <small>
+                              Predeterminada
+                            </small>
+                          }
+                        </span>
+
+                        <span>
+                          {{ address.recipientName }}
+                        </span>
+
+                        <span>
+                          {{ address.addressLine }}
+                        </span>
+
+                        <span>
+                          @if (address.zone) {
+                            {{ address.zone }} ·
+                          }
+
+                          {{ address.city }},
+                          {{ address.department }}
+                        </span>
+
+                      </span>
+
+                    </label>
+
+                  }
+
+                </div>
+
+              }
+
+            </section>
+
+          }
+
+          <section class="checkout-panel">
+
+            <div class="section-number">
+              {{
+                fulfillmentType() ===
+                  'DELIVERY'
+                  ? '03'
+                  : '02'
+              }}
+            </div>
+
+            <div class="section-heading">
+              <span>
+                SUCURSAL
+              </span>
+
+              <h2>
+                {{
+                  fulfillmentType() ===
+                    'PICKUP'
+                    ? 'Seleccione dónde recoger.'
+                    : 'Origen de abastecimiento.'
+                }}
+              </h2>
+            </div>
+
+            @if (
+              warehouses().length === 0
+            ) {
+
+              <div class="empty-info warning">
+                <strong>
+                  Sin disponibilidad completa
+                </strong>
+
+                <p>
+                  Actualmente ninguna sucursal
+                  puede abastecer todos los
+                  productos seleccionados.
+                </p>
+              </div>
+
+            }
+            @else {
+
+              <div class="warehouse-options">
+
+                @for (
+                  warehouse of warehouses();
+                  track warehouse.warehouseId
+                ) {
+
+                  <label
+                    class="warehouse-card"
+                    [class.active]="
+                      form.controls
+                        .warehouseId.value ===
+                          warehouse.warehouseId
+                    "
+                  >
+                    <input
+                      type="radio"
+                      formControlName="warehouseId"
+                      [value]="warehouse.warehouseId"
+                    />
+
+                    <span>
+                      <small>
+                        {{ warehouse.warehouseCode }}
+                      </small>
+
+                      <strong>
+                        {{ warehouse.storeName }}
+                      </strong>
+
+                      <span>
+                        {{ warehouse.warehouseName }}
+                      </span>
+
+                      @if (
+                        warehouse.storeAddress
+                      ) {
+                        <span class="store-address">
+                          {{ warehouse.storeAddress }}
+                        </span>
+                      }
+                    </span>
+
+                  </label>
+
+                }
+
+              </div>
+
+            }
+
+          </section>
+
+          <section class="checkout-panel">
+
+            <div class="section-number">
+              {{
+                fulfillmentType() ===
+                  'DELIVERY'
+                  ? '04'
+                  : '03'
+              }}
+            </div>
+
+            <div class="section-heading">
+              <span>
+                OBSERVACIONES
+              </span>
+
+              <h2>
+                Indicaciones adicionales
+              </h2>
+            </div>
+
+            <textarea
+              rows="4"
+              maxlength="500"
+              formControlName="notes"
+              placeholder="Información opcional para preparar o entregar su pedido..."
+            ></textarea>
+
+            <small class="field-note">
+              Máximo 500 caracteres.
+            </small>
+
+          </section>
+
+        </div>
+
+        <aside class="order-summary">
+
+          <span class="summary-kicker">
+            RESUMEN DEL PEDIDO
+          </span>
+
+          <h2>
+            Su selección
+          </h2>
+
+          <div class="summary-items">
+
+            @for (
+              item of cart.cart().items;
+              track item.id
+            ) {
+
+              <article>
+
+                <div>
+                  <strong>
+                    {{ item.productName }}
+                  </strong>
+
+                  <small>
+                    {{ item.color }}
+                    ·
+                    {{ item.size }}
+                    ·
+                    x{{ item.quantity }}
+                  </small>
+                </div>
+
+                <span>
+                  Bs {{ item.subtotal }}
+                </span>
+
+              </article>
+
+            }
+
+          </div>
+
+          <div class="summary-line">
+            <span>
+              Productos
+            </span>
+
+            <strong>
+              {{ cart.totalItems() }}
+            </strong>
+          </div>
+
+          <div class="summary-line total">
+            <span>
+              Total
+            </span>
+
+            <strong>
+              Bs {{ cart.subtotal() }}
+            </strong>
+          </div>
+
+          @if (
+            selectedWarehouse();
+            as warehouse
+          ) {
+
+            <div class="selection-summary">
+              <span>
+                {{
+                  fulfillmentType() ===
+                    'PICKUP'
+                    ? 'Recojo'
+                    : 'Abastecimiento'
+                }}
+              </span>
+
+              <strong>
+                {{ warehouse.storeName }}
+              </strong>
+            </div>
+
+          }
+
+          @if (
+            selectedAddress();
+            as address
+          ) {
+            @if (
+              fulfillmentType() ===
+                'DELIVERY'
+            ) {
+
+              <div class="selection-summary">
+                <span>
+                  Entrega
+                </span>
+
+                <strong>
+                  {{ address.label }}
+                </strong>
+
+                <small>
+                  {{ address.addressLine }}
+                </small>
+              </div>
+
+            }
+          }
+
+          <p class="reserve-note">
+            Al confirmar, el inventario
+            será reservado inmediatamente.
+          </p>
+
+          <button
+            type="submit"
+            class="confirm-button"
+            [disabled]="
+              placingOrder() ||
+              warehouses().length === 0 ||
+              (
+                fulfillmentType() ===
+                  'DELIVERY' &&
+                addresses().length === 0
+              )
+            "
+          >
+            @if (placingOrder()) {
+              Reservando...
+            }
+            @else {
+              Confirmar pedido →
+            }
+          </button>
+
+          <button
+            type="button"
+            class="back-bag-button"
+            (click)="
+              router.navigate(['/bolsa'])
+            "
+          >
+            Volver a la bolsa
+          </button>
+
+        </aside>
+
+      </form>
+
+    }
+
+  }
+
+</app-authenticated-shell>

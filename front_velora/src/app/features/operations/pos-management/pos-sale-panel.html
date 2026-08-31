@@ -1,0 +1,647 @@
+<section class="sale-panel">
+
+  <header class="sale-heading">
+
+    <div>
+      <span>NUEVA VENTA</span>
+
+      <h2>
+        Venta presencial
+      </h2>
+
+      <p>
+        Seleccione productos disponibles
+        en {{ session.warehouseName }}.
+      </p>
+    </div>
+
+    <div class="session-reference">
+      <span>SESIÓN</span>
+      <strong>
+        {{ session.sessionNumber }}
+      </strong>
+    </div>
+
+  </header>
+
+  <section
+    class="offline-status"
+    [class.is-offline]="!offline.online()"
+    [class.has-pending]="
+      offline.pendingForSession(
+        session.id
+      ) > 0
+    "
+  >
+    <div class="offline-status__main">
+
+      <span
+        class="offline-status__dot"
+      ></span>
+
+      <div>
+        <span class="offline-status__eyebrow">
+          {{
+            offline.online()
+              ? 'CONEXIÓN ACTIVA'
+              : 'MODO OFFLINE'
+          }}
+        </span>
+
+        <strong>
+          {{
+            offline.online()
+              ? 'POS conectado al servidor'
+              : 'Ventas en efectivo disponibles sin conexión'
+          }}
+        </strong>
+
+        @if (!offline.online()) {
+          <small>
+            Tarjeta y QR requieren conexión.
+          </small>
+        }
+      </div>
+
+    </div>
+
+    @if (
+      offline.pendingForSession(
+        session.id
+      ) > 0
+    ) {
+
+      <div class="offline-status__queue">
+
+        <div>
+          <span>
+            PENDIENTES LOCALES
+          </span>
+
+          <strong>
+            {{
+              offline.pendingForSession(
+                session.id
+              )
+            }}
+          </strong>
+        </div>
+
+        @if (
+          offline.conflictsForSession(
+            session.id
+          ) > 0
+        ) {
+          <small>
+            {{
+              offline.conflictsForSession(
+                session.id
+              )
+            }}
+            requieren revisión.
+          </small>
+        }
+
+        @if (offline.online()) {
+          <button
+            type="button"
+            [disabled]="offline.syncing()"
+            (click)="syncOfflineSales()"
+          >
+            {{
+              offline.syncing()
+                ? 'Sincronizando...'
+                : 'Sincronizar ahora'
+            }}
+          </button>
+        }
+
+      </div>
+    }
+
+  </section>
+
+  @if (successMessage()) {
+    <div class="sale-feedback success">
+      <span>✓</span>
+      <p>{{ successMessage() }}</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="sale-feedback error">
+      <span>!</span>
+      <p>{{ errorMessage() }}</p>
+    </div>
+  }
+
+  @if (loading()) {
+
+    <div class="sale-state">
+      Cargando catálogo e inventario...
+    </div>
+
+  }
+  @else if (
+    pendingSale();
+    as sale
+  ) {
+
+    <section class="pending-sale">
+
+      <div class="pending-sale__main">
+
+        <span>COBRO PENDIENTE</span>
+
+        <h3>
+          {{ sale.orderNumber }}
+        </h3>
+
+        <p>
+          El stock está reservado hasta
+          resolver el pago.
+        </p>
+
+      </div>
+
+      <div class="pending-facts">
+
+        <div>
+          <span>Método</span>
+          <strong>
+            {{ sale.paymentMethod }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Total</span>
+          <strong>
+            Bs {{ sale.total }}
+          </strong>
+        </div>
+
+        <div>
+          <span>Estado</span>
+          <strong>
+            Pendiente
+          </strong>
+        </div>
+
+      </div>
+
+      <div class="pending-actions">
+
+        <button
+          type="button"
+          class="confirm-payment"
+          [disabled]="busy()"
+          (click)="confirmPending()"
+        >
+          Confirmar pago
+        </button>
+
+        <button
+          type="button"
+          class="fail-payment"
+          [disabled]="busy()"
+          (click)="failPending()"
+        >
+          Marcar fallido
+        </button>
+
+        <button
+          type="button"
+          class="cancel-payment"
+          [disabled]="busy()"
+          (click)="cancelPending()"
+        >
+          Cancelar cobro
+        </button>
+
+      </div>
+
+      <small class="provider-note">
+        Tarjeta y QR utilizan confirmación
+        operativa mientras no exista una
+        pasarela externa integrada.
+      </small>
+
+    </section>
+
+  }
+  @else {
+
+    @if (saleOperationId()) {
+
+      <div class="retry-warning">
+
+        <div>
+          <strong>
+            Reintento protegido
+          </strong>
+
+          <p>
+            El intento anterior no recibió
+            respuesta definitiva. La venta
+            quedó bloqueada para conservar
+            el mismo clientOperationId.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          [disabled]="busy()"
+          (click)="discardRetry()"
+        >
+          Modificar venta
+        </button>
+
+      </div>
+
+    }
+
+    <div class="sale-workspace">
+
+      <section class="catalog-side">
+
+        <div class="catalog-toolbar">
+
+          <div>
+            <span>CATÁLOGO</span>
+
+            <h3>
+              Productos disponibles
+            </h3>
+          </div>
+
+          <input
+            type="search"
+            placeholder="Buscar producto, SKU, color o talla..."
+            [value]="productSearch()"
+            [disabled]="
+              busy() ||
+              saleOperationId()
+            "
+            (input)="
+              setSearch(
+                $any($event.target).value
+              )
+            "
+          />
+
+        </div>
+
+        @if (
+          visibleCatalog().length === 0
+        ) {
+
+          <div class="empty-catalog">
+            No existen variantes para
+            la búsqueda actual.
+          </div>
+
+        }
+        @else {
+
+          <div class="catalog-list">
+
+            @for (
+              item of visibleCatalog();
+              track item.variant.id
+            ) {
+
+              <article
+                class="catalog-item"
+                [class.no-stock]="
+                  item.availableQuantity <= 0
+                "
+              >
+
+                <div class="catalog-copy">
+
+                  <span>
+                    {{ item.categoryName }}
+                  </span>
+
+                  <strong>
+                    {{ item.productName }}
+                  </strong>
+
+                  <small>
+                    {{ item.variant.color }}
+                    ·
+                    Talla {{ item.variant.size }}
+                    ·
+                    {{ item.variant.sku }}
+                  </small>
+
+                </div>
+
+                <div class="catalog-price">
+
+                  <strong>
+                    Bs {{ item.variant.price }}
+                  </strong>
+
+                  <small
+                    [class.empty]="
+                      item.availableQuantity <= 0
+                    "
+                  >
+                    Disponible:
+                    {{ item.availableQuantity }}
+                  </small>
+
+                </div>
+
+                <button
+                  type="button"
+                  class="add-product"
+                  [disabled]="
+                    item.availableQuantity <= 0 ||
+                    busy() ||
+                    saleOperationId()
+                  "
+                  (click)="addItem(item)"
+                >
+                  +
+                </button>
+
+              </article>
+
+            }
+
+          </div>
+
+        }
+
+      </section>
+
+      <aside class="ticket">
+
+        <div class="ticket-heading">
+
+          <span>VENTA ACTUAL</span>
+
+          <h3>
+            {{
+              totalUnits()
+            }}
+            {{
+              totalUnits() === 1
+                ? 'unidad'
+                : 'unidades'
+            }}
+          </h3>
+
+        </div>
+
+        @if (
+          cart().length === 0
+        ) {
+
+          <div class="empty-ticket">
+            Agregue productos desde
+            el catálogo.
+          </div>
+
+        }
+        @else {
+
+          <div class="ticket-lines">
+
+            @for (
+              line of cart();
+              track line.variantId
+            ) {
+
+              <article>
+
+                <div class="line-copy">
+
+                  <strong>
+                    {{ line.productName }}
+                  </strong>
+
+                  <small>
+                    {{ line.color }}
+                    ·
+                    Talla {{ line.size }}
+                  </small>
+
+                  <small>
+                    {{ line.sku }}
+                    ·
+                    Disponible:
+                    {{
+                      availableFor(
+                        line.variantId
+                      )
+                    }}
+                  </small>
+
+                </div>
+
+                <div class="quantity">
+
+                  <button
+                    type="button"
+                    [disabled]="
+                      busy() ||
+                      saleOperationId()
+                    "
+                    (click)="decrease(line)"
+                  >
+                    −
+                  </button>
+
+                  <strong>
+                    {{ line.quantity }}
+                  </strong>
+
+                  <button
+                    type="button"
+                    [disabled]="
+                      busy() ||
+                      saleOperationId()
+                    "
+                    (click)="increase(line)"
+                  >
+                    +
+                  </button>
+
+                </div>
+
+                <strong class="line-total">
+                  Bs
+                  {{
+                    line.unitPrice *
+                    line.quantity
+                  }}
+                </strong>
+
+                <button
+                  type="button"
+                  class="remove-line"
+                  [disabled]="
+                    busy() ||
+                    saleOperationId()
+                  "
+                  (click)="
+                    remove(
+                      line.variantId
+                    )
+                  "
+                >
+                  ×
+                </button>
+
+              </article>
+
+            }
+
+          </div>
+
+          <button
+            type="button"
+            class="clear-ticket"
+            [disabled]="
+              busy() ||
+              saleOperationId()
+            "
+            (click)="clearCart()"
+          >
+            Vaciar venta
+          </button>
+
+        }
+
+        <div class="payment-methods">
+
+          <span>
+            MÉTODO DE PAGO
+          </span>
+
+          <div class="method-grid">
+
+            <button
+              type="button"
+              [class.active]="
+                paymentMethod() ===
+                  'CASH'
+              "
+              [disabled]="
+                busy() ||
+                saleOperationId()
+              "
+              (click)="
+                selectPaymentMethod(
+                  'CASH'
+                )
+              "
+            >
+              Efectivo
+            </button>
+
+            <button
+              type="button"
+              [class.active]="
+                paymentMethod() ===
+                  'CARD'
+              "
+              [disabled]="
+                busy() ||
+                saleOperationId()
+              "
+              (click)="
+                selectPaymentMethod(
+                  'CARD'
+                )
+              "
+            >
+              Tarjeta
+            </button>
+
+            <button
+              type="button"
+              [class.active]="
+                paymentMethod() ===
+                  'QR'
+              "
+              [disabled]="
+                busy() ||
+                saleOperationId()
+              "
+              (click)="
+                selectPaymentMethod(
+                  'QR'
+                )
+              "
+            >
+              QR
+            </button>
+
+          </div>
+
+          <small>
+            {{ paymentMethodDescription() }}
+          </small>
+
+        </div>
+
+        <div class="ticket-total">
+
+          <span>Total</span>
+
+          <strong>
+            Bs {{ totalAmount() }}
+          </strong>
+
+        </div>
+
+        <button
+          type="button"
+          class="charge-button"
+          [disabled]="
+            busy() ||
+            cart().length === 0 ||
+            (
+              !offline.online() &&
+              paymentMethod() !== 'CASH'
+            )
+          "
+          (click)="createSale()"
+        >
+          @if (busy()) {
+            Procesando...
+          }
+          @else if (saleOperationId()) {
+            Reintentar venta →
+          }
+          @else if (
+            paymentMethod() === 'CASH'
+          ) {
+            Cobrar y completar →
+          }
+          @else {
+            Registrar y reservar →
+          }
+        </button>
+
+        @if (
+          paymentMethod() !== 'CASH'
+        ) {
+          <p class="reservation-note">
+            Tarjeta y QR reservarán el
+            inventario hasta confirmar
+            o resolver el pago.
+          </p>
+        }
+
+      </aside>
+
+    </div>
+
+  }
+
+</section>

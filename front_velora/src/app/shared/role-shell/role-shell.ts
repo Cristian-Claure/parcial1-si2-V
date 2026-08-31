@@ -27,8 +27,8 @@ export class RoleShell {
         { label: 'Usuarios y encargados', route: '/admin' },
         { label: 'Catálogo', route: '/admin/catalogo' },
         { label: 'Inventario', route: '/admin/inventario' },
-        { label: 'Pedidos y ventas', disabled: true },
-        { label: 'POS y cajas', disabled: true },
+        { label: 'Pedidos y ventas', route: '/admin/pedidos' },
+        { label: 'POS y cajas', route: '/admin/pos' },
         { label: 'Reportes IA', disabled: true },
         { label: 'Auditoría', disabled: true },
         { label: 'Configuración', disabled: true }
@@ -40,8 +40,8 @@ export class RoleShell {
         { label: 'Dashboard', route: '/sucursal' },
         { label: 'Catálogo', route: '/sucursal/catalogo' },
         { label: 'Inventario', route: '/sucursal/inventario' },
-        { label: 'Pedidos y ventas', disabled: true },
-        { label: 'POS y caja', disabled: true },
+        { label: 'Pedidos y ventas', route: '/sucursal/pedidos' },
+        { label: 'POS y caja', route: '/sucursal/pos' },
         { label: 'Reportes', disabled: true }
       ];
     }

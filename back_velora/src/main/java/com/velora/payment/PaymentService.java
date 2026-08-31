@@ -8,7 +8,9 @@ import com.velora.order.OrderEntity;
 import com.velora.order.OrderRepository;
 import com.velora.order.OrderStatus;
 import com.velora.payment.dto.ConfirmPaymentRequest;
+import com.velora.payment.dto.CreateOnlinePaymentIntentRequest;
 import com.velora.payment.dto.CreatePaymentRequest;
+import com.velora.payment.dto.OnlinePaymentIntentResponse;
 import com.velora.payment.dto.PaymentActionRequest;
 import com.velora.payment.dto.PaymentHistoryResponse;
 import com.velora.payment.dto.PaymentResponse;
@@ -23,6 +25,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class PaymentService {
+
+    private static final String ONLINE_SANDBOX_PROVIDER =
+            "VELORA_SANDBOX";
+
+    private static final long QR_EXPIRATION_SECONDS =
+            10L * 60L;
 
     private final PaymentRepository payments;
     private final PaymentStatusHistoryRepository history;
@@ -133,6 +141,212 @@ public class PaymentService {
         return PaymentResponse.from(payment);
     }
 
+    @Transactional
+    public OnlinePaymentIntentResponse createOnlineIntent(
+            UUID customerId,
+            UUID orderId,
+            CreateOnlinePaymentIntentRequest request
+    ) {
+        validateOnlineRequest(request);
+
+        /*
+         * Reutilizamos la creación estándar de pagos.
+         * Esa lógica ya bloquea el pedido, verifica
+         * propiedad, estado RESERVED y evita otro
+         * pago PENDING o PAID.
+         */
+        PaymentResponse created = create(
+                customerId,
+                orderId,
+                new CreatePaymentRequest(
+                        request.method(),
+                        request.notes()
+                )
+        );
+
+        PaymentEntity payment = payments
+                .findForUpdateById(
+                        created.id()
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Pago no encontrado."
+                ));
+
+        payment.setProvider(
+                ONLINE_SANDBOX_PROVIDER
+        );
+
+        payment.setExternalReference(
+                buildExternalReference(
+                        payment.getMethod()
+                )
+        );
+
+        /*
+         * cardToken se valida, pero jamás se
+         * persiste. Tampoco se almacenan CVV
+         * ni número completo de tarjeta.
+         */
+        payments.saveAndFlush(payment);
+
+        return buildOnlineIntent(
+                payment
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public OnlinePaymentIntentResponse getOnlineIntentForCustomer(
+            UUID customerId,
+            UUID paymentId
+    ) {
+        requireCustomer(customerId);
+
+        PaymentEntity payment = payments
+                .findByIdAndCustomer(
+                        paymentId,
+                        customerId
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Pago no encontrado."
+                ));
+
+        validateSandboxPayment(
+                payment
+        );
+
+        return buildOnlineIntent(
+                payment
+        );
+    }
+
+    @Transactional
+    public PaymentResponse confirmOnlineSandbox(
+            UUID customerId,
+            UUID paymentId
+    ) {
+        UserEntity customer =
+                requireCustomer(customerId);
+
+        PaymentEntity initial = payments
+                .findByIdAndCustomer(
+                        paymentId,
+                        customerId
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Pago no encontrado."
+                ));
+
+        OrderEntity lockedOrder = orders
+                .findForUpdateById(
+                        initial.getOrder().getId()
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Pedido no encontrado."
+                ));
+
+        PaymentEntity payment = payments
+                .findForUpdateById(paymentId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Pago no encontrado."
+                ));
+
+        if (!payment.getOrder()
+                .getCustomer()
+                .getId()
+                .equals(customerId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Pago no encontrado."
+            );
+        }
+
+        validateSandboxPayment(
+                payment
+        );
+
+        if (lockedOrder.getStatus()
+                != OrderStatus.RESERVED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Solo puede pagarse un pedido reservado."
+            );
+        }
+
+        if (payment.getStatus()
+                != PaymentStatus.PENDING) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Solo pueden confirmarse pagos pendientes."
+            );
+        }
+
+        if (
+                payment.getMethod()
+                        == PaymentMethod.QR
+                &&
+                Instant.now().isAfter(
+                        qrExpiresAt(payment)
+                )
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El código QR expiró. Cancele el pago e inicie uno nuevo."
+            );
+        }
+
+        if (payments.existsByOrderIdAndStatus(
+                lockedOrder.getId(),
+                PaymentStatus.PAID
+        )) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El pedido ya tiene un pago confirmado."
+            );
+        }
+
+        PaymentStatus previous =
+                payment.getStatus();
+
+        payment.setStatus(
+                PaymentStatus.PAID
+        );
+
+        payment.setProcessedBy(
+                customer
+        );
+
+        payment.setPaidAt(
+                Instant.now()
+        );
+
+        payments.saveAndFlush(
+                payment
+        );
+
+        registerHistory(
+                payment,
+                previous,
+                PaymentStatus.PAID,
+                customer,
+                "Pago online confirmado mediante VELORA_SANDBOX."
+        );
+
+        history.flush();
+
+        /*
+         * El pedido NO se marca FULFILLED aquí.
+         * El pago y la preparación/entrega son
+         * procesos diferentes.
+         */
+        return PaymentResponse.from(
+                payment
+        );
+    }
     @Transactional(readOnly = true)
     public List<PaymentResponse> listForCustomerOrder(
             UUID customerId,
@@ -606,6 +820,145 @@ public class PaymentService {
         history.flush();
 
         return PaymentResponse.from(payment);
+    }
+    private void validateOnlineRequest(
+            CreateOnlinePaymentIntentRequest request
+    ) {
+        if (
+                request.method() != PaymentMethod.CARD
+                && request.method() != PaymentMethod.QR
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El pago online solo admite TARJETA o QR."
+            );
+        }
+
+        if (request.method() == PaymentMethod.CARD) {
+            if (
+                    request.cardToken() == null
+                    || request.cardToken().isBlank()
+                    || !request.cardToken()
+                        .startsWith("vlr_sbx_")
+            ) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "El token de tarjeta no es válido."
+                );
+            }
+
+            if (
+                    request.cardBrand() == null
+                    || request.cardBrand().isBlank()
+            ) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "La marca de la tarjeta es obligatoria."
+                );
+            }
+
+            if (
+                    request.cardLast4() == null
+                    || !request.cardLast4()
+                        .matches("\\d{4}")
+            ) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Los últimos cuatro dígitos de la tarjeta no son válidos."
+                );
+            }
+        }
+    }
+
+    private void validateSandboxPayment(
+            PaymentEntity payment
+    ) {
+        if (
+                !ONLINE_SANDBOX_PROVIDER.equals(
+                        payment.getProvider()
+                )
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El pago no pertenece al gateway online de VÉLORA."
+            );
+        }
+
+        if (
+                payment.getMethod() != PaymentMethod.CARD
+                && payment.getMethod() != PaymentMethod.QR
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El método de pago no corresponde a un pago online."
+            );
+        }
+    }
+
+    private String buildExternalReference(
+            PaymentMethod method
+    ) {
+        String compactId =
+                UUID.randomUUID()
+                        .toString()
+                        .replace("-", "")
+                        .substring(0, 20)
+                        .toUpperCase();
+
+        return "VLR-SBX-"
+                + method.name()
+                + "-"
+                + compactId;
+    }
+
+    private OnlinePaymentIntentResponse buildOnlineIntent(
+            PaymentEntity payment
+    ) {
+        if (
+                payment.getMethod()
+                        != PaymentMethod.QR
+        ) {
+            return new OnlinePaymentIntentResponse(
+                    PaymentResponse.from(payment),
+                    null,
+                    null
+            );
+        }
+
+        Instant expiresAt =
+                qrExpiresAt(payment);
+
+        String qrPayload =
+                "VELORA"
+                + "|PAYMENT="
+                + payment.getId()
+                + "|ORDER="
+                + payment.getOrder()
+                    .getOrderNumber()
+                + "|AMOUNT="
+                + payment.getAmount()
+                    .toPlainString()
+                + "|CURRENCY="
+                + payment.getCurrency()
+                + "|REFERENCE="
+                + payment.getExternalReference()
+                + "|EXPIRES="
+                + expiresAt;
+
+        return new OnlinePaymentIntentResponse(
+                PaymentResponse.from(payment),
+                qrPayload,
+                expiresAt
+        );
+    }
+
+    private Instant qrExpiresAt(
+            PaymentEntity payment
+    ) {
+        return payment.getCreatedAt()
+                .plusSeconds(
+                        QR_EXPIRATION_SECONDS
+                );
     }
     private void registerHistory(
             PaymentEntity payment,

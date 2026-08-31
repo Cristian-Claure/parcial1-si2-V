@@ -1,0 +1,634 @@
+<app-authenticated-shell
+  [title]="title()"
+  [subtitle]="subtitle()"
+  [navItems]="navItems()"
+  [userLabel]="userLabel()"
+  (logoutRequested)="logout()"
+>
+
+  <section class="page-heading">
+
+    <span>OPERACIÓN PRESENCIAL</span>
+
+    <h1>
+      POS y control de caja.
+    </h1>
+
+    <p>
+      Apertura, movimientos, arqueo y cierre
+      del efectivo de cada punto de venta.
+    </p>
+
+  </section>
+
+  @if (successMessage()) {
+    <div class="feedback success">
+      <span>✓</span>
+      <p>{{ successMessage() }}</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="feedback error">
+      <span>!</span>
+      <p>{{ errorMessage() }}</p>
+    </div>
+  }
+
+  @if (loading()) {
+
+    <section class="state-panel">
+      Cargando puntos de venta...
+    </section>
+
+  }
+  @else if (
+    pointsOfSale().length === 0
+  ) {
+
+    <section class="state-panel">
+      No existen puntos de venta disponibles.
+    </section>
+
+  }
+  @else {
+
+    <section class="pos-layout">
+
+      <aside class="pos-selector">
+
+        <span class="section-label">
+          PUNTOS DE VENTA
+        </span>
+
+        <div class="pos-list">
+
+          @for (
+            point of pointsOfSale();
+            track point.id
+          ) {
+
+            <button
+              type="button"
+              class="pos-card"
+              [class.active]="
+                selectedPointOfSaleId() ===
+                  point.id
+              "
+              [class.inactive]="
+                !point.active
+              "
+              (click)="
+                selectPointOfSale(
+                  point.id
+                )
+              "
+            >
+
+              <span>
+                {{ point.code }}
+              </span>
+
+              <strong>
+                {{ point.name }}
+              </strong>
+
+              <small>
+                {{ point.storeName }}
+              </small>
+
+              <small>
+                {{ point.warehouseName }}
+              </small>
+
+              @if (!point.active) {
+                <em>
+                  Inactivo
+                </em>
+              }
+
+            </button>
+
+          }
+
+        </div>
+
+      </aside>
+
+      <main class="cash-area">
+
+        @if (
+          selectedPointOfSale();
+          as point
+        ) {
+
+          <section class="selected-pos">
+
+            <div>
+              <span>
+                {{ point.code }}
+              </span>
+
+              <h2>
+                {{ point.name }}
+              </h2>
+
+              <p>
+                {{ point.storeName }}
+                ·
+                {{ point.warehouseName }}
+              </p>
+            </div>
+
+            <span
+              class="point-status"
+              [class.active]="
+                point.active
+              "
+            >
+              {{
+                point.active
+                  ? 'Activo'
+                  : 'Inactivo'
+              }}
+            </span>
+
+          </section>
+
+          @if (sessionLoading()) {
+
+            <section class="state-panel compact">
+              Consultando caja...
+            </section>
+
+          }
+          @else if (
+            currentSession();
+            as session
+          ) {
+
+            <section class="session-summary">
+
+              <div class="session-heading">
+
+                <div>
+                  <span>
+                    CAJA ABIERTA
+                  </span>
+
+                  <h2>
+                    {{ session.sessionNumber }}
+                  </h2>
+
+                  <small>
+                    Abierta
+                    {{
+                      session.openedAt
+                        | date:'dd/MM/yyyy HH:mm'
+                    }}
+                  </small>
+                </div>
+
+                <div class="open-badge">
+                  ● ABIERTA
+                </div>
+
+              </div>
+
+              <div class="cash-metrics">
+
+                <article>
+                  <span>
+                    Monto inicial
+                  </span>
+
+                  <strong>
+                    Bs {{ session.openingAmount }}
+                  </strong>
+                </article>
+
+                <article>
+                  <span>
+                    Entradas manuales
+                  </span>
+
+                  <strong>
+                    Bs {{ cashInTotal() }}
+                  </strong>
+                </article>
+
+                <article>
+                  <span>
+                    Salidas manuales
+                  </span>
+
+                  <strong>
+                    Bs {{ cashOutTotal() }}
+                  </strong>
+                </article>
+
+                <article class="expected">
+                  <span>
+                    Efectivo esperado
+                  </span>
+
+                  <strong>
+                    Bs {{ session.expectedCashAmount }}
+                  </strong>
+                </article>
+
+              </div>
+
+            </section>
+
+            <app-pos-sale-panel
+              [session]="session"
+              (cashChanged)="refreshCurrentSession()"
+            />
+
+            <section class="cash-grid">
+
+              <form
+                class="panel"
+                [formGroup]="movementForm"
+                (ngSubmit)="registerMovement()"
+              >
+
+                <div class="panel-heading">
+                  <span>
+                    MOVIMIENTO
+                  </span>
+
+                  <h3>
+                    Entrada o salida de caja
+                  </h3>
+                </div>
+
+                <label>
+                  <span>Tipo</span>
+
+                  <select
+                    formControlName="movementType"
+                  >
+                    <option value="CASH_IN">
+                      Entrada de efectivo
+                    </option>
+
+                    <option value="CASH_OUT">
+                      Salida de efectivo
+                    </option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Monto</span>
+
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    formControlName="amount"
+                  />
+                </label>
+
+                <label>
+                  <span>Motivo</span>
+
+                  <textarea
+                    rows="3"
+                    maxlength="500"
+                    formControlName="reason"
+                    placeholder="Ej. cambio inicial adicional, retiro para depósito..."
+                  ></textarea>
+                </label>
+
+                <button
+                  type="submit"
+                  class="primary-button"
+                  [disabled]="busy()"
+                >
+                  Registrar movimiento
+                </button>
+
+              </form>
+
+              <form
+                class="panel close-panel"
+                [formGroup]="closeForm"
+                (ngSubmit)="closeSession()"
+              >
+
+                <div class="panel-heading">
+                  <span>
+                    ARQUEO
+                  </span>
+
+                  <h3>
+                    Cierre de caja
+                  </h3>
+                </div>
+
+                <div class="expected-box">
+                  <span>
+                    Sistema espera
+                  </span>
+
+                  <strong>
+                    Bs {{ session.expectedCashAmount }}
+                  </strong>
+                </div>
+
+                <label>
+                  <span>
+                    Efectivo contado
+                  </span>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    formControlName="countedCashAmount"
+                  />
+                </label>
+
+                <label>
+                  <span>
+                    Observaciones
+                  </span>
+
+                  <textarea
+                    rows="3"
+                    maxlength="500"
+                    formControlName="closingNotes"
+                    placeholder="Observaciones del arqueo..."
+                  ></textarea>
+                </label>
+
+                <button
+                  type="submit"
+                  class="close-button"
+                  [disabled]="
+                    busy() ||
+                    !offline.ready() ||
+                    !offline.online() ||
+                    offline.pendingForSession(
+                      session.id
+                    ) > 0
+                  "
+                >
+                  Cerrar caja
+                </button>
+
+                @if (!offline.online()) {
+                  <small class="close-warning">
+                    El POS está sin conexión.
+                    Recupere la conexión antes
+                    de cerrar esta caja.
+                  </small>
+                }
+                @else if (
+                  offline.pendingForSession(
+                    session.id
+                  ) > 0
+                ) {
+                  <small class="close-warning">
+                    Existen ventas locales
+                    pendientes de sincronización.
+                    Sincronícelas antes del arqueo.
+                  </small>
+                }
+                @else {
+                  <small class="close-warning">
+                    El backend impedirá cerrar
+                    la caja si existen pagos POS
+                    pendientes.
+                  </small>
+                }
+
+              </form>
+
+            </section>
+
+            <section class="movements-panel">
+
+              <div class="panel-heading">
+                <span>
+                  HISTORIAL
+                </span>
+
+                <h3>
+                  Movimientos de la sesión
+                </h3>
+              </div>
+
+              @if (
+                movements().length === 0
+              ) {
+
+                <p class="empty-movements">
+                  Aún no existen movimientos
+                  manuales en esta caja.
+                </p>
+
+              }
+              @else {
+
+                <div class="movement-list">
+
+                  @for (
+                    movement of movements();
+                    track movement.id
+                  ) {
+
+                    <article>
+
+                      <span
+                        class="movement-type"
+                        [class.out]="
+                          movement.movementType ===
+                            'CASH_OUT'
+                        "
+                      >
+                        {{
+                          movement.movementType ===
+                            'CASH_IN'
+                            ? 'ENTRADA'
+                            : 'SALIDA'
+                        }}
+                      </span>
+
+                      <div>
+                        <strong>
+                          {{ movement.reason }}
+                        </strong>
+
+                        <small>
+                          {{
+                            movement.createdAt
+                              | date:'dd/MM/yyyy HH:mm'
+                          }}
+                        </small>
+                      </div>
+
+                      <strong
+                        class="movement-amount"
+                        [class.out]="
+                          movement.movementType ===
+                            'CASH_OUT'
+                        "
+                      >
+                        {{
+                          movement.movementType ===
+                            'CASH_IN'
+                            ? '+'
+                            : '-'
+                        }}
+                        Bs {{ movement.amount }}
+                      </strong>
+
+                    </article>
+
+                  }
+
+                </div>
+
+              }
+
+            </section>
+
+          }
+          @else {
+
+            <section class="open-session-panel">
+
+              <span>
+                CAJA CERRADA
+              </span>
+
+              <h2>
+                Abra una sesión para comenzar
+                a operar este POS.
+              </h2>
+
+              @if (!point.active) {
+
+                <div class="inactive-warning">
+                  Este punto de venta está
+                  inactivo y no puede abrir
+                  una nueva caja.
+                </div>
+
+              }
+              @else {
+
+                <form
+                  [formGroup]="openForm"
+                  (ngSubmit)="openSession()"
+                >
+
+                  <label>
+                    <span>
+                      Monto inicial
+                    </span>
+
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      formControlName="openingAmount"
+                    />
+                  </label>
+
+                  <label>
+                    <span>
+                      Observaciones
+                    </span>
+
+                    <textarea
+                      rows="3"
+                      maxlength="500"
+                      formControlName="openingNotes"
+                      placeholder="Observaciones de apertura..."
+                    ></textarea>
+                  </label>
+
+                  <button
+                    type="submit"
+                    class="primary-button"
+                    [disabled]="busy()"
+                  >
+                    {{
+                      busy()
+                        ? 'Abriendo...'
+                        : 'Abrir caja →'
+                    }}
+                  </button>
+
+                </form>
+
+              }
+
+            </section>
+
+          }
+
+          @if (
+            lastClosedSession();
+            as closed
+          ) {
+
+            <section class="closed-summary">
+
+              <div>
+                <span>
+                  ÚLTIMO CIERRE
+                </span>
+
+                <strong>
+                  {{ closed.sessionNumber }}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Esperado
+                </span>
+
+                <strong>
+                  Bs {{ closed.expectedCashAmount }}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Contado
+                </span>
+
+                <strong>
+                  Bs {{ closed.countedCashAmount }}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Diferencia
+                </span>
+
+                <strong>
+                  Bs {{ closed.cashDifference }}
+                </strong>
+              </div>
+
+            </section>
+
+          }
+
+        }
+
+      </main>
+
+    </section>
+
+  }
+
+</app-authenticated-shell>

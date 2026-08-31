@@ -3,7 +3,9 @@ package com.velora.payment;
 import java.util.List;
 import java.util.UUID;
 
+import com.velora.payment.dto.CreateOnlinePaymentIntentRequest;
 import com.velora.payment.dto.CreatePaymentRequest;
+import com.velora.payment.dto.OnlinePaymentIntentResponse;
 import com.velora.payment.dto.PaymentActionRequest;
 import com.velora.payment.dto.PaymentHistoryResponse;
 import com.velora.payment.dto.PaymentResponse;
@@ -41,6 +43,56 @@ public class CustomerPaymentController {
         );
     }
 
+    @PostMapping(
+            "/orders/{orderId}/payments/online-intent"
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    public OnlinePaymentIntentResponse createOnlineIntent(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID orderId,
+            @Valid @RequestBody
+            CreateOnlinePaymentIntentRequest request
+    ) {
+        return payments.createOnlineIntent(
+                userId(jwt),
+                orderId,
+                request
+        );
+    }
+
+    @GetMapping(
+            "/payments/{paymentId}/online-intent"
+    )
+    public OnlinePaymentIntentResponse getOnlineIntent(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID paymentId
+    ) {
+        return payments.getOnlineIntentForCustomer(
+                userId(jwt),
+                paymentId
+        );
+    }
+
+    /*
+     * Endpoint exclusivo del gateway de
+     * desarrollo VELORA_SANDBOX.
+     *
+     * Cuando integremos una pasarela real,
+     * esta confirmación será sustituida por
+     * webhook/callback firmado del proveedor.
+     */
+    @PostMapping(
+            "/payments/{paymentId}/sandbox-confirm"
+    )
+    public PaymentResponse confirmOnlineSandbox(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID paymentId
+    ) {
+        return payments.confirmOnlineSandbox(
+                userId(jwt),
+                paymentId
+        );
+    }
     @GetMapping("/orders/{orderId}/payments")
     public List<PaymentResponse> list(
             @AuthenticationPrincipal Jwt jwt,

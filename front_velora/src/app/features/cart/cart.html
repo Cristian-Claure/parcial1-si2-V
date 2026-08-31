@@ -1,0 +1,234 @@
+<app-authenticated-shell
+  title="Mi espacio VÉLORA"
+  subtitle="Cliente"
+  [navItems]="navItems"
+  [userLabel]="userLabel()"
+  (logoutRequested)="logout()"
+>
+  <section class="cart-heading">
+    <span>MI BOLSA</span>
+
+    <div class="heading-row">
+      <div>
+        <h1>Su selección.</h1>
+
+        <p>
+          Revise variantes y cantidades antes
+          de continuar con su compra.
+        </p>
+      </div>
+
+      @if (cart.totalItems() > 0) {
+        <button
+          type="button"
+          class="clear-button"
+          [disabled]="clearing()"
+          (click)="clear()"
+        >
+          {{
+            clearing()
+              ? 'Vaciando...'
+              : 'Vaciar bolsa'
+          }}
+        </button>
+      }
+    </div>
+  </section>
+
+  @if (errorMessage()) {
+    <div class="cart-feedback">
+      <strong>No pudimos completar la acción.</strong>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (loading()) {
+    <section class="loading-state">
+      Cargando su selección...
+    </section>
+  }
+  @else if (cart.cart().items.length === 0) {
+    <section class="empty-cart">
+      <div class="empty-mark">V</div>
+
+      <span>BOLSA VACÍA</span>
+
+      <h2>
+        Encuentre una pieza para comenzar.
+      </h2>
+
+      <p>
+        Explore la colección y seleccione
+        el color y la talla que prefiera.
+      </p>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="continueShopping()"
+      >
+        Explorar colección →
+      </button>
+    </section>
+  }
+  @else {
+    <section class="cart-layout">
+
+      <div class="cart-items">
+
+        @for (
+          item of cart.cart().items;
+          track item.id
+        ) {
+          <article class="cart-item">
+
+            <div class="item-visual">
+              @if (
+                productImage(item.productId);
+                as image
+              ) {
+                <img
+                  [src]="image"
+                  [alt]="item.productName"
+                />
+              }
+              @else {
+                <span>VÉLORA</span>
+              }
+            </div>
+
+            <div class="item-info">
+              <span class="sku">
+                {{ item.sku }}
+              </span>
+
+              <h2>
+                {{ item.productName }}
+              </h2>
+
+              <div class="variant-data">
+                <span>
+                  Color
+                  <strong>
+                    {{ item.color }}
+                  </strong>
+                </span>
+
+                <span>
+                  Talla
+                  <strong>
+                    {{ item.size }}
+                  </strong>
+                </span>
+              </div>
+
+              <strong class="unit-price">
+                Bs {{ item.unitPrice }}
+              </strong>
+            </div>
+
+            <div class="item-controls">
+
+              <div class="quantity">
+                <button
+                  type="button"
+                  [disabled]="
+                    item.quantity <= 1 ||
+                    busyItemId() === item.id
+                  "
+                  (click)="decrease(item)"
+                >
+                  −
+                </button>
+
+                <span>
+                  {{ item.quantity }}
+                </span>
+
+                <button
+                  type="button"
+                  [disabled]="
+                    item.quantity >= 99 ||
+                    busyItemId() === item.id
+                  "
+                  (click)="increase(item)"
+                >
+                  +
+                </button>
+              </div>
+
+              <strong class="subtotal">
+                Bs {{ item.subtotal }}
+              </strong>
+
+              <button
+                type="button"
+                class="remove-button"
+                [disabled]="
+                  busyItemId() === item.id
+                "
+                (click)="remove(item)"
+              >
+                Retirar
+              </button>
+
+            </div>
+
+          </article>
+        }
+
+      </div>
+
+      <aside class="summary">
+
+        <span class="summary-kicker">
+          RESUMEN
+        </span>
+
+        <h2>
+          Su compra
+        </h2>
+
+        <div class="summary-row">
+          <span>Productos</span>
+          <strong>
+            {{ cart.totalItems() }}
+          </strong>
+        </div>
+
+        <div class="summary-row total">
+          <span>Subtotal</span>
+
+          <strong>
+            Bs {{ cart.subtotal() }}
+          </strong>
+        </div>
+
+        <p class="summary-note">
+          El carrito no reserva inventario.
+          La disponibilidad se confirma al
+          generar el pedido.
+        </p>
+
+        <button
+          type="button"
+          class="checkout-button"
+          (click)="checkout()"
+        >
+          Continuar compra →
+        </button>
+
+        <button
+          type="button"
+          class="continue-button"
+          (click)="continueShopping()"
+        >
+          Seguir explorando
+        </button>
+
+      </aside>
+
+    </section>
+  }
+
+</app-authenticated-shell>
