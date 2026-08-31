@@ -1,0 +1,458 @@
+<app-authenticated-shell
+  [title]="title()"
+  [subtitle]="subtitle()"
+  [navItems]="navItems()"
+  [userLabel]="userLabel()"
+  (logoutRequested)="logout()"
+>
+  <section class="page-heading">
+    <span>OPERACIÓN COMERCIAL</span>
+
+    <h1>Pedidos y ventas.</h1>
+
+    <p>
+      Controle reservas, pagos y entregas desde
+      una sola vista operativa.
+    </p>
+  </section>
+
+  <section class="filters">
+
+    <label>
+      <span>Estado</span>
+
+      <select
+        [value]="statusFilter()"
+        (change)="
+          setStatusFilter(
+            $any($event.target).value
+          )
+        "
+      >
+        <option value="ALL">
+          Todos
+        </option>
+
+        <option value="RESERVED">
+          Reservados
+        </option>
+
+        <option value="FULFILLED">
+          Completados
+        </option>
+
+        <option value="CANCELLED">
+          Cancelados
+        </option>
+      </select>
+    </label>
+
+    <label>
+      <span>Canal</span>
+
+      <select
+        [value]="channelFilter()"
+        (change)="
+          setChannelFilter(
+            $any($event.target).value
+          )
+        "
+      >
+        <option value="ALL">
+          Todos
+        </option>
+
+        <option value="ECOMMERCE">
+          Ecommerce
+        </option>
+
+        <option value="POS">
+          POS
+        </option>
+      </select>
+    </label>
+
+    @if (
+      auth.currentUser()?.role ===
+        'ADMIN'
+    ) {
+      <label>
+        <span>Sucursal</span>
+
+        <select
+          [value]="storeFilter()"
+          (change)="
+            setStoreFilter(
+              $any($event.target).value
+            )
+          "
+        >
+          <option value="ALL">
+            Todas
+          </option>
+
+          @for (
+            store of stores();
+            track store.id
+          ) {
+            <option
+              [value]="store.id"
+            >
+              {{ store.name }}
+            </option>
+          }
+        </select>
+      </label>
+    }
+
+    <div class="result-count">
+      <span>Resultados</span>
+      <strong>
+        {{ visibleOrders().length }}
+      </strong>
+    </div>
+
+  </section>
+
+  @if (successMessage()) {
+    <div class="feedback success">
+      <span>✓</span>
+      <p>{{ successMessage() }}</p>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="feedback error">
+      <span>!</span>
+      <p>{{ errorMessage() }}</p>
+    </div>
+  }
+
+  @if (loading()) {
+
+    <section class="loading-panel">
+      Cargando operación comercial...
+    </section>
+
+  }
+  @else if (
+    visibleOrders().length === 0
+  ) {
+
+    <section class="empty-panel">
+      No existen pedidos para los filtros
+      seleccionados.
+    </section>
+
+  }
+  @else {
+
+    <section class="orders">
+
+      @for (
+        order of visibleOrders();
+        track order.id
+      ) {
+
+        <article class="order-card">
+
+          <header class="order-card__header">
+
+            <div>
+              <div class="order-reference">
+                <span>
+                  {{ channelLabel(order.orderChannel) }}
+                </span>
+
+                <strong>
+                  {{ order.orderNumber }}
+                </strong>
+              </div>
+
+              <small>
+                {{
+                  order.createdAt
+                    | date:'dd/MM/yyyy HH:mm'
+                }}
+              </small>
+            </div>
+
+            <span
+              class="order-status"
+              [class.reserved]="
+                order.status === 'RESERVED'
+              "
+              [class.fulfilled]="
+                order.status === 'FULFILLED'
+              "
+              [class.cancelled]="
+                order.status === 'CANCELLED'
+              "
+            >
+              {{ orderStatusLabel(order) }}
+            </span>
+
+          </header>
+
+          <div class="order-content">
+
+            <section class="order-info">
+
+              <div class="facts">
+
+                <div>
+                  <span>Cliente</span>
+
+                  <strong>
+                    {{ order.customerName }}
+                  </strong>
+
+                  @if (order.customerEmail) {
+                    <small>
+                      {{ order.customerEmail }}
+                    </small>
+                  }
+                </div>
+
+                <div>
+                  <span>Sucursal</span>
+
+                  <strong>
+                    {{ order.storeName }}
+                  </strong>
+
+                  <small>
+                    {{ order.warehouseName }}
+                  </small>
+                </div>
+
+                <div>
+                  <span>Modalidad</span>
+
+                  <strong>
+                    {{ fulfillmentLabel(order) }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Total</span>
+
+                  <strong class="money">
+                    Bs {{ order.total }}
+                  </strong>
+                </div>
+
+              </div>
+
+              @if (
+                latestPayment(order);
+                as latest
+              ) {
+
+                <div class="payment-card">
+
+                  <div class="payment-main">
+
+                    <span>
+                      PAGO
+                    </span>
+
+                    <strong>
+                      {{
+                        paymentMethodLabel(
+                          latest.method
+                        )
+                      }}
+                    </strong>
+
+                    <small>
+                      {{
+                        paymentStatusLabel(
+                          latest
+                        )
+                      }}
+                      · Bs {{ latest.amount }}
+                    </small>
+
+                  </div>
+
+                  <div class="payment-actions">
+
+                    @if (
+                      latest.status ===
+                        'PENDING'
+                    ) {
+
+                      <button
+                        type="button"
+                        class="approve"
+                        [disabled]="
+                          busyId() === latest.id
+                        "
+                        (click)="
+                          confirmPayment(latest)
+                        "
+                      >
+                        Confirmar pago
+                      </button>
+
+                      <button
+                        type="button"
+                        class="secondary"
+                        [disabled]="
+                          busyId() === latest.id
+                        "
+                        (click)="
+                          failPayment(latest)
+                        "
+                      >
+                        Marcar fallido
+                      </button>
+
+                    }
+
+                    @if (
+                      latest.status ===
+                        'PAID'
+                    ) {
+
+                      <button
+                        type="button"
+                        class="refund"
+                        [disabled]="
+                          busyId() === latest.id
+                        "
+                        (click)="
+                          refundPayment(latest)
+                        "
+                      >
+                        Registrar reembolso
+                      </button>
+
+                    }
+
+                  </div>
+
+                </div>
+
+              }
+              @else {
+
+                <div class="no-payment">
+                  <span>Sin pago registrado</span>
+
+                  <p>
+                    El cliente aún no inició
+                    un método de pago para
+                    este pedido.
+                  </p>
+                </div>
+
+              }
+
+            </section>
+
+            <aside class="fulfillment">
+
+              <span>
+                ENTREGA
+              </span>
+
+              @if (
+                paidPayment(order);
+                as paid
+              ) {
+
+                <div class="paid-badge">
+                  ✓ Pago confirmado
+                </div>
+
+                @if (
+                  order.status ===
+                    'RESERVED'
+                ) {
+
+                  <button
+                    type="button"
+                    class="fulfill-button"
+                    [disabled]="
+                      busyId() === order.id
+                    "
+                    (click)="
+                      fulfillOrder(order)
+                    "
+                  >
+                    {{
+                      busyId() ===
+                        order.id
+                        ? 'Procesando...'
+                        : (
+                            order.fulfillmentType ===
+                              'DELIVERY'
+                              ? 'Marcar como entregado'
+                              : order.fulfillmentType ===
+                                  'PICKUP'
+                                ? 'Confirmar recojo'
+                                : 'Completar venta'
+                          )
+                    }}
+                  </button>
+
+                }
+                @else if (
+                  order.status ===
+                    'FULFILLED'
+                ) {
+
+                  <strong class="completed">
+                    Operación completada
+                  </strong>
+
+                }
+
+              }
+              @else {
+
+                <div class="waiting-payment">
+                  Esperando pago confirmado
+                </div>
+
+              }
+
+              @if (
+                order.orderChannel ===
+                  'ECOMMERCE' &&
+                latestPayment(order);
+                as payment
+              ) {
+                @if (
+                  payment.status ===
+                    'PENDING' &&
+                  (
+                    payment.method === 'CARD' ||
+                    payment.method === 'QR' ||
+                    payment.method === 'WEB'
+                  )
+                ) {
+                  <small class="manual-warning">
+                    La confirmación actual es
+                    operativa/manual mientras
+                    no exista una pasarela
+                    bancaria integrada.
+                  </small>
+                }
+              }
+
+            </aside>
+
+          </div>
+
+        </article>
+
+      }
+
+    </section>
+
+  }
+
+</app-authenticated-shell>

@@ -153,3 +153,19 @@ a.nav-item:hover {
 .logout:hover {
   border-color: #c7a989;
 }
+/* CYCLE2_BACK_BUTTON */
+
+.back-button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #c7a989;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  color: #f3dfcb;
+}

@@ -1,0 +1,359 @@
+<section class="payment-panel">
+
+  <header class="payment-heading">
+    <div>
+      <span>
+        PAGO ONLINE
+      </span>
+
+      <h2>
+        Complete su compra.
+      </h2>
+
+      <p>
+        Pedido
+        <strong>
+          {{ order.orderNumber }}
+        </strong>
+        ·
+        Bs {{ order.total }}
+      </p>
+    </div>
+
+    <div class="secure-badge">
+      Pago seguro
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="payment-feedback error">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="payment-feedback success">
+      {{ successMessage() }}
+    </div>
+  }
+
+  @if (paidPayment(); as payment) {
+
+    <section class="paid-state">
+
+      <div class="paid-mark">
+        ✓
+      </div>
+
+      <span>
+        PAGO CONFIRMADO
+      </span>
+
+      <h3>
+        Compra pagada correctamente.
+      </h3>
+
+      <div class="paid-facts">
+
+        <article>
+          <span>Método</span>
+          <strong>
+            {{
+              payment.method === 'CARD'
+                ? 'Tarjeta'
+                : 'QR'
+            }}
+          </strong>
+        </article>
+
+        <article>
+          <span>Total</span>
+          <strong>
+            Bs {{ payment.amount }}
+          </strong>
+        </article>
+
+        <article>
+          <span>Estado</span>
+          <strong>
+            Pagado
+          </strong>
+        </article>
+
+      </div>
+
+      <p>
+        El pago fue registrado. La sucursal
+        podrá continuar con la preparación
+        del pedido.
+      </p>
+
+    </section>
+
+  }
+  @else {
+
+    <div class="payment-methods">
+
+      <button
+        type="button"
+        [class.active]="
+          method() === 'CARD'
+        "
+        [disabled]="
+          busy() ||
+          hasPendingIntent()
+        "
+        (click)="
+          selectMethod('CARD')
+        "
+      >
+        <span>01</span>
+        <strong>Tarjeta</strong>
+        <small>
+          Débito o crédito
+        </small>
+      </button>
+
+      <button
+        type="button"
+        [class.active]="
+          method() === 'QR'
+        "
+        [disabled]="
+          busy() ||
+          hasPendingIntent()
+        "
+        (click)="
+          selectMethod('QR')
+        "
+      >
+        <span>02</span>
+        <strong>QR</strong>
+        <small>
+          Pago desde banca móvil
+        </small>
+      </button>
+
+    </div>
+
+    @if (
+      method() === 'CARD' &&
+      !hasPendingIntent()
+    ) {
+
+      <form
+        class="card-form"
+        [formGroup]="cardForm"
+        (ngSubmit)="payCard()"
+      >
+
+        <label class="full">
+          <span>
+            Titular
+          </span>
+
+          <input
+            type="text"
+            maxlength="100"
+            autocomplete="cc-name"
+            formControlName="holder"
+            placeholder="Nombre como aparece en la tarjeta"
+          >
+        </label>
+
+        <label class="full">
+          <span>
+            Número de tarjeta
+          </span>
+
+          <input
+            type="text"
+            inputmode="numeric"
+            autocomplete="cc-number"
+            formControlName="number"
+            placeholder="4111 1111 1111 1111"
+          >
+        </label>
+
+        <label>
+          <span>
+            Vencimiento
+          </span>
+
+          <input
+            type="text"
+            maxlength="5"
+            autocomplete="cc-exp"
+            formControlName="expiry"
+            placeholder="MM/AA"
+          >
+        </label>
+
+        <label>
+          <span>
+            CVV
+          </span>
+
+          <input
+            type="password"
+            maxlength="4"
+            inputmode="numeric"
+            autocomplete="cc-csc"
+            formControlName="cvv"
+            placeholder="123"
+          >
+        </label>
+
+        <div class="security-note full">
+          Los datos completos de la tarjeta y
+          el CVV no se almacenan en VÉLORA.
+        </div>
+
+        <button
+          type="submit"
+          class="pay-button full"
+          [disabled]="busy()"
+        >
+          {{
+            busy()
+              ? 'Procesando...'
+              : 'Pagar Bs ' + order.total
+          }}
+        </button>
+
+      </form>
+
+    }
+
+    @if (
+      method() === 'QR' &&
+      !hasPendingIntent()
+    ) {
+
+      <section class="qr-start">
+
+        <div>
+          <span>
+            TOTAL A PAGAR
+          </span>
+
+          <strong>
+            Bs {{ order.total }}
+          </strong>
+
+          <p>
+            El código se generará por el
+            importe exacto de este pedido.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          [disabled]="busy()"
+          (click)="generateQr()"
+        >
+          {{
+            busy()
+              ? 'Generando...'
+              : 'Generar código QR'
+          }}
+        </button>
+
+      </section>
+
+    }
+
+    @if (
+      intent();
+      as current
+    ) {
+
+      @if (
+        current.payment.status ===
+          'PENDING'
+      ) {
+
+        <section class="pending-payment">
+
+          @if (
+            current.payment.method ===
+              'QR'
+          ) {
+
+            <span class="pending-kicker">
+              QR DE PAGO
+            </span>
+
+            @if (qrDataUrl()) {
+
+              <div class="qr-frame">
+                <img
+                  [src]="qrDataUrl()"
+                  alt="Código QR de pago VÉLORA"
+                >
+              </div>
+
+            }
+
+            <strong class="qr-amount">
+              Bs
+              {{ current.payment.amount }}
+            </strong>
+
+            @if (current.expiresAt) {
+              <small>
+                Válido hasta
+                {{ qrExpirationLabel() }}
+              </small>
+            }
+
+            <button
+              type="button"
+              class="confirm-button"
+              [disabled]="
+                busy() ||
+                qrExpired()
+              "
+              (click)="confirmQrPayment()"
+            >
+              {{
+                busy()
+                  ? 'Verificando...'
+                  : 'Simular pago realizado'
+              }}
+            </button>
+
+          }
+          @else {
+
+            <span class="pending-kicker">
+              TARJETA
+            </span>
+
+            <p>
+              El intento fue creado.
+              Puede volver a intentar la
+              confirmación o cancelarlo.
+            </p>
+
+          }
+
+          <button
+            type="button"
+            class="cancel-button"
+            [disabled]="busy()"
+            (click)="cancelCurrentIntent()"
+          >
+            Cancelar intento
+          </button>
+
+        </section>
+
+      }
+
+    }
+
+  }
+
+</section>

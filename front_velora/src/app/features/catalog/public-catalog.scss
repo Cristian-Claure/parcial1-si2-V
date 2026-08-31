@@ -10,11 +10,12 @@
 }
 
 header {
-  height: 80px;
+  min-height: 80px;
   padding: 0 6vw;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 24px;
   border-bottom: 1px solid #ded2c7;
 }
 
@@ -28,12 +29,32 @@ header {
 
 nav {
   display: flex;
+  align-items: center;
   gap: 28px;
 }
 
 nav a {
   color: inherit;
   text-decoration: none;
+}
+
+.bag-link {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.bag-link > span {
+  min-width: 21px;
+  height: 21px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: #211c1b;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
 }
 
 main {
@@ -61,21 +82,82 @@ h1 {
   color: #72635b;
 }
 
+.catalog-feedback {
+  width: fit-content;
+  max-width: 760px;
+  margin-top: 25px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid;
+  border-radius: 11px;
+  padding: 12px 14px;
+  font-size: 13px;
+}
+
+.catalog-feedback > span {
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.catalog-feedback p {
+  margin: 2px 0 0;
+}
+
+.catalog-feedback a {
+  margin-left: auto;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.catalog-feedback.success {
+  border-color: #cad7c2;
+  background: #f4f8f1;
+  color: #49613e;
+}
+
+.catalog-feedback.success > span {
+  background: #dde9d7;
+}
+
+.catalog-feedback.error {
+  border-color: #dfbeb8;
+  background: #fff5f2;
+  color: #864a42;
+}
+
 .products {
   margin-top: 55px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(285px, 1fr)
+    );
   gap: 28px;
 }
 
 .product-card {
+  display: flex;
+  flex-direction: column;
   background: #fffdfa;
   border: 1px solid #e6dbd0;
 }
 
 .visual {
   min-height: 330px;
-  background: linear-gradient(145deg, #211d1c, #44362f);
+  background:
+    linear-gradient(
+      145deg,
+      #211d1c,
+      #44362f
+    );
   color: #c7a989;
   display: grid;
   place-items: center;
@@ -89,6 +171,9 @@ h1 {
 }
 
 .product-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 24px;
 }
 
@@ -110,23 +195,113 @@ h1 {
   min-height: 42px;
 }
 
-.product-copy strong {
+.starting-price {
   display: block;
-  margin: 18px 0;
+  margin: 12px 0 20px;
 }
 
-.variants {
-  display: flex;
-  flex-wrap: wrap;
+.variant-selector {
+  margin-top: auto;
+  display: grid;
   gap: 8px;
 }
 
-.variants span {
+.variant-selector > span {
+  color: #745f54;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.variant-selector select {
+  width: 100%;
   border: 1px solid #d9ccc0;
-  padding: 7px 9px;
+  border-radius: 9px;
+  background: #fff;
+  color: #29211e;
+  padding: 12px;
+  font: inherit;
+}
+
+.selected-variant {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #eee4dc;
+  padding-top: 13px;
+}
+
+.selected-variant > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #74655d;
   font-size: 12px;
 }
 
-.error {
-  color: #9f3030;
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(0,0,0,.12);
+  border-radius: 50%;
+}
+
+.add-button {
+  width: 100%;
+  margin-top: 18px;
+  border: 1px solid #211d1c;
+  border-radius: 9px;
+  background: #211d1c;
+  color: #fffaf5;
+  padding: 13px 15px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+}
+
+.add-button:hover {
+  background: #392f2a;
+}
+
+.add-button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.unavailable {
+  color: #9c5149 !important;
+}
+
+@media (max-width: 720px) {
+  header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-top: 22px;
+    padding-bottom: 22px;
+  }
+
+  nav {
+    width: 100%;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+
+  main {
+    padding-top: 45px;
+  }
+
+  .catalog-feedback {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .catalog-feedback a {
+    width: 100%;
+    margin-left: 37px;
+  }
 }

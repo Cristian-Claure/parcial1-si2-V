@@ -1,14 +1,35 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import {
+  HttpErrorResponse
+} from '@angular/common/http';
 
-import { AuthService } from '../../../core/auth/auth.service';
+import {
+  Component,
+  inject,
+  signal
+} from '@angular/core';
+
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
+
+import {
+  Router,
+  RouterLink
+} from '@angular/router';
+
+import {
+  AuthService
+} from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink
+  ],
   templateUrl: './register.html',
   styleUrl: '../shared/auth-page.scss'
 })
@@ -21,50 +42,161 @@ export class Register {
   readonly errorMessage = signal('');
 
   readonly form = this.fb.nonNullable.group({
-    firstName: ['', [Validators.required, Validators.maxLength(80)]],
-    lastName: ['', [Validators.required, Validators.maxLength(100)]],
-    email: ['', [Validators.required, Validators.email]],
+    firstName: [
+      '',
+      [
+        Validators.required,
+        Validators.maxLength(80)
+      ]
+    ],
+    lastName: [
+      '',
+      [
+        Validators.required,
+        Validators.maxLength(100)
+      ]
+    ],
+    email: [
+      '',
+      [
+        Validators.required,
+        Validators.email
+      ]
+    ],
     password: [
       '',
       [
         Validators.required,
         Validators.minLength(8),
-        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
+        Validators.pattern(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/
+        )
       ]
     ],
-    confirmPassword: ['', Validators.required]
+    confirmPassword: [
+      '',
+      Validators.required
+    ]
   });
 
   submit(): void {
-    if (this.form.invalid || this.loading()) {
+    this.errorMessage.set('');
+
+    if (
+      this.form.invalid ||
+      this.loading()
+    ) {
       this.form.markAllAsTouched();
+
+      this.errorMessage.set(
+        'Revise los campos marcados antes de continuar.'
+      );
+
       return;
     }
 
-    const value = this.form.getRawValue();
+    const value =
+      this.form.getRawValue();
 
-    if (value.password !== value.confirmPassword) {
-      this.errorMessage.set('Las contraseñas no coinciden.');
+    if (
+      value.password !==
+      value.confirmPassword
+    ) {
+      this.form.controls.confirmPassword
+        .markAsTouched();
+
+      this.errorMessage.set(
+        'Las contraseñas no coinciden.'
+      );
+
       return;
     }
 
     this.loading.set(true);
-    this.errorMessage.set('');
 
     this.auth.register({
-      firstName: value.firstName,
-      lastName: value.lastName,
-      email: value.email,
-      password: value.password
+      firstName:
+        value.firstName.trim(),
+      lastName:
+        value.lastName.trim(),
+      email:
+        value.email.trim().toLowerCase(),
+      password:
+        value.password
     }).subscribe({
       next: () => {
         this.loading.set(false);
-        void this.router.navigate(['/mi-cuenta']);
+
+        /*
+         * El registro público crea la cuenta,
+         * pero el usuario debe autenticarse
+         * nuevamente de forma explícita.
+         */
+        this.auth.logout();
+
+        void this.router.navigate(
+          ['/login'],
+          {
+            queryParams: {
+              registered: '1',
+              email:
+                value.email
+                  .trim()
+                  .toLowerCase()
+            }
+          }
+        );
       },
-      error: (error: HttpErrorResponse) => {
+
+      error: (
+        error: HttpErrorResponse
+      ) => {
         this.loading.set(false);
-        this.errorMessage.set(error.error?.message ?? 'No fue posible crear la cuenta.');
+
+        if (error.status === 409) {
+          this.errorMessage.set(
+            'Ya existe una cuenta registrada con este correo electrónico.'
+          );
+
+          return;
+        }
+
+        if (error.status === 400) {
+          this.errorMessage.set(
+            error.error?.message ??
+              'Los datos enviados no son válidos. Revise el formulario.'
+          );
+
+          return;
+        }
+
+        this.errorMessage.set(
+          error.error?.message ??
+            'No fue posible crear la cuenta. Intente nuevamente.'
+        );
       }
     });
+  }
+
+  passwordInvalid(): boolean {
+    const control =
+      this.form.controls.password;
+
+    return (
+      control.touched &&
+      control.invalid
+    );
+  }
+
+  passwordsMismatch(): boolean {
+    const confirm =
+      this.form.controls.confirmPassword;
+
+    return (
+      confirm.touched &&
+      confirm.value.length > 0 &&
+      this.form.controls.password.value !==
+        confirm.value
+    );
   }
 }
