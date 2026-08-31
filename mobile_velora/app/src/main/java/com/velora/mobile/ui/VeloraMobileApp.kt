@@ -215,8 +215,20 @@ private fun RegisterScreen(
 private fun CustomerHome(
     firstName: String,
     email: String,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    cartViewModel: CartViewModel = viewModel()
 ) {
+    val cartState by
+        cartViewModel.state.collectAsState()
+
+    var showCart by remember {
+        mutableStateOf(false)
+    }
+
+    var checkoutNotice by remember {
+        mutableStateOf(false)
+    }
+
     AuthCanvas {
         BrandHeader()
         Spacer(Modifier.height(60.dp))
@@ -243,7 +255,79 @@ private fun CustomerHome(
 
         Spacer(Modifier.height(28.dp))
 
-        CustomerCatalogSection()
+        if (showCart) {
+
+            CustomerCartSection(
+                viewModel = cartViewModel,
+                onCheckout = {
+                    checkoutNotice = true
+                }
+            )
+
+            if (checkoutNotice) {
+                Spacer(
+                    Modifier.height(12.dp)
+                )
+
+                Text(
+                    text =
+                        "El checkout mobile se conectará en el siguiente paso.",
+                    color =
+                        VeloraColors.Terracotta
+                )
+            }
+
+            Spacer(
+                Modifier.height(16.dp)
+            )
+
+            OutlinedButton(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                onClick = {
+                    checkoutNotice = false
+                    showCart = false
+                }
+            ) {
+                Text(
+                    "VOLVER AL CATÁLOGO"
+                )
+            }
+
+        } else {
+
+            CustomerCatalogSection(
+                onAddToCart =
+                    cartViewModel::addVariant,
+                addingVariantId =
+                    cartState.busyVariantId
+            )
+
+            Spacer(
+                Modifier.height(16.dp)
+            )
+
+            Button(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                onClick = {
+                    checkoutNotice = false
+                    showCart = true
+                    cartViewModel.load()
+                },
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor =
+                            VeloraColors.Ink,
+                        contentColor =
+                            VeloraColors.Surface
+                    )
+            ) {
+                Text(
+                    "VER BOLSA (${cartState.cart.totalItems})"
+                )
+            }
+        }
 
         Spacer(Modifier.height(28.dp))
 
