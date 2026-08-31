@@ -41,6 +41,12 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
 
+    /*
+     * Generación local del QR de pago.
+     * No realiza red ni procesa pagos.
+     */
+    implementation("com.google.zxing:core:3.5.4")
+
     implementation(platform("com.google.firebase:firebase-bom:34.18.0"))
     implementation("com.google.firebase:firebase-messaging")
 

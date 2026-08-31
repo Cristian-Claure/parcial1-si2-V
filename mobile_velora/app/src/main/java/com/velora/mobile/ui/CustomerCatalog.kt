@@ -2,6 +2,7 @@ package com.velora.mobile.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,6 +27,8 @@ import com.velora.mobile.ui.theme.VeloraColors
 
 @Composable
 fun CustomerCatalogSection(
+    onAddToCart: (String) -> Unit = {},
+    addingVariantId: String? = null,
     viewModel: CatalogViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -89,7 +92,11 @@ fun CustomerCatalogSection(
                         items = state.products,
                         key = { it.id }
                     ) { product ->
-                        ProductCard(product)
+                        ProductCard(
+                            product = product,
+                            onAddToCart = onAddToCart,
+                            addingVariantId = addingVariantId
+                        )
                     }
                 }
             }
@@ -99,7 +106,9 @@ fun CustomerCatalogSection(
 
 @Composable
 private fun ProductCard(
-    product: MobileProduct
+    product: MobileProduct,
+    onAddToCart: (String) -> Unit,
+    addingVariantId: String?
 ) {
     val activeVariants =
         product.variants.filter {
@@ -182,6 +191,61 @@ private fun ProductCard(
                     },
                     color = VeloraColors.Muted
                 )
+
+                Spacer(Modifier.height(12.dp))
+
+                activeVariants.forEach { variant ->
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text =
+                                    "${variant.color} · ${variant.size}",
+                                color =
+                                    VeloraColors.Ink
+                            )
+
+                            Text(
+                                text =
+                                    "${variant.currency} " +
+                                        "%.2f".format(
+                                            variant.price
+                                        ),
+                                color =
+                                    VeloraColors.Muted
+                            )
+                        }
+
+                        TextButton(
+                            enabled =
+                                addingVariantId == null,
+                            onClick = {
+                                onAddToCart(
+                                    variant.id
+                                )
+                            }
+                        ) {
+                            Text(
+                                if (
+                                    addingVariantId ==
+                                        variant.id
+                                ) {
+                                    "AÑADIENDO..."
+                                } else {
+                                    "AÑADIR"
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(
+                        Modifier.height(6.dp)
+                    )
+                }
             }
         }
     }

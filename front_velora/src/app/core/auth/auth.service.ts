@@ -1,4 +1,7 @@
-import { HttpClient } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpErrorResponse
+} from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 
@@ -53,7 +56,14 @@ export class AuthService {
   constructor() {
     if (this.tokenState()) {
       this.refreshProfile().subscribe({
-        error: () => this.clearSession()
+        error: (error: HttpErrorResponse) => {
+          if (
+            error.status === 401 ||
+            error.status === 403
+          ) {
+            this.clearSession();
+          }
+        }
       });
     }
   }

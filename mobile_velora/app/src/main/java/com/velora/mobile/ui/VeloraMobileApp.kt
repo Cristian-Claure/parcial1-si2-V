@@ -1,6 +1,9 @@
 package com.velora.mobile.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -13,11 +16,20 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.velora.mobile.data.MobileOrder
 import com.velora.mobile.ui.theme.VeloraColors
 
 private enum class AuthScreen {
     LOGIN,
     REGISTER
+}
+
+private enum class CustomerScreen {
+    CATALOG,
+    ORDERS,
+    CART,
+    CHECKOUT,
+    PAYMENT
 }
 
 @Composable
@@ -215,46 +227,331 @@ private fun RegisterScreen(
 private fun CustomerHome(
     firstName: String,
     email: String,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    cartViewModel: CartViewModel = viewModel(),
+    checkoutViewModel: CheckoutViewModel = viewModel(),
+    ordersViewModel: OrdersViewModel = viewModel()
 ) {
+    val cartState by
+        cartViewModel.state.collectAsState()
+
+    var customerScreen by remember {
+        mutableStateOf(
+            CustomerScreen.CATALOG
+        )
+    }
+
+    var selectedOrder by remember {
+        mutableStateOf<MobileOrder?>(
+            null
+        )
+    }
+
+    /*
+     * Cuando cambia la sesión customer,
+     * sincronizamos nuevamente la bolsa
+     * con el usuario autenticado actual.
+     */
+    LaunchedEffect(email) {
+        cartViewModel.load()
+    }
+
     AuthCanvas {
         BrandHeader()
-        Spacer(Modifier.height(60.dp))
 
-        Text("MI EXPERIENCIA", color = VeloraColors.Terracotta)
-        Text(
-            "Hola, $firstName.",
-            color = VeloraColors.Ink,
-            style = MaterialTheme.typography.headlineLarge
+        Spacer(
+            Modifier.height(28.dp)
         )
 
-        Spacer(Modifier.height(16.dp))
-        Text(email, color = VeloraColors.Muted)
+        Text(
+            text = "MI EXPERIENCIA",
+            color =
+                VeloraColors.Terracotta
+        )
 
-        Spacer(Modifier.height(44.dp))
+        Text(
+            text = "Hola, $firstName.",
+            color =
+                VeloraColors.Ink,
+            style =
+                MaterialTheme
+                    .typography
+                    .headlineLarge
+        )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            CustomerTile("PEDIDOS", "Próxima vertical", Modifier.weight(1f))
-            CustomerTile("FAVORITOS", "Próxima vertical", Modifier.weight(1f))
+        Spacer(
+            Modifier.height(8.dp)
+        )
+
+        Text(
+            text = email,
+            color =
+                VeloraColors.Muted
+        )
+
+        Spacer(
+            Modifier.height(26.dp)
+        )
+
+        when (customerScreen) {
+
+            CustomerScreen.CATALOG -> {
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            12.dp
+                        )
+                ) {
+                    CustomerTile(
+                        title = "PEDIDOS",
+                        subtitle =
+                            "Ver historial y estado",
+                        modifier =
+                            Modifier.weight(1f),
+                        onClick = {
+                            ordersViewModel.load()
+
+                            customerScreen =
+                                CustomerScreen.ORDERS
+                        }
+                    )
+
+                    CustomerTile(
+                        title = "FAVORITOS",
+                        subtitle =
+                            "Disponible próximamente",
+                        modifier =
+                            Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(
+                    Modifier.height(24.dp)
+                )
+
+                CustomerCatalogSection(
+                    onAddToCart =
+                        cartViewModel::addVariant,
+                    addingVariantId =
+                        cartState.busyVariantId
+                )
+
+                Spacer(
+                    Modifier.height(16.dp)
+                )
+
+                Button(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    onClick = {
+                        cartViewModel.load()
+
+                        customerScreen =
+                            CustomerScreen.CART
+                    },
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor =
+                                VeloraColors.Ink,
+                            contentColor =
+                                VeloraColors.Surface
+                        )
+                ) {
+                    Text(
+                        text =
+                            "VER BOLSA (${cartState.cart.totalItems})"
+                    )
+                }
+            }
+
+            CustomerScreen.ORDERS -> {
+
+                CustomerOrdersSection(
+                    viewModel =
+                        ordersViewModel,
+                    onBackToCatalog = {
+                        customerScreen =
+                            CustomerScreen.CATALOG
+                    }
+                )
+            }
+
+            CustomerScreen.CART -> {
+
+                CustomerCartSection(
+                    viewModel =
+                        cartViewModel,
+                    onCheckout = {
+                        /*
+                         * Las sucursales válidas dependen
+                         * del contenido actual de la bolsa,
+                         * por eso se actualizan justo antes
+                         * de entrar al checkout.
+                         */
+                        checkoutViewModel.load()
+
+                        customerScreen =
+                            CustomerScreen.CHECKOUT
+                    }
+                )
+
+                Spacer(
+                    Modifier.height(16.dp)
+                )
+
+                OutlinedButton(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    onClick = {
+                        customerScreen =
+                            CustomerScreen.CATALOG
+                    }
+                ) {
+                    Text(
+                        "VOLVER AL CATÁLOGO"
+                    )
+                }
+            }
+
+            CustomerScreen.CHECKOUT -> {
+
+                CustomerCheckoutSection(
+                    viewModel =
+                        checkoutViewModel,
+
+                    onBackToCart = {
+                        cartViewModel.load()
+
+                        customerScreen =
+                            CustomerScreen.CART
+                    },
+
+                    onContinueToPayment = {
+                        order ->
+
+                        selectedOrder =
+                            order
+
+                        /*
+                         * El backend convierte el carrito
+                         * original a CONVERTED cuando crea
+                         * el pedido RESERVED.
+                         */
+                        cartViewModel.load()
+
+                        customerScreen =
+                            CustomerScreen.PAYMENT
+                    }
+                )
+            }
+
+            CustomerScreen.PAYMENT -> {
+
+                val order =
+                    selectedOrder
+
+                if (order == null) {
+
+                    Text(
+                        text =
+                            "No existe un pedido seleccionado para pagar.",
+                        color =
+                            VeloraColors.Error
+                    )
+
+                    Spacer(
+                        Modifier.height(12.dp)
+                    )
+
+                    OutlinedButton(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        onClick = {
+                            customerScreen =
+                                CustomerScreen.CHECKOUT
+                        }
+                    ) {
+                        Text(
+                            "VOLVER AL CHECKOUT"
+                        )
+                    }
+
+                } else {
+
+                    /*
+                     * Cada pedido obtiene su propio
+                     * PaymentViewModel. Así un pago
+                     * anterior no contamina una compra
+                     * nueva.
+                     */
+                    val paymentViewModel:
+                        PaymentViewModel =
+                            viewModel(
+                                key =
+                                    "payment-${order.id}"
+                            )
+
+                    CustomerPaymentSection(
+                        order =
+                            order,
+
+                        viewModel =
+                            paymentViewModel,
+
+                        onBackToOrder = {
+                            customerScreen =
+                                CustomerScreen.CHECKOUT
+                        },
+
+                        onPaymentCompleted = {
+                            /*
+                             * El pago queda PAID,
+                             * mientras el pedido sigue
+                             * RESERVED hasta su entrega.
+                             */
+                            selectedOrder =
+                                null
+
+                            cartViewModel.load()
+                            ordersViewModel.load()
+
+                            customerScreen =
+                                CustomerScreen.ORDERS
+                        }
+                    )
+                }
+            }
         }
 
-        Spacer(Modifier.height(28.dp))
-
-        CustomerCatalogSection()
-
-        Spacer(Modifier.height(28.dp))
+        Spacer(
+            Modifier.height(24.dp)
+        )
 
         Button(
-            onClick = onLogout,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = VeloraColors.Ink,
-                contentColor = VeloraColors.Surface
-            )
+            modifier =
+                Modifier.fillMaxWidth(),
+            onClick = {
+                selectedOrder = null
+
+                customerScreen =
+                    CustomerScreen.CATALOG
+
+                onLogout()
+            },
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor =
+                        VeloraColors.Ink,
+                    contentColor =
+                        VeloraColors.Surface
+                )
         ) {
-            Text("CERRAR SESIÓN")
+            Text(
+                "CERRAR SESIÓN"
+            )
         }
     }
 }
@@ -263,17 +560,56 @@ private fun CustomerHome(
 private fun CustomerTile(
     title: String,
     subtitle: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
+
+    val tileModifier =
+        if (onClick == null) {
+            modifier
+                .background(
+                    VeloraColors.Card
+                )
+                .padding(
+                    18.dp
+                )
+        } else {
+            modifier
+                .background(
+                    VeloraColors.Card
+                )
+                .clickable(
+                    onClick = onClick
+                )
+                .padding(
+                    18.dp
+                )
+        }
+
     Box(
-        modifier = modifier
-            .background(VeloraColors.Card)
-            .padding(18.dp)
+        modifier =
+            tileModifier
     ) {
         Column {
-            Text(title, color = VeloraColors.Ink, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(6.dp))
-            Text(subtitle, color = VeloraColors.Muted)
+            Text(
+                title,
+                color =
+                    VeloraColors.Ink,
+                fontWeight =
+                    FontWeight.Bold
+            )
+
+            Spacer(
+                Modifier.height(
+                    6.dp
+                )
+            )
+
+            Text(
+                subtitle,
+                color =
+                    VeloraColors.Muted
+            )
         }
     }
 }
@@ -307,7 +643,11 @@ private fun AuthCanvas(content: @Composable ColumnScope.() -> Unit) {
         contentAlignment = Alignment.TopCenter
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(
+                    rememberScrollState()
+                ),
             content = content
         )
     }
