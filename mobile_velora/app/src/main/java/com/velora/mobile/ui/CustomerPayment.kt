@@ -443,22 +443,39 @@ fun CustomerPaymentSection(
                             )
 
                             Text(
-                                text = "Contenido QR:",
+                                text =
+                                    "Escanee este código para realizar el pago:",
                                 color =
                                     VeloraColors.Muted
                             )
 
                             Spacer(
-                                Modifier.height(5.dp)
+                                Modifier.height(10.dp)
                             )
 
-                            Text(
-                                text =
-                                    pendingIntent
-                                        .qrPayload
-                                        ?: "QR no disponible.",
-                                color =
-                                    VeloraColors.Ink
+                            val qrPayload =
+                                pendingIntent
+                                    .qrPayload
+
+                            if (
+                                qrPayload
+                                    .isNullOrBlank()
+                            ) {
+                                Text(
+                                    text =
+                                        "QR no disponible.",
+                                    color =
+                                        VeloraColors.Error
+                                )
+                            } else {
+                                QrCodeImage(
+                                    payload =
+                                        qrPayload
+                                )
+                            }
+
+                            Spacer(
+                                Modifier.height(8.dp)
                             )
 
                             pendingIntent
