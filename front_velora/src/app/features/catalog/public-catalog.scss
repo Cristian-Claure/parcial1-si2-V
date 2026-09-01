@@ -305,3 +305,110 @@ h1 {
     margin-left: 37px;
   }
 }
+.catalog-tools {
+  margin-top: 36px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1.6fr)
+    minmax(170px, .8fr)
+    minmax(190px, .8fr);
+  gap: 14px;
+  border: 1px solid var(--velora-border);
+  border-radius: var(--velora-radius-md);
+  background: var(--velora-card);
+  box-shadow: var(--velora-shadow-sm);
+}
+
+.catalog-field {
+  display: grid;
+  gap: 7px;
+}
+
+.catalog-field > span {
+  color: var(--velora-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.catalog-field input,
+.catalog-field select {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid var(--velora-border);
+  border-radius: var(--velora-radius-sm);
+  background: var(--velora-ivory);
+  color: var(--velora-ink);
+  outline: none;
+}
+
+.catalog-field input:focus,
+.catalog-field select:focus {
+  border-color: var(--velora-terracotta);
+  box-shadow:
+    0 0 0 3px
+    rgba(169, 119, 96, .12);
+}
+
+.catalog-results {
+  grid-column: 1 / -1;
+  padding-top: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--velora-border);
+  color: var(--velora-muted);
+  font-size: 13px;
+}
+
+.catalog-results strong {
+  color: var(--velora-ink);
+}
+
+.catalog-results button {
+  border: 0;
+  background: transparent;
+  color: var(--velora-terracotta);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.empty-results {
+  grid-column: 1 / -1;
+  padding: 48px 24px;
+  border: 1px dashed var(--velora-border-strong);
+  border-radius: var(--velora-radius-md);
+  color: var(--velora-muted);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .catalog-tools {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .catalog-search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .catalog-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-search {
+    grid-column: auto;
+  }
+
+  .catalog-results {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
