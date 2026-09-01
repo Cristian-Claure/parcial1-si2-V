@@ -234,71 +234,129 @@
             @if (
               activeVariants(product).length
             ) {
-              <label class="variant-selector">
-                <span>
-                  Seleccione color y talla
-                </span>
+              <div class="variant-picker">
 
-                <select
-                  [value]="
-                    selectedVariantId(
-                      product.id
-                    )
-                  "
-                  (change)="
-                    selectVariant(
-                      product.id,
-                      $any($event.target).value
-                    )
-                  "
-                >
-                  @for (
-                    variant of
-                      activeVariants(product);
-                    track variant.id
-                  ) {
-                    <option
-                      [value]="variant.id"
-                    >
-                      {{ variant.color }}
-                      ·
-                      Talla {{ variant.size }}
-                      ·
-                      Bs {{ variant.price }}
-                    </option>
-                  }
-                </select>
-              </label>
+                <div class="variant-group">
+                  <span class="variant-label">
+                    Color
+                  </span>
 
-              @if (
-                selectedVariant(product);
-                as variant
-              ) {
-                <div class="selected-variant">
-                  <div>
-                    @if (variant.colorHex) {
-                      <span
-                        class="color-dot"
-                        [style.background]="
-                          variant.colorHex
+                  <div class="color-options">
+                    @for (
+                      option of
+                        colorOptions(product);
+                      track option.color
+                    ) {
+                      <button
+                        type="button"
+                        class="color-option"
+                        [class.is-selected]="
+                          selectedVariant(product)
+                            ?.color ===
+                          option.color
                         "
-                      ></span>
+                        [attr.aria-pressed]="
+                          selectedVariant(product)
+                            ?.color ===
+                          option.color
+                        "
+                        [attr.aria-label]="
+                          'Seleccionar color ' +
+                          option.color
+                        "
+                        (click)="
+                          selectColor(
+                            product,
+                            option.color
+                          )
+                        "
+                      >
+                        @if (option.colorHex) {
+                          <span
+                            class="color-swatch"
+                            [style.background]="
+                              option.colorHex
+                            "
+                          ></span>
+                        }
+
+                        <span>
+                          {{ option.color }}
+                        </span>
+                      </button>
                     }
+                  </div>
+                </div>
 
-                    <span>
-                      {{ variant.color }}
+                @if (
+                  selectedVariant(product);
+                  as variant
+                ) {
+                  <div class="variant-group">
+                    <span class="variant-label">
+                      Talla
                     </span>
 
-                    <span>
-                      Talla {{ variant.size }}
-                    </span>
+                    <div class="size-options">
+                      @for (
+                        sizeVariant of
+                          sizeOptions(product);
+                        track sizeVariant.id
+                      ) {
+                        <button
+                          type="button"
+                          class="size-option"
+                          [class.is-selected]="
+                            selectedVariantId(
+                              product.id
+                            ) ===
+                            sizeVariant.id
+                          "
+                          [attr.aria-pressed]="
+                            selectedVariantId(
+                              product.id
+                            ) ===
+                            sizeVariant.id
+                          "
+                          (click)="
+                            selectVariant(
+                              product.id,
+                              sizeVariant.id
+                            )
+                          "
+                        >
+                          {{ sizeVariant.size }}
+                        </button>
+                      }
+                    </div>
                   </div>
 
-                  <strong>
-                    Bs {{ variant.price }}
-                  </strong>
-                </div>
-              }
+                  <div class="selected-variant">
+                    <div>
+                      @if (variant.colorHex) {
+                        <span
+                          class="color-dot"
+                          [style.background]="
+                            variant.colorHex
+                          "
+                        ></span>
+                      }
+
+                      <span>
+                        {{ variant.color }}
+                      </span>
+
+                      <span>
+                        Talla {{ variant.size }}
+                      </span>
+                    </div>
+
+                    <strong>
+                      Bs {{ variant.price }}
+                    </strong>
+                  </div>
+                }
+              </div>
 
               <button
                 type="button"

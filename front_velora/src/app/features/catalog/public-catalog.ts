@@ -337,6 +337,71 @@ export class PublicCatalog {
     );
   }
 
+  colorOptions(
+    product: Product
+  ): ProductVariant[] {
+    const active =
+      this.activeVariants(product);
+
+    return active.filter(
+      (variant, index) =>
+        active.findIndex(
+          (candidate) =>
+            candidate.color ===
+            variant.color
+        ) === index
+    );
+  }
+
+  sizeOptions(
+    product: Product
+  ): ProductVariant[] {
+    const color =
+      this.selectedVariant(product)
+        ?.color;
+
+    if (!color) {
+      return [];
+    }
+
+    return this
+      .activeVariants(product)
+      .filter(
+        (variant) =>
+          variant.color === color
+      );
+  }
+
+  selectColor(
+    product: Product,
+    color: string
+  ): void {
+    const current =
+      this.selectedVariant(product);
+
+    const candidates =
+      this.activeVariants(product)
+        .filter(
+          (variant) =>
+            variant.color === color
+        );
+
+    const next =
+      candidates.find(
+        (variant) =>
+          variant.size ===
+          current?.size
+      ) ??
+      candidates[0];
+
+    if (next) {
+      this.selectVariant(
+        product.id,
+        next.id
+      );
+    }
+  }
+
   selectedVariantId(
     productId: string
   ): string {

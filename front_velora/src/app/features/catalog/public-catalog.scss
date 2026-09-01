@@ -200,28 +200,92 @@ h1 {
   margin: 12px 0 20px;
 }
 
-.variant-selector {
+.variant-picker {
   margin-top: auto;
+  display: grid;
+  gap: 16px;
+}
+
+.variant-group {
   display: grid;
   gap: 8px;
 }
 
-.variant-selector > span {
-  color: #745f54;
-  font-size: 11px;
+.variant-label {
+  color: var(--velora-muted);
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: .07em;
+  letter-spacing: .11em;
   text-transform: uppercase;
 }
 
-.variant-selector select {
-  width: 100%;
-  border: 1px solid #d9ccc0;
-  border-radius: 9px;
-  background: #fff;
-  color: #29211e;
-  padding: 12px;
+.color-options,
+.size-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.color-option,
+.size-option {
+  min-height: 38px;
+  box-sizing: border-box;
+  border: 1px solid var(--velora-border);
+  background: var(--velora-ivory);
+  color: var(--velora-ink);
+  cursor: pointer;
   font: inherit;
+  transition:
+    border-color var(--velora-transition-fast),
+    background var(--velora-transition-fast),
+    color var(--velora-transition-fast),
+    transform var(--velora-transition-fast);
+}
+
+.color-option {
+  padding: 7px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: var(--velora-radius-pill);
+  font-size: 12px;
+}
+
+.size-option {
+  min-width: 42px;
+  padding: 7px 10px;
+  border-radius: var(--velora-radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.color-option:hover,
+.size-option:hover {
+  border-color: var(--velora-border-strong);
+  transform: translateY(-1px);
+}
+
+.color-option.is-selected,
+.size-option.is-selected {
+  border-color: var(--velora-ink);
+  background: var(--velora-ink);
+  color: var(--velora-ivory);
+}
+
+.color-swatch {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  border: 1px solid rgba(0, 0, 0, .14);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px
+    rgba(255, 255, 255, .35);
+}
+
+.color-option.is-selected .color-swatch {
+  border-color:
+    rgba(255, 255, 255, .7);
 }
 
 .selected-variant {
