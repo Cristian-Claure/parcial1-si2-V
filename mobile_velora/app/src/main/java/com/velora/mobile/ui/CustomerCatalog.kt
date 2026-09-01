@@ -37,6 +37,7 @@ import com.velora.mobile.ui.theme.VeloraColors
 @Composable
 fun CustomerCatalogSection(
     onAddToCart: (String) -> Unit = {},
+    onOpenProduct: (MobileProduct) -> Unit = {},
     addingVariantId: String? = null,
     viewModel: CatalogViewModel = viewModel()
 ) {
@@ -437,6 +438,7 @@ fun CustomerCatalogSection(
                         ProductCard(
                             product = product,
                             onAddToCart = onAddToCart,
+                            onOpenProduct = onOpenProduct,
                             addingVariantId = addingVariantId
                         )
                     }
@@ -463,6 +465,7 @@ private fun normalizeCatalogText(
 private fun ProductCard(
     product: MobileProduct,
     onAddToCart: (String) -> Unit,
+    onOpenProduct: (MobileProduct) -> Unit,
     addingVariantId: String?
 ) {
     val activeVariants =
@@ -585,6 +588,24 @@ private fun ProductCard(
                         .typography
                         .titleLarge
             )
+
+            Spacer(
+                Modifier.height(
+                    6.dp
+                )
+            )
+
+            TextButton(
+                onClick = {
+                    onOpenProduct(
+                        product
+                    )
+                }
+            ) {
+                Text(
+                    "VER DETALLE →"
+                )
+            }
 
             product.description
                 ?.takeIf {

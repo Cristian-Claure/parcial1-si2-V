@@ -17,6 +17,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.velora.mobile.data.MobileOrder
+import com.velora.mobile.data.MobileProduct
 import com.velora.mobile.ui.theme.VeloraColors
 
 private enum class AuthScreen {
@@ -27,6 +28,7 @@ private enum class AuthScreen {
 private enum class CustomerScreen {
     HOME,
     CATALOG,
+    PRODUCT_DETAIL,
     FAVORITES,
     CART,
     ACCOUNT,
@@ -241,6 +243,12 @@ private fun CustomerHome(
     var customerScreen by remember {
         mutableStateOf(
             CustomerScreen.HOME
+        )
+    }
+
+    var selectedProduct by remember {
+        mutableStateOf<MobileProduct?>(
+            null
         )
     }
 
@@ -805,6 +813,18 @@ private fun CustomerHome(
                 CustomerCatalogSection(
                     onAddToCart =
                         cartViewModel::addVariant,
+
+                    onOpenProduct = {
+                        product ->
+
+                        selectedProduct =
+                            product
+
+                        customerScreen =
+                            CustomerScreen
+                                .PRODUCT_DETAIL
+                    },
+
                     addingVariantId =
                         cartState.busyVariantId
                 )
@@ -833,6 +853,75 @@ private fun CustomerHome(
                     Text(
                         text =
                             "VER BOLSA (${cartState.cart.totalItems})"
+                    )
+                }
+            }
+
+            CustomerScreen.PRODUCT_DETAIL -> {
+
+                val product =
+                    selectedProduct
+
+                if (
+                    product == null
+                ) {
+                    Text(
+                        text =
+                            "No existe un producto seleccionado.",
+                        color =
+                            VeloraColors.Error
+                    )
+
+                    Spacer(
+                        Modifier.height(
+                            12.dp
+                        )
+                    )
+
+                    OutlinedButton(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        onClick = {
+                            customerScreen =
+                                CustomerScreen
+                                    .CATALOG
+                        }
+                    ) {
+                        Text(
+                            "VOLVER AL CATÁLOGO"
+                        )
+                    }
+                }
+                else {
+                    CustomerProductDetail(
+                        product =
+                            product,
+
+                        addingVariantId =
+                            cartState.busyVariantId,
+
+                        onAddToCart =
+                            cartViewModel::addVariant,
+
+                        onBackToCatalog = {
+                            selectedProduct =
+                                null
+
+                            customerScreen =
+                                CustomerScreen
+                                    .CATALOG
+                        },
+
+                        onOpenCart = {
+                            selectedProduct =
+                                null
+
+                            cartViewModel.load()
+
+                            customerScreen =
+                                CustomerScreen
+                                    .CART
+                        }
                     )
                 }
             }
