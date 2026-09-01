@@ -25,9 +25,12 @@ private enum class AuthScreen {
 }
 
 private enum class CustomerScreen {
+    HOME,
     CATALOG,
-    ORDERS,
+    FAVORITES,
     CART,
+    ACCOUNT,
+    ORDERS,
     CHECKOUT,
     PAYMENT
 }
@@ -237,7 +240,7 @@ private fun CustomerHome(
 
     var customerScreen by remember {
         mutableStateOf(
-            CustomerScreen.CATALOG
+            CustomerScreen.HOME
         )
     }
 
@@ -256,8 +259,60 @@ private fun CustomerHome(
         cartViewModel.load()
     }
 
-    AuthCanvas {
-        BrandHeader()
+    Scaffold(
+        containerColor =
+            VeloraColors.Surface,
+        bottomBar = {
+            when (customerScreen) {
+                CustomerScreen.HOME,
+                CustomerScreen.CATALOG,
+                CustomerScreen.FAVORITES,
+                CustomerScreen.CART,
+                CustomerScreen.ACCOUNT -> {
+                    CustomerBottomNavigation(
+                        currentScreen =
+                            customerScreen,
+                        cartCount =
+                            cartState.cart.totalItems,
+                        onSelect = {
+                            destination ->
+
+                            if (
+                                destination ==
+                                    CustomerScreen.CART
+                            ) {
+                                cartViewModel.load()
+                            }
+
+                            customerScreen =
+                                destination
+                        }
+                    )
+                }
+
+                else -> Unit
+            }
+        }
+    ) { innerPadding ->
+
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        innerPadding
+                    )
+                    .padding(
+                        horizontal =
+                            24.dp,
+                        vertical =
+                            18.dp
+                    )
+                    .verticalScroll(
+                        rememberScrollState()
+                    )
+        ) {
+            BrandHeader()
 
         Spacer(
             Modifier.height(28.dp)
@@ -294,6 +349,221 @@ private fun CustomerHome(
         )
 
         when (customerScreen) {
+
+            CustomerScreen.HOME -> {
+
+                Text(
+                    text =
+                        "TU ESPACIO VÉLORA",
+                    color =
+                        VeloraColors.Terracotta,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                Text(
+                    text =
+                        "Moda que acompaña cada momento.",
+                    color =
+                        VeloraColors.Ink,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .headlineLarge
+                )
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                Text(
+                    text =
+                        "Descubra nuevas piezas, continúe su compra o revise sus pedidos.",
+                    color =
+                        VeloraColors.Muted
+                )
+
+                Spacer(
+                    Modifier.height(24.dp)
+                )
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            12.dp
+                        )
+                ) {
+
+                    CustomerTile(
+                        title =
+                            "EXPLORAR",
+                        subtitle =
+                            "Descubrir la colección",
+                        modifier =
+                            Modifier.weight(1f),
+                        onClick = {
+                            customerScreen =
+                                CustomerScreen.CATALOG
+                        }
+                    )
+
+                    CustomerTile(
+                        title =
+                            "PEDIDOS",
+                        subtitle =
+                            "Seguir sus compras",
+                        modifier =
+                            Modifier.weight(1f),
+                        onClick = {
+                            ordersViewModel.load()
+
+                            customerScreen =
+                                CustomerScreen.ORDERS
+                        }
+                    )
+                }
+
+                Spacer(
+                    Modifier.height(12.dp)
+                )
+
+                CustomerTile(
+                    title =
+                        "MI BOLSA",
+                    subtitle =
+                        if (
+                            cartState.cart.totalItems ==
+                                0
+                        ) {
+                            "Lista para su próxima elección"
+                        }
+                        else {
+                            "${cartState.cart.totalItems} producto(s) esperando"
+                        },
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    onClick = {
+                        cartViewModel.load()
+
+                        customerScreen =
+                            CustomerScreen.CART
+                    }
+                )
+            }
+
+            CustomerScreen.FAVORITES -> {
+
+                Text(
+                    text =
+                        "FAVORITOS",
+                    color =
+                        VeloraColors.Terracotta,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                Text(
+                    text =
+                        "Las piezas que inspiran su estilo.",
+                    color =
+                        VeloraColors.Ink,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .headlineMedium
+                )
+
+                Spacer(
+                    Modifier.height(12.dp)
+                )
+
+                Text(
+                    text =
+                        "Aquí podrá reunir las prendas que desea volver a encontrar fácilmente.",
+                    color =
+                        VeloraColors.Muted
+                )
+            }
+
+            CustomerScreen.ACCOUNT -> {
+
+                Text(
+                    text =
+                        "MI CUENTA",
+                    color =
+                        VeloraColors.Terracotta,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                Text(
+                    text =
+                        firstName,
+                    color =
+                        VeloraColors.Ink,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .headlineMedium
+                )
+
+                Text(
+                    text =
+                        email,
+                    color =
+                        VeloraColors.Muted
+                )
+
+                Spacer(
+                    Modifier.height(24.dp)
+                )
+
+                CustomerTile(
+                    title =
+                        "MIS PEDIDOS",
+                    subtitle =
+                        "Historial, estados y pagos",
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    onClick = {
+                        ordersViewModel.load()
+
+                        customerScreen =
+                            CustomerScreen.ORDERS
+                    }
+                )
+
+                Spacer(
+                    Modifier.height(12.dp)
+                )
+
+                OutlinedButton(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    onClick = {
+                        selectedOrder = null
+                        onLogout()
+                    }
+                ) {
+                    Text(
+                        "CERRAR SESIÓN"
+                    )
+                }
+            }
 
             CustomerScreen.CATALOG -> {
 
@@ -529,28 +799,194 @@ private fun CustomerHome(
         Spacer(
             Modifier.height(24.dp)
         )
+        }
+    }
+}
 
-        Button(
+@Composable
+private fun CustomerBottomNavigation(
+    currentScreen:
+        CustomerScreen,
+    cartCount:
+        Int,
+    onSelect:
+        (CustomerScreen) -> Unit
+) {
+
+    Surface(
+        color =
+            VeloraColors.Card,
+        tonalElevation =
+            8.dp,
+        shadowElevation =
+            10.dp
+    ) {
+
+        Row(
             modifier =
-                Modifier.fillMaxWidth(),
-            onClick = {
-                selectedOrder = null
-
-                customerScreen =
-                    CustomerScreen.CATALOG
-
-                onLogout()
-            },
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor =
-                        VeloraColors.Ink,
-                    contentColor =
-                        VeloraColors.Surface
-                )
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(
+                        horizontal =
+                            4.dp,
+                        vertical =
+                            6.dp
+                    ),
+            horizontalArrangement =
+                Arrangement.SpaceEvenly
         ) {
+
+            CustomerNavAction(
+                label =
+                    "Inicio",
+                marker =
+                    "⌂",
+                selected =
+                    currentScreen ==
+                        CustomerScreen.HOME,
+                modifier =
+                    Modifier.weight(1f),
+                onClick = {
+                    onSelect(
+                        CustomerScreen.HOME
+                    )
+                }
+            )
+
+            CustomerNavAction(
+                label =
+                    "Explorar",
+                marker =
+                    "◇",
+                selected =
+                    currentScreen ==
+                        CustomerScreen.CATALOG,
+                modifier =
+                    Modifier.weight(1f),
+                onClick = {
+                    onSelect(
+                        CustomerScreen.CATALOG
+                    )
+                }
+            )
+
+            CustomerNavAction(
+                label =
+                    "Favoritos",
+                marker =
+                    "♡",
+                selected =
+                    currentScreen ==
+                        CustomerScreen.FAVORITES,
+                modifier =
+                    Modifier.weight(1f),
+                onClick = {
+                    onSelect(
+                        CustomerScreen.FAVORITES
+                    )
+                }
+            )
+
+            CustomerNavAction(
+                label =
+                    if (cartCount > 0) {
+                        "Bolsa $cartCount"
+                    }
+                    else {
+                        "Bolsa"
+                    },
+                marker =
+                    "▱",
+                selected =
+                    currentScreen ==
+                        CustomerScreen.CART,
+                modifier =
+                    Modifier.weight(1f),
+                onClick = {
+                    onSelect(
+                        CustomerScreen.CART
+                    )
+                }
+            )
+
+            CustomerNavAction(
+                label =
+                    "Cuenta",
+                marker =
+                    "○",
+                selected =
+                    currentScreen ==
+                        CustomerScreen.ACCOUNT,
+                modifier =
+                    Modifier.weight(1f),
+                onClick = {
+                    onSelect(
+                        CustomerScreen.ACCOUNT
+                    )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun CustomerNavAction(
+    label:
+        String,
+    marker:
+        String,
+    selected:
+        Boolean,
+    modifier:
+        Modifier = Modifier,
+    onClick:
+        () -> Unit
+) {
+
+    TextButton(
+        modifier =
+            modifier,
+        onClick =
+            onClick,
+        colors =
+            ButtonDefaults
+                .textButtonColors(
+                    contentColor =
+                        if (selected) {
+                            VeloraColors
+                                .Terracotta
+                        }
+                        else {
+                            VeloraColors
+                                .Muted
+                        }
+                )
+    ) {
+
+        Column(
+            horizontalAlignment =
+                Alignment.CenterHorizontally
+        ) {
+
             Text(
-                "CERRAR SESIÓN"
+                text =
+                    marker,
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleMedium
+            )
+
+            Text(
+                text =
+                    label,
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelSmall,
+                maxLines =
+                    1
             )
         }
     }
