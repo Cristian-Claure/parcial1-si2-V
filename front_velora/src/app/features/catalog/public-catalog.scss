@@ -583,3 +583,17 @@ h1 {
     flex-direction: column;
   }
 }
+.product-detail-link {
+  width: fit-content;
+  margin-top: 9px;
+  color: var(--velora-terracotta);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.product-detail-link:hover {
+  color: var(--velora-ink);
+}

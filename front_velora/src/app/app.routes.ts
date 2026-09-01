@@ -11,6 +11,12 @@ export const routes: Routes = [
       import('./features/catalog/public-catalog').then((m) => m.PublicCatalog)
   },
   {
+    path: 'catalogo/:slug',
+    loadComponent: () =>
+      import('./features/catalog/product-detail/product-detail')
+        .then((m) => m.ProductDetail)
+  },
+  {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login)
   },

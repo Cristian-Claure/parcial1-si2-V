@@ -1,0 +1,304 @@
+<div class="detail-page">
+  <header>
+    <a routerLink="/" class="brand">
+      VÉLORA
+    </a>
+
+    <nav>
+      <a routerLink="/">
+        Inicio
+      </a>
+
+      <a routerLink="/catalogo">
+        Colección
+      </a>
+
+      @if (
+        auth.currentUser()?.role ===
+        'CUSTOMER'
+      ) {
+        <a routerLink="/bolsa">
+          Bolsa
+          @if (cart.totalItems() > 0) {
+            ({{ cart.totalItems() }})
+          }
+        </a>
+
+        <a routerLink="/mi-cuenta">
+          Mi cuenta
+        </a>
+      }
+      @else {
+        <a routerLink="/login">
+          Iniciar sesión
+        </a>
+      }
+    </nav>
+  </header>
+
+  <main>
+    <a
+      routerLink="/catalogo"
+      class="back-link"
+    >
+      ← Volver a la colección
+    </a>
+
+    @if (loading()) {
+      <div class="state-card">
+        Cargando producto...
+      </div>
+    }
+
+    @if (error()) {
+      <div class="feedback error">
+        {{ error() }}
+      </div>
+    }
+
+    @if (
+      product();
+      as item
+    ) {
+      <section class="product-layout">
+        <div class="gallery">
+          <div class="main-image">
+            @if (selectedImageUrl()) {
+              <img
+                [src]="selectedImageUrl()"
+                [alt]="item.name"
+              />
+            }
+            @else {
+              <div class="image-placeholder">
+                <strong>V</strong>
+                <span>VÉLORA</span>
+              </div>
+            }
+          </div>
+
+          @if (images(item).length > 1) {
+            <div class="thumbnails">
+              @for (
+                image of images(item);
+                track image.id
+              ) {
+                <button
+                  type="button"
+                  [class.selected]="
+                    selectedImageUrl() ===
+                    image.imageUrl
+                  "
+                  (click)="
+                    selectImage(
+                      image.imageUrl
+                    )
+                  "
+                >
+                  <img
+                    [src]="image.imageUrl"
+                    [alt]="
+                      image.altText ||
+                      item.name
+                    "
+                  />
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="product-info">
+          <span class="category">
+            {{ item.categoryName }}
+          </span>
+
+          @if (item.brand) {
+            <span class="brand-name">
+              {{ item.brand }}
+            </span>
+          }
+
+          <h1>
+            {{ item.name }}
+          </h1>
+
+          @if (item.description) {
+            <p class="description">
+              {{ item.description }}
+            </p>
+          }
+
+          @if (
+            selectedVariant(item);
+            as variant
+          ) {
+            <div class="price">
+              <strong>
+                {{ variant.currency }}
+                {{ variant.price }}
+              </strong>
+
+              @if (
+                variant.compareAtPrice &&
+                variant.compareAtPrice >
+                  variant.price
+              ) {
+                <span>
+                  {{ variant.currency }}
+                  {{ variant.compareAtPrice }}
+                </span>
+              }
+            </div>
+
+            <div class="selector-group">
+              <span>Color</span>
+
+              <div class="color-options">
+                @for (
+                  option of
+                    colorOptions(item);
+                  track option.color
+                ) {
+                  <button
+                    type="button"
+                    [class.selected]="
+                      variant.color ===
+                      option.color
+                    "
+                    (click)="
+                      selectColor(
+                        item,
+                        option.color
+                      )
+                    "
+                  >
+                    @if (option.colorHex) {
+                      <i
+                        [style.background]="
+                          option.colorHex
+                        "
+                      ></i>
+                    }
+
+                    {{ option.color }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="selector-group">
+              <span>Talla</span>
+
+              <div class="size-options">
+                @for (
+                  sizeVariant of
+                    sizeOptions(item);
+                  track sizeVariant.id
+                ) {
+                  <button
+                    type="button"
+                    [class.selected]="
+                      variant.id ===
+                      sizeVariant.id
+                    "
+                    (click)="
+                      selectVariant(
+                        sizeVariant.id
+                      )
+                    "
+                  >
+                    {{ sizeVariant.size }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="selection">
+              <span>
+                Selección
+              </span>
+
+              <strong>
+                {{ variant.color }}
+                · Talla {{ variant.size }}
+              </strong>
+            </div>
+          }
+
+          @if (message()) {
+            <div class="feedback success">
+              {{ message() }}
+
+              <a routerLink="/bolsa">
+                Ver mi bolsa →
+              </a>
+            </div>
+          }
+
+          <button
+            type="button"
+            class="add-button"
+            [disabled]="adding()"
+            (click)="addToCart(item)"
+          >
+            @if (adding()) {
+              Agregando...
+            }
+            @else if (
+              auth.currentUser()?.role ===
+              'CUSTOMER'
+            ) {
+              Agregar a mi bolsa
+            }
+            @else {
+              Iniciar sesión para comprar
+            }
+          </button>
+
+          <div class="product-notes">
+            @if (item.composition) {
+              <section>
+                <span>Composición</span>
+                <p>{{ item.composition }}</p>
+              </section>
+            }
+
+            @if (item.fitNotes) {
+              <section>
+                <span>Calce</span>
+                <p>{{ item.fitNotes }}</p>
+              </section>
+            }
+
+            @if (item.careInstructions) {
+              <section>
+                <span>Cuidados</span>
+                <p>
+                  {{ item.careInstructions }}
+                </p>
+              </section>
+            }
+          </div>
+
+          <aside class="future-experience">
+            <span>
+              EXPERIENCIA VÉLORA
+            </span>
+
+            <strong>
+              Probador virtual
+            </strong>
+
+            <p>
+              La experiencia con cámara,
+              realidad aumentada y visualización
+              digital estará disponible
+              próximamente.
+            </p>
+          </aside>
+        </div>
+      </section>
+    }
+  </main>
+</div>

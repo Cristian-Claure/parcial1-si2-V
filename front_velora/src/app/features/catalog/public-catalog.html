@@ -233,6 +233,16 @@
               {{ product.name }}
             </h2>
 
+            <a
+              class="product-detail-link"
+              [routerLink]="[
+                '/catalogo',
+                product.slug
+              ]"
+            >
+              Ver detalle →
+            </a>
+
             @if (product.description) {
               <p class="product-description">
                 {{ product.description }}
