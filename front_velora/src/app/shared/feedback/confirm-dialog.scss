@@ -1,0 +1,146 @@
+:host {
+  position: relative;
+  z-index: 3100;
+}
+
+.confirm-backdrop {
+  position: fixed;
+  z-index: 3100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(24, 20, 18, .48);
+  backdrop-filter: blur(8px);
+}
+
+.confirm-card {
+  width: min(470px, 100%);
+  display: grid;
+  justify-items: center;
+  border: 1px solid var(--velora-border-strong);
+  border-radius: var(--velora-radius-lg);
+  background: var(--velora-card);
+  padding: clamp(26px, 5vw, 38px);
+  box-shadow: var(--velora-shadow-lg);
+  text-align: center;
+  animation: velora-confirm-in 180ms ease-out;
+}
+
+.confirm-kicker {
+  color: var(--velora-terracotta);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.confirm-mark {
+  width: 56px;
+  height: 56px;
+  margin-top: 17px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--velora-champagne);
+  border-radius: 50%;
+  color: var(--velora-terracotta);
+  font-family: var(--velora-font-display);
+  font-size: 24px;
+}
+
+.confirm-mark.destructive {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--velora-error) 50%,
+      transparent
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--velora-error) 7%,
+      transparent
+    );
+  color: var(--velora-error);
+}
+
+.confirm-card h2 {
+  margin: 18px 0 8px;
+  color: var(--velora-ink);
+  font-family: var(--velora-font-display);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.confirm-card p {
+  max-width: 390px;
+  margin: 0;
+  color: var(--velora-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.confirm-actions {
+  width: 100%;
+  margin-top: 25px;
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.confirm-actions button {
+  min-height: 44px;
+  appearance: none;
+  border-radius: var(--velora-radius-sm);
+  padding: 11px 15px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.confirm-cancel {
+  border: 1px solid var(--velora-border-strong);
+  background: transparent;
+  color: var(--velora-ink-soft);
+}
+
+.confirm-accept {
+  border: 1px solid var(--velora-ink);
+  background: var(--velora-ink);
+  color: var(--velora-ivory);
+}
+
+.confirm-accept.destructive {
+  border-color: var(--velora-error);
+  background: var(--velora-error);
+  color: white;
+}
+
+@keyframes velora-confirm-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 520px) {
+  .confirm-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .confirm-cancel {
+    order: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm-card {
+    animation: none;
+  }
+}

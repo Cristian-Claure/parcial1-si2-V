@@ -50,6 +50,14 @@ import {
   CUSTOMER_NAV_ITEMS
 } from '../../shared/customer-navigation';
 
+import {
+  ConfirmService
+} from '../../core/feedback/confirm.service';
+
+import {
+  FeedbackService
+} from '../../core/feedback/feedback.service';
+
 interface PaymentOption {
   value: PaymentMethod;
   label: string;
@@ -77,6 +85,12 @@ export class MyOrders {
 
   private readonly router =
     inject(Router);
+
+  private readonly confirm =
+    inject(ConfirmService);
+
+  private readonly feedback =
+    inject(FeedbackService);
 
   readonly orders =
     signal<Order[]>([]);
@@ -305,6 +319,11 @@ export class MyOrders {
           this.successMessage.set(
             'La solicitud de pago fue registrada. Permanecerá pendiente hasta que el proveedor de pago o la operación VÉLORA la confirme.'
           );
+
+          this.feedback.info(
+            'Pago online iniciado',
+            'La solicitud quedó registrada y permanece pendiente de confirmación.'
+          );
         }
         else if (
           method === 'COD'
@@ -312,10 +331,20 @@ export class MyOrders {
           this.successMessage.set(
             'Pago contra entrega registrado correctamente.'
           );
+
+          this.feedback.success(
+            'Método de pago registrado',
+            'El pago contra entrega quedó asociado a su pedido.'
+          );
         }
         else {
           this.successMessage.set(
             'Pago en efectivo registrado correctamente.'
+          );
+
+          this.feedback.success(
+            'Método de pago registrado',
+            'El pago en sucursal quedó asociado a su pedido.'
           );
         }
       },
@@ -335,9 +364,9 @@ export class MyOrders {
     });
   }
 
-  cancelPayment(
+  async cancelPayment(
     payment: Payment
-  ): void {
+  ): Promise<void> {
     if (
       payment.status !==
         'PENDING'
@@ -346,9 +375,18 @@ export class MyOrders {
     }
 
     const confirmed =
-      window.confirm(
-        '¿Cancelar este intento de pago? El pedido continuará reservado.'
-      );
+      await this.confirm.ask({
+        eyebrow: 'PAGO',
+        title:
+          '¿Cancelar este intento de pago?',
+        message:
+          'El pedido continuará reservado y podrá seleccionar otro método de pago.',
+        confirmLabel:
+          'Cancelar pago',
+        cancelLabel:
+          'Mantener pago',
+        destructive: true
+      });
 
     if (!confirmed) {
       return;
@@ -388,6 +426,11 @@ export class MyOrders {
         this.successMessage.set(
           'El pago pendiente fue cancelado. Puede seleccionar otro método o cancelar el pedido.'
         );
+
+        this.feedback.success(
+          'Pago cancelado',
+          'Ahora puede elegir otro método de pago para este pedido.'
+        );
       },
 
       error: (
@@ -405,9 +448,9 @@ export class MyOrders {
     });
   }
 
-  cancelOrder(
+  async cancelOrder(
     order: Order
-  ): void {
+  ): Promise<void> {
     if (
       order.status !==
         'RESERVED'
@@ -427,11 +470,21 @@ export class MyOrders {
       return;
     }
 
-    if (
-      !window.confirm(
-        `¿Cancelar el pedido ${order.orderNumber}? El inventario reservado será liberado.`
-      )
-    ) {
+    const confirmed =
+      await this.confirm.ask({
+        eyebrow: 'PEDIDO',
+        title:
+          `¿Cancelar ${order.orderNumber}?`,
+        message:
+          'El inventario reservado será liberado y este pedido ya no podrá continuar.',
+        confirmLabel:
+          'Cancelar pedido',
+        cancelLabel:
+          'Conservar pedido',
+        destructive: true
+      });
+
+    if (!confirmed) {
       return;
     }
 
@@ -460,6 +513,11 @@ export class MyOrders {
 
         this.successMessage.set(
           'Pedido cancelado. Las unidades reservadas fueron liberadas.'
+        );
+
+        this.feedback.success(
+          'Pedido cancelado',
+          'Las unidades reservadas volvieron a estar disponibles.'
         );
       },
 

@@ -8,6 +8,13 @@ import {
 import { filter } from 'rxjs';
 
 import { AuthService } from './core/auth/auth.service';
+import {
+  ConfirmDialog
+} from './shared/feedback/confirm-dialog';
+
+import {
+  FeedbackOutlet
+} from './shared/feedback/feedback-outlet';
 import { CartService } from './core/cart/cart.service';
 
 import {
@@ -22,7 +29,12 @@ import { CatalogService } from './core/catalog/catalog.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterLink, RouterOutlet],
+  imports: [
+    RouterLink,
+    RouterOutlet,
+    FeedbackOutlet,
+    ConfirmDialog
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

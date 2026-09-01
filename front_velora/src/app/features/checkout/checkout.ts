@@ -67,6 +67,10 @@ import {
 } from '../../shared/customer-navigation';
 
 import {
+  FeedbackService
+} from '../../core/feedback/feedback.service';
+
+import {
   OnlinePaymentPanel
 } from './online-payment-panel';
 
@@ -103,6 +107,9 @@ export class Checkout {
 
   readonly router =
     inject(Router);
+
+  private readonly feedback =
+    inject(FeedbackService);
 
   private readonly fb =
     inject(FormBuilder);
@@ -351,6 +358,11 @@ export class Checkout {
         this.placingOrder.set(false);
         this.createdOrder.set(order);
 
+        this.feedback.success(
+          'Pedido creado',
+          `El pedido ${order.orderNumber} quedó reservado correctamente.`
+        );
+
         /*
          * El backend convierte el carrito original
          * a CONVERTED. Volvemos a consultar para
@@ -473,6 +485,11 @@ export class Checkout {
           null
         );
       }
+
+      this.feedback.info(
+        'Intento offline descartado',
+        'El intento pendiente fue retirado. Su bolsa permanece disponible.'
+      );
     }
     catch (error: unknown) {
       this.errorMessage.set(
@@ -575,6 +592,11 @@ export class Checkout {
       this.offlineQueuedOperationId.set(
         clientOperationId
       );
+
+      this.feedback.info(
+        'Compra guardada sin conexión',
+        'Conservamos la selección en este dispositivo. No se reservó inventario ni se realizó ningún cobro.'
+      );
     }
     catch (error: unknown) {
       this.errorMessage.set(
@@ -600,6 +622,11 @@ export class Checkout {
 
     this.createdOrder.set(
       order
+    );
+
+    this.feedback.success(
+      'Pedido sincronizado',
+      `El pedido ${order.orderNumber} ya fue validado y reservado.`
     );
 
     this.cart.load().subscribe({

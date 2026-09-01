@@ -85,11 +85,13 @@ fun CustomerOrdersSection(
 
             state.error.isNotBlank() -> {
 
-                Text(
-                    text =
+                VeloraFeedbackCard(
+                    message =
                         state.error,
-                    color =
-                        VeloraColors.Error
+                    tone =
+                        VeloraFeedbackTone.Error,
+                    modifier =
+                        Modifier.fillMaxWidth()
                 )
 
                 Spacer(
@@ -147,13 +149,13 @@ fun CustomerOrdersSection(
                 Modifier.height(8.dp)
             )
 
-            Text(
-                text =
+            VeloraFeedbackCard(
+                message =
                     state.message,
-                color =
-                    VeloraColors.Terracotta,
-                fontWeight =
-                    FontWeight.Bold
+                tone =
+                    VeloraFeedbackTone.Success,
+                modifier =
+                    Modifier.fillMaxWidth()
             )
         }
 

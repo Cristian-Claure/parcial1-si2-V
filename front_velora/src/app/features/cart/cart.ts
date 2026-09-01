@@ -39,6 +39,14 @@ import {
   CUSTOMER_NAV_ITEMS
 } from '../../shared/customer-navigation';
 
+import {
+  ConfirmService
+} from '../../core/feedback/confirm.service';
+
+import {
+  FeedbackService
+} from '../../core/feedback/feedback.service';
+
 @Component({
   selector: 'app-cart',
   standalone: true,
@@ -57,6 +65,12 @@ export class CartPage {
 
   private readonly router =
     inject(Router);
+
+  private readonly confirm =
+    inject(ConfirmService);
+
+  private readonly feedback =
+    inject(FeedbackService);
 
   readonly products =
     signal<Product[]>([]);
@@ -124,6 +138,11 @@ export class CartPage {
     ).subscribe({
       next: () => {
         this.busyItemId.set(null);
+
+        this.feedback.success(
+          'Producto retirado',
+          `${item.productName} salió de su bolsa.`
+        );
       },
       error: (error: HttpErrorResponse) => {
         this.busyItemId.set(null);
@@ -138,12 +157,21 @@ export class CartPage {
     });
   }
 
-  clear(): void {
-    if (
-      !window.confirm(
-        '¿Vaciar todos los productos de la bolsa?'
-      )
-    ) {
+  async clear(): Promise<void> {
+    const confirmed =
+      await this.confirm.ask({
+        eyebrow: 'MI BOLSA',
+        title: '¿Vaciar la bolsa?',
+        message:
+          'Se retirarán todas las piezas de esta selección. Esta acción no afecta sus favoritos.',
+        confirmLabel:
+          'Vaciar bolsa',
+        cancelLabel:
+          'Conservar selección',
+        destructive: true
+      });
+
+    if (!confirmed) {
       return;
     }
 
@@ -153,6 +181,11 @@ export class CartPage {
     this.cart.clear().subscribe({
       next: () => {
         this.clearing.set(false);
+
+        this.feedback.success(
+          'Bolsa vacía',
+          'Retiramos todas las piezas de su selección.'
+        );
       },
       error: (error: HttpErrorResponse) => {
         this.clearing.set(false);
