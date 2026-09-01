@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -473,93 +475,343 @@ private fun ProductCard(
             it.price
         }
 
+    var selectedVariantId by
+        rememberSaveable(
+            product.id
+        ) {
+            mutableStateOf(
+                activeVariants
+                    .firstOrNull()
+                    ?.id
+                    .orEmpty()
+            )
+        }
+
+    val selectedVariant =
+        activeVariants.firstOrNull {
+            it.id ==
+                selectedVariantId
+        } ?: activeVariants.firstOrNull()
+
+    val selectedColor =
+        selectedVariant
+            ?.color
+            .orEmpty()
+
+    val colorOptions =
+        activeVariants
+            .map {
+                it.color
+            }
+            .distinct()
+
+    val sizeOptions =
+        activeVariants.filter {
+            it.color ==
+                selectedColor
+        }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = VeloraColors.Card
-        )
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            MaterialTheme
+                .shapes
+                .large,
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    VeloraColors.Card
+            ),
+        border =
+            CardDefaults
+                .outlinedCardBorder()
     ) {
         Column(
-            modifier = Modifier.padding(18.dp)
+            modifier =
+                Modifier.padding(
+                    20.dp
+                )
         ) {
             Text(
-                text = product.categoryName.uppercase(),
-                color = VeloraColors.Terracotta
+                text =
+                    product.categoryName
+                        .uppercase(),
+                color =
+                    VeloraColors.Terracotta,
+                fontWeight =
+                    FontWeight.Bold,
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelMedium
             )
 
-            Spacer(Modifier.height(7.dp))
+            product.brand
+                ?.takeIf {
+                    it.isNotBlank()
+                }
+                ?.let {
+                    Spacer(
+                        Modifier.height(
+                            5.dp
+                        )
+                    )
 
-            Text(
-                text = product.name,
-                color = VeloraColors.Ink,
-                fontWeight = FontWeight.Bold
+                    Text(
+                        text = it,
+                        color =
+                            VeloraColors.Muted,
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelMedium
+                    )
+                }
+
+            Spacer(
+                Modifier.height(
+                    10.dp
+                )
             )
-
-            product.brand?.let {
-                Spacer(Modifier.height(4.dp))
-
-                Text(
-                    text = it,
-                    color = VeloraColors.Muted
-                )
-            }
-
-            product.description?.let {
-                Spacer(Modifier.height(8.dp))
-
-                Text(
-                    text = it,
-                    color = VeloraColors.Muted
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            if (lowestVariant != null) {
-                Text(
-                    text =
-                        "Desde ${lowestVariant.currency} " +
-                            "%.2f".format(lowestVariant.price),
-                    color = VeloraColors.Ink,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(Modifier.height(8.dp))
 
             Text(
                 text =
-                    "${activeVariants.size} variante(s) disponible(s)",
-                color = VeloraColors.Muted
+                    product.name,
+                color =
+                    VeloraColors.Ink,
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleLarge
             )
 
-            if (activeVariants.isNotEmpty()) {
-                Spacer(Modifier.height(5.dp))
+            product.description
+                ?.takeIf {
+                    it.isNotBlank()
+                }
+                ?.let {
+                    Spacer(
+                        Modifier.height(
+                            8.dp
+                        )
+                    )
 
-                Text(
-                    text = activeVariants.joinToString(
-                        separator = " · "
-                    ) {
-                        "${it.color} ${it.size}"
-                    },
-                    color = VeloraColors.Muted
+                    Text(
+                        text = it,
+                        color =
+                            VeloraColors.Muted,
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodyMedium
+                    )
+                }
+
+            if (
+                lowestVariant != null
+            ) {
+                Spacer(
+                    Modifier.height(
+                        16.dp
+                    )
                 )
 
-                Spacer(Modifier.height(12.dp))
+                Text(
+                    text =
+                        "Desde " +
+                            lowestVariant.currency +
+                            " " +
+                            "%.2f".format(
+                                lowestVariant.price
+                            ),
+                    color =
+                        VeloraColors.Ink,
+                    fontWeight =
+                        FontWeight.Bold,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleMedium
+                )
+            }
 
-                activeVariants.forEach { variant ->
+            if (
+                activeVariants.isNotEmpty()
+            ) {
+                Spacer(
+                    Modifier.height(
+                        20.dp
+                    )
+                )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement =
-                            Arrangement.SpaceBetween
+                Text(
+                    text = "COLOR",
+                    color =
+                        VeloraColors.Terracotta,
+                    fontWeight =
+                        FontWeight.Bold,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall
+                )
+
+                Spacer(
+                    Modifier.height(
+                        8.dp
+                    )
+                )
+
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(
+                                rememberScrollState()
+                            ),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+                    colorOptions.forEach {
+                        color ->
+
+                        FilterChip(
+                            selected =
+                                selectedColor ==
+                                    color,
+                            onClick = {
+                                val currentSize =
+                                    selectedVariant
+                                        ?.size
+
+                                val candidates =
+                                    activeVariants
+                                        .filter {
+                                            it.color ==
+                                                color
+                                        }
+
+                                val next =
+                                    candidates
+                                        .firstOrNull {
+                                            it.size ==
+                                                currentSize
+                                        }
+                                        ?: candidates
+                                            .firstOrNull()
+
+                                if (next != null) {
+                                    selectedVariantId =
+                                        next.id
+                                }
+                            },
+                            label = {
+                                Text(color)
+                            }
+                        )
+                    }
+                }
+
+                Spacer(
+                    Modifier.height(
+                        16.dp
+                    )
+                )
+
+                Text(
+                    text = "TALLA",
+                    color =
+                        VeloraColors.Terracotta,
+                    fontWeight =
+                        FontWeight.Bold,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall
+                )
+
+                Spacer(
+                    Modifier.height(
+                        8.dp
+                    )
+                )
+
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(
+                                rememberScrollState()
+                            ),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+                    sizeOptions.forEach {
+                        variant ->
+
+                        FilterChip(
+                            selected =
+                                selectedVariant
+                                    ?.id ==
+                                    variant.id,
+                            onClick = {
+                                selectedVariantId =
+                                    variant.id
+                            },
+                            label = {
+                                Text(
+                                    variant.size
+                                )
+                            }
+                        )
+                    }
+                }
+
+                selectedVariant?.let {
+                    variant ->
+
+                    Spacer(
+                        Modifier.height(
+                            18.dp
+                        )
+                    )
+
+                    Card(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(),
+                        colors =
+                            CardDefaults
+                                .cardColors(
+                                    containerColor =
+                                        VeloraColors
+                                            .SurfaceSoft
+                                )
                     ) {
-                        Column {
+                        Column(
+                            modifier =
+                                Modifier.padding(
+                                    14.dp
+                                )
+                        ) {
                             Text(
                                 text =
-                                    "${variant.color} · ${variant.size}",
+                                    "${variant.color} · Talla ${variant.size}",
                                 color =
-                                    VeloraColors.Ink
+                                    VeloraColors.Ink,
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+
+                            Spacer(
+                                Modifier.height(
+                                    4.dp
+                                )
                             )
 
                             Text(
@@ -572,33 +824,54 @@ private fun ProductCard(
                                     VeloraColors.Muted
                             )
                         }
-
-                        TextButton(
-                            enabled =
-                                addingVariantId == null,
-                            onClick = {
-                                onAddToCart(
-                                    variant.id
-                                )
-                            }
-                        ) {
-                            Text(
-                                if (
-                                    addingVariantId ==
-                                        variant.id
-                                ) {
-                                    "AÑADIENDO..."
-                                } else {
-                                    "AÑADIR"
-                                }
-                            )
-                        }
                     }
 
                     Spacer(
-                        Modifier.height(6.dp)
+                        Modifier.height(
+                            14.dp
+                        )
                     )
+
+                    Button(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(),
+                        enabled =
+                            addingVariantId ==
+                                null,
+                        onClick = {
+                            onAddToCart(
+                                variant.id
+                            )
+                        }
+                    ) {
+                        Text(
+                            if (
+                                addingVariantId ==
+                                    variant.id
+                            ) {
+                                "AÑADIENDO..."
+                            }
+                            else {
+                                "AGREGAR A MI BOLSA"
+                            }
+                        )
+                    }
                 }
+            }
+            else {
+                Spacer(
+                    Modifier.height(
+                        14.dp
+                    )
+                )
+
+                Text(
+                    text =
+                        "Sin variantes disponibles.",
+                    color =
+                        VeloraColors.Error
+                )
             }
         }
     }
