@@ -19,6 +19,7 @@ import com.velora.cart.ShoppingCartItemRepository;
 import com.velora.cart.ShoppingCartRepository;
 import com.velora.catalog.product.ProductStatus;
 import com.velora.catalog.variant.ProductVariantEntity;
+import com.velora.catalog.variant.ProductVariantRepository;
 import com.velora.customer.CustomerAddressEntity;
 import com.velora.customer.CustomerAddressRepository;
 import com.velora.inventory.InventoryMovementEntity;
@@ -30,7 +31,9 @@ import com.velora.inventory.WarehouseEntity;
 import com.velora.inventory.WarehouseRepository;
 import com.velora.order.dto.CreateOrderRequest;
 import com.velora.order.dto.OrderItemResponse;
+import com.velora.order.dto.OfflineOrderItemRequest;
 import com.velora.order.dto.OrderResponse;
+import com.velora.order.dto.SyncOfflineOrderRequest;
 import com.velora.payment.PaymentRepository;
 import com.velora.payment.PaymentStatus;
 import com.velora.user.UserEntity;
@@ -47,6 +50,7 @@ public class OrderService {
 
     private final UserRepository users;
     private final CustomerAddressRepository addresses;
+    private final ProductVariantRepository variants;
 
     private final WarehouseRepository warehouses;
     private final InventoryStockRepository stocks;
@@ -63,6 +67,7 @@ public class OrderService {
     public OrderService(
             UserRepository users,
             CustomerAddressRepository addresses,
+            ProductVariantRepository variants,
             WarehouseRepository warehouses,
             InventoryStockRepository stocks,
             InventoryMovementRepository movements,
@@ -74,6 +79,7 @@ public class OrderService {
     ) {
         this.users = users;
         this.addresses = addresses;
+        this.variants = variants;
         this.warehouses = warehouses;
         this.stocks = stocks;
         this.movements = movements;
@@ -276,6 +282,247 @@ public class OrderService {
 
         cart.setStatus(CartStatus.CONVERTED);
         carts.saveAndFlush(cart);
+
+        return response(order);
+    }
+
+    @Transactional
+    public OrderResponse syncOffline(
+            UUID userId,
+            SyncOfflineOrderRequest request
+    ) {
+        UserEntity customer = requireCustomer(userId);
+
+        OrderEntity existingOrder = orders
+                .findByClientOperationId(
+                        request.clientOperationId()
+                )
+                .orElse(null);
+
+        if (existingOrder != null) {
+            return responseForExistingOfflineOperation(
+                    customer,
+                    existingOrder,
+                    request
+            );
+        }
+
+        validateOfflineFulfillment(request);
+
+        ShoppingCartEntity sourceCart =
+                lockOfflineSourceCart(
+                        customer.getId(),
+                        request.sourceCartId()
+                );
+
+        WarehouseEntity warehouse = warehouses
+                .findById(request.warehouseId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Almacén no encontrado."
+                ));
+
+        if (!warehouse.isActive()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El almacén seleccionado está inactivo."
+            );
+        }
+
+        CustomerAddressEntity deliveryAddress =
+                resolveOfflineAddress(
+                        customer,
+                        request
+                );
+
+        Map<UUID, Integer> quantities =
+                normalizeOfflineItems(
+                        request.items()
+                );
+
+        List<UUID> variantIds =
+                new ArrayList<>(
+                        quantities.keySet()
+                );
+
+        variantIds.sort(
+                Comparator.comparing(
+                        UUID::toString
+                )
+        );
+
+        Map<UUID, ProductVariantEntity> orderVariants =
+                new LinkedHashMap<>();
+
+        Map<UUID, InventoryStockEntity> lockedStocks =
+                new LinkedHashMap<>();
+
+        BigDecimal subtotal = BigDecimal.ZERO;
+        String currency = null;
+
+        for (UUID variantId : variantIds) {
+            ProductVariantEntity variant = variants
+                    .findById(variantId)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.CONFLICT,
+                            "Una variante del pedido ya no existe."
+                    ));
+
+            validatePurchasableVariant(variant);
+
+            int quantity =
+                    quantities.get(variantId);
+
+            if (currency == null) {
+                currency = variant.getCurrency();
+            } else if (!currency.equals(
+                    variant.getCurrency()
+            )) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "El pedido contiene variantes con monedas diferentes."
+                );
+            }
+
+            InventoryStockEntity stock = stocks
+                    .findForUpdate(
+                            warehouse.getId(),
+                            variant.getId()
+                    )
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.CONFLICT,
+                            "La variante "
+                                    + variant.getSku()
+                                    + " no tiene stock en la sucursal seleccionada."
+                    ));
+
+            if (stock.getAvailableQuantity() < quantity) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Stock disponible insuficiente para "
+                                + variant.getSku()
+                                + ". Disponible: "
+                                + stock.getAvailableQuantity()
+                                + ", solicitado: "
+                                + quantity
+                                + "."
+                );
+            }
+
+            orderVariants.put(
+                    variant.getId(),
+                    variant
+            );
+
+            lockedStocks.put(
+                    variant.getId(),
+                    stock
+            );
+
+            subtotal = subtotal.add(
+                    variant.getPrice().multiply(
+                            BigDecimal.valueOf(quantity)
+                    )
+            );
+        }
+
+        OrderEntity order = new OrderEntity();
+
+        order.setOrderNumber(generateOrderNumber());
+        order.setOrderChannel(OrderChannel.ECOMMERCE);
+
+        order.setClientOperationId(
+                request.clientOperationId()
+        );
+
+        order.setClientCreatedAt(
+                request.clientCreatedAt()
+        );
+
+        order.setSyncedAt(Instant.now());
+
+        order.setCustomer(customer);
+        order.setWarehouse(warehouse);
+
+        order.setFulfillmentType(
+                request.fulfillmentType()
+        );
+
+        order.setStatus(OrderStatus.RESERVED);
+        order.setCurrency(currency);
+        order.setSubtotal(subtotal);
+        order.setTotal(subtotal);
+        order.setNotes(request.notes());
+
+        if (deliveryAddress != null) {
+            applyAddressSnapshot(
+                    order,
+                    deliveryAddress
+            );
+        }
+
+        orders.saveAndFlush(order);
+
+        List<OrderItemEntity> snapshots =
+                new ArrayList<>();
+
+        for (UUID variantId : variantIds) {
+            ProductVariantEntity variant =
+                    orderVariants.get(variantId);
+
+            int quantity =
+                    quantities.get(variantId);
+
+            BigDecimal lineSubtotal =
+                    variant.getPrice().multiply(
+                            BigDecimal.valueOf(quantity)
+                    );
+
+            OrderItemEntity orderItem =
+                    new OrderItemEntity();
+
+            orderItem.setOrder(order);
+            orderItem.setVariant(variant);
+
+            orderItem.setProductName(
+                    variant.getProduct().getName()
+            );
+
+            orderItem.setSku(variant.getSku());
+            orderItem.setSize(variant.getSize());
+            orderItem.setColor(variant.getColor());
+
+            orderItem.setUnitPrice(
+                    variant.getPrice()
+            );
+
+            orderItem.setCurrency(
+                    variant.getCurrency()
+            );
+
+            orderItem.setQuantity(quantity);
+            orderItem.setSubtotal(lineSubtotal);
+
+            snapshots.add(orderItem);
+
+            reserveStock(
+                    lockedStocks.get(variantId),
+                    quantity,
+                    order,
+                    customer
+            );
+        }
+
+        orderItems.saveAll(snapshots);
+
+        stocks.flush();
+        movements.flush();
+        orderItems.flush();
+
+        reconcileOfflineSourceCart(
+                sourceCart,
+                quantities
+        );
 
         return response(order);
     }
@@ -693,6 +940,181 @@ public class OrderService {
         }
     }
 
+    private void validateOfflineFulfillment(
+            SyncOfflineOrderRequest request
+    ) {
+        if (request.fulfillmentType() != FulfillmentType.DELIVERY
+                && request.fulfillmentType() != FulfillmentType.PICKUP) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El pedido offline solo admite entrega a domicilio o recojo en tienda."
+            );
+        }
+    }
+
+    private CustomerAddressEntity resolveOfflineAddress(
+            UserEntity customer,
+            SyncOfflineOrderRequest request
+    ) {
+        if (request.fulfillmentType() == FulfillmentType.PICKUP) {
+            if (request.addressId() != null) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Los pedidos para recojo en tienda no deben incluir dirección de entrega."
+                );
+            }
+
+            return null;
+        }
+
+        if (request.addressId() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "La dirección de entrega es obligatoria."
+            );
+        }
+
+        return addresses
+                .findByIdAndUserIdAndActiveTrue(
+                        request.addressId(),
+                        customer.getId()
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "La dirección seleccionada ya no está disponible."
+                ));
+    }
+
+    private Map<UUID, Integer> normalizeOfflineItems(
+            List<OfflineOrderItemRequest> requestedItems
+    ) {
+        if (requestedItems == null
+                || requestedItems.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El pedido offline no contiene productos."
+            );
+        }
+
+        Map<UUID, Integer> quantities =
+                new LinkedHashMap<>();
+
+        for (OfflineOrderItemRequest item : requestedItems) {
+            if (item == null
+                    || item.variantId() == null
+                    || item.quantity() <= 0) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "El pedido offline contiene un producto inválido."
+                );
+            }
+
+            quantities.merge(
+                    item.variantId(),
+                    item.quantity(),
+                    Integer::sum
+            );
+        }
+
+        return quantities;
+    }
+
+    private OrderResponse responseForExistingOfflineOperation(
+            UserEntity customer,
+            OrderEntity existingOrder,
+            SyncOfflineOrderRequest request
+    ) {
+        if (existingOrder.getOrderChannel()
+                    != OrderChannel.ECOMMERCE
+                || existingOrder.getCustomer() == null
+                || !existingOrder
+                        .getCustomer()
+                        .getId()
+                        .equals(customer.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El identificador de operación ya fue utilizado."
+            );
+        }
+
+        UUID existingAddressId =
+                existingOrder.getAddress() == null
+                        ? null
+                        : existingOrder
+                                .getAddress()
+                                .getId();
+
+        boolean sameHeader =
+                existingOrder
+                        .getWarehouse()
+                        .getId()
+                        .equals(request.warehouseId())
+                && existingOrder.getFulfillmentType()
+                        == request.fulfillmentType()
+                && java.util.Objects.equals(
+                        existingAddressId,
+                        request.addressId()
+                )
+                && java.util.Objects.equals(
+                        existingOrder.getClientCreatedAt(),
+                        request.clientCreatedAt()
+                )
+                && java.util.Objects.equals(
+                        normalizeOfflineNotes(
+                                existingOrder.getNotes()
+                        ),
+                        normalizeOfflineNotes(
+                                request.notes()
+                        )
+                );
+
+        if (!sameHeader) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El identificador de operación ya pertenece a otro pedido."
+            );
+        }
+
+        Map<UUID, Integer> requestedQuantities =
+                normalizeOfflineItems(
+                        request.items()
+                );
+
+        Map<UUID, Integer> storedQuantities =
+                new LinkedHashMap<>();
+
+        for (OrderItemEntity line :
+                orderItems
+                        .findAllByOrderIdOrderByProductNameAscSkuAsc(
+                                existingOrder.getId()
+                        )) {
+
+            storedQuantities.merge(
+                    line.getVariant().getId(),
+                    line.getQuantity(),
+                    Integer::sum
+            );
+        }
+
+        if (!storedQuantities.equals(
+                requestedQuantities
+        )) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El identificador de operación ya pertenece a otro pedido."
+            );
+        }
+
+        return response(existingOrder);
+    }
+
+    private String normalizeOfflineNotes(
+            String notes
+    ) {
+        return notes == null || notes.isBlank()
+                ? null
+                : notes.trim();
+    }
     private CustomerAddressEntity resolveAddress(
             UserEntity customer,
             CreateOrderRequest request
@@ -893,6 +1315,68 @@ public class OrderService {
         }
     }
 
+    private ShoppingCartEntity lockOfflineSourceCart(
+            UUID userId,
+            UUID sourceCartId
+    ) {
+        if (sourceCartId == null) {
+            return null;
+        }
+
+        return carts
+                .findForUpdateByIdAndUserAndStatus(
+                        sourceCartId,
+                        userId,
+                        CartStatus.ACTIVE
+                )
+                .orElse(null);
+    }
+
+    private void reconcileOfflineSourceCart(
+            ShoppingCartEntity sourceCart,
+            Map<UUID, Integer> orderedQuantities
+    ) {
+        if (sourceCart == null) {
+            return;
+        }
+
+        for (
+                Map.Entry<UUID, Integer> entry
+                        : orderedQuantities.entrySet()
+        ) {
+            ShoppingCartItemEntity cartItem =
+                    cartItems
+                            .findByCartIdAndVariantId(
+                                    sourceCart.getId(),
+                                    entry.getKey()
+                            )
+                            .orElse(null);
+
+            if (cartItem == null) {
+                continue;
+            }
+
+            int remainingQuantity =
+                    cartItem.getQuantity()
+                            - entry.getValue();
+
+            if (remainingQuantity > 0) {
+                cartItem.setQuantity(
+                        remainingQuantity
+                );
+
+                cartItems.save(
+                        cartItem
+                );
+            } else {
+                cartItems.delete(
+                        cartItem
+                );
+            }
+        }
+
+        cartItems.flush();
+    }
     private UserEntity requireCustomer(UUID userId) {
         UserEntity user = users
                 .findById(userId)

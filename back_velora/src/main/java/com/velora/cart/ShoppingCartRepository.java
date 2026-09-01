@@ -29,4 +29,17 @@ public interface ShoppingCartRepository
             @Param("userId") UUID userId,
             @Param("status") CartStatus status
     );
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        select c
+        from ShoppingCartEntity c
+        where c.id = :cartId
+          and c.user.id = :userId
+          and c.status = :status
+    """)
+    Optional<ShoppingCartEntity> findForUpdateByIdAndUserAndStatus(
+            @Param("cartId") UUID cartId,
+            @Param("userId") UUID userId,
+            @Param("status") CartStatus status
+    );
 }

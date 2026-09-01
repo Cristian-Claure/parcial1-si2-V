@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.velora.order.dto.CreateOrderRequest;
 import com.velora.order.dto.OrderResponse;
+import com.velora.order.dto.SyncOfflineOrderRequest;
 
 import jakarta.validation.Valid;
 
@@ -35,6 +36,16 @@ public class OrderController {
         );
     }
 
+    @PostMapping("/offline-sync")
+    public OrderResponse syncOffline(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody SyncOfflineOrderRequest request
+    ) {
+        return orders.syncOffline(
+                userId(jwt),
+                request
+        );
+    }
     @GetMapping
     public List<OrderResponse> list(
             @AuthenticationPrincipal Jwt jwt
