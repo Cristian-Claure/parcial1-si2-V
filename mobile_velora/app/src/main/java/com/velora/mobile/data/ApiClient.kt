@@ -176,10 +176,12 @@ class ApiClient(
                             )
                     }.getOrDefault("")
 
-                throw IllegalStateException(
-                    serverMessage.ifBlank {
-                        "No se pudo completar la solicitud HTTP $status."
-                    }
+                throw ApiHttpException(
+                    statusCode = status,
+                    message =
+                        serverMessage.ifBlank {
+                            "No se pudo completar la solicitud HTTP $status."
+                        }
                 )
             }
 

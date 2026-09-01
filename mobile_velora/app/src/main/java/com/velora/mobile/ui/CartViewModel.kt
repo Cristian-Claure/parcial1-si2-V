@@ -5,6 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.velora.mobile.data.ApiClient
 import com.velora.mobile.data.CartApi
+import com.velora.mobile.data.CartOfflineCodec
+import com.velora.mobile.data.CustomerOfflineScope
+import com.velora.mobile.data.CustomerOfflineStore
 import com.velora.mobile.data.MobileCart
 import com.velora.mobile.data.SessionStore
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 data class CartUiState(
     val loading: Boolean = false,
@@ -45,6 +49,14 @@ class CartViewModel(
                 }
             )
         )
+
+    private val offlineStore =
+        CustomerOfflineStore(
+            application
+        )
+
+    private val offlineCodec =
+        CartOfflineCodec()
 
     private val _state =
         MutableStateFlow(
@@ -80,6 +92,17 @@ class CartViewModel(
                         api.load()
                     }
 
+                withContext(
+                    Dispatchers.IO
+                ) {
+                    offlineStore.save(
+                        CustomerOfflineScope.CART,
+                        offlineCodec.encode(
+                            cart
+                        )
+                    )
+                }
+
                 _state.value =
                     CartUiState(
                         cart = cart
@@ -89,13 +112,60 @@ class CartViewModel(
                 exception: Exception
             ) {
 
-                _state.value =
-                    _state.value.copy(
-                        loading = false,
-                        error =
-                            exception.message
-                                ?: "No se pudo cargar la bolsa."
-                    )
+                if (
+                    exception !is IOException
+                ) {
+                    _state.value =
+                        _state.value.copy(
+                            loading = false,
+                            error =
+                                exception.message
+                                    ?: "No se pudo cargar la bolsa."
+                        )
+
+                    return@launch
+                }
+
+                val cachedCart =
+                    runCatching {
+                        withContext(
+                            Dispatchers.IO
+                        ) {
+                            offlineStore
+                                .load(
+                                    CustomerOfflineScope.CART
+                                )
+                                ?.let {
+                                    payload ->
+
+                                    offlineCodec.decode(
+                                        payload
+                                    )
+                                }
+                        }
+                    }
+                        .getOrNull()
+
+                if (
+                    cachedCart != null
+                ) {
+                    _state.value =
+                        CartUiState(
+                            cart =
+                                cachedCart,
+                            message =
+                                "Mostrando la bolsa guardada sin conexión."
+                        )
+                }
+                else {
+                    _state.value =
+                        _state.value.copy(
+                            loading = false,
+                            error =
+                                exception.message
+                                    ?: "No se pudo cargar la bolsa."
+                        )
+                }
             }
         }
     }

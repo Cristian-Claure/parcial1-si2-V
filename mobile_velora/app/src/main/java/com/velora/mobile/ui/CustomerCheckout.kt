@@ -21,6 +21,7 @@ import com.velora.mobile.data.MobileCheckoutWarehouse
 import com.velora.mobile.data.MobileCustomerAddress
 import com.velora.mobile.data.MobileFulfillmentType
 import com.velora.mobile.data.MobileOrder
+import com.velora.mobile.data.MobileOfflineSyncState
 import com.velora.mobile.ui.theme.VeloraColors
 
 @Composable
@@ -269,6 +270,12 @@ fun CustomerCheckoutSection(
             val createdOrder =
                 state.createdOrder
 
+            val offlineOperationId =
+                state.offlineOperationId
+
+            val offlineSyncState =
+                state.offlineSyncState
+
             if (createdOrder != null) {
 
                 Card(
@@ -324,6 +331,25 @@ fun CustomerCheckoutSection(
                                 VeloraColors.Ink
                         )
 
+                        if (
+                            state.message
+                                .isNotBlank()
+                        ) {
+
+                            Spacer(
+                                Modifier.height(
+                                    8.dp
+                                )
+                            )
+
+                            Text(
+                                text =
+                                    state.message,
+                                color =
+                                    VeloraColors.Ink
+                            )
+                        }
+
                         Spacer(
                             Modifier.height(12.dp)
                         )
@@ -344,7 +370,244 @@ fun CustomerCheckoutSection(
                     }
                 }
 
+            } else if (
+                !offlineOperationId
+                    .isNullOrBlank() &&
+                offlineSyncState != null
+            ) {
+
+                Card(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                VeloraColors.Card
+                        )
+                ) {
+
+                    Column(
+                        modifier =
+                            Modifier.padding(
+                                16.dp
+                            )
+                    ) {
+
+                        Text(
+                            text =
+                                when (
+                                    offlineSyncState
+                                ) {
+                                    MobileOfflineSyncState.PENDING ->
+                                        "PEDIDO GUARDADO SIN CONEXIÓN"
+
+                                    MobileOfflineSyncState.CONFLICT ->
+                                        "PEDIDO REQUIERE REVISIÓN"
+
+                                    MobileOfflineSyncState.SYNCED ->
+                                        "PEDIDO SINCRONIZADO"
+                                },
+                            color =
+                                VeloraColors.Terracotta,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+
+                        Spacer(
+                            Modifier.height(
+                                8.dp
+                            )
+                        )
+
+                        Text(
+                            text =
+                                when (
+                                    offlineSyncState
+                                ) {
+                                    MobileOfflineSyncState.PENDING ->
+                                        "El pedido está guardado de forma segura en este dispositivo. Todavía no reservó stock ni procesó ningún pago."
+
+                                    MobileOfflineSyncState.CONFLICT ->
+                                        "El servidor no pudo confirmar el pedido con el snapshot guardado. Revise el detalle antes de continuar."
+
+                                    MobileOfflineSyncState.SYNCED ->
+                                        "El pedido fue sincronizado correctamente."
+                                },
+                            color =
+                                VeloraColors.Ink
+                        )
+
+                        if (
+                            state.message
+                                .isNotBlank()
+                        ) {
+
+                            Spacer(
+                                Modifier.height(
+                                    8.dp
+                                )
+                            )
+
+                            Text(
+                                text =
+                                    state.message,
+                                color =
+                                    VeloraColors.Ink
+                            )
+                        }
+
+                        Spacer(
+                            Modifier.height(
+                                6.dp
+                            )
+                        )
+
+                        Text(
+                            text =
+                                "Operación: " +
+                                    offlineOperationId,
+                            color =
+                                VeloraColors.Ink
+                        )
+
+                        Spacer(
+                            Modifier.height(
+                                14.dp
+                            )
+                        )
+
+                        when (
+                            offlineSyncState
+                        ) {
+
+                            MobileOfflineSyncState.PENDING -> {
+
+                                Button(
+                                    modifier =
+                                        Modifier.fillMaxWidth(),
+                                    enabled =
+                                        !state.placingOrder,
+                                    onClick =
+                                        viewModel::placeOrder
+                                ) {
+
+                                    Text(
+                                        if (
+                                            state.placingOrder
+                                        ) {
+                                            "SINCRONIZANDO..."
+                                        }
+                                        else {
+                                            "REINTENTAR SINCRONIZACIÓN"
+                                        }
+                                    )
+                                }
+                            }
+
+                            MobileOfflineSyncState.CONFLICT -> {
+
+                                Button(
+                                    modifier =
+                                        Modifier.fillMaxWidth(),
+                                    enabled =
+                                        !state.placingOrder,
+                                    onClick =
+                                        viewModel::retryOfflineConflict
+                                ) {
+
+                                    Text(
+                                        if (
+                                            state.placingOrder
+                                        ) {
+                                            "REINTENTANDO..."
+                                        }
+                                        else {
+                                            "REINTENTAR PEDIDO"
+                                        }
+                                    )
+                                }
+                            }
+
+                            MobileOfflineSyncState.SYNCED -> {
+                            }
+                        }
+
+                        if (
+                            offlineSyncState !=
+                                MobileOfflineSyncState.SYNCED
+                        ) {
+
+                            Spacer(
+                                Modifier.height(
+                                    8.dp
+                                )
+                            )
+
+                            OutlinedButton(
+                                modifier =
+                                    Modifier.fillMaxWidth(),
+                                enabled =
+                                    !state.placingOrder,
+                                onClick =
+                                    viewModel::discardOfflineOrder
+                            ) {
+
+                                Text(
+                                    "DESCARTAR PEDIDO GUARDADO"
+                                )
+                            }
+
+                            Spacer(
+                                Modifier.height(
+                                    6.dp
+                                )
+                            )
+
+                            Text(
+                                text =
+                                    "Al descartarlo, la bolsa guardada se conserva para que pueda revisarla y generar un nuevo pedido.",
+                                color =
+                                    VeloraColors.Ink
+                            )
+                        }
+                    }
+                }
+
             } else {
+
+                if (
+                    state.message
+                        .isNotBlank()
+                ) {
+
+                    Card(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor =
+                                    VeloraColors.Card
+                            )
+                    ) {
+
+                        Text(
+                            text =
+                                state.message,
+                            color =
+                                VeloraColors.Ink,
+                            modifier =
+                                Modifier.padding(
+                                    14.dp
+                                )
+                        )
+                    }
+
+                    Spacer(
+                        Modifier.height(
+                            10.dp
+                        )
+                    )
+                }
 
                 Button(
                     modifier =
@@ -368,7 +631,8 @@ fun CustomerCheckoutSection(
                             state.placingOrder
                         ) {
                             "GENERANDO..."
-                        } else {
+                        }
+                        else {
                             "GENERAR PEDIDO"
                         }
                     )

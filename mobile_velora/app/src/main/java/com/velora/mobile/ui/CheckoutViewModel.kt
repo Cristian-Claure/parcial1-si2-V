@@ -1,11 +1,28 @@
 package com.velora.mobile.ui
 
 import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.velora.mobile.data.ApiClient
 import com.velora.mobile.data.CheckoutApi
 import com.velora.mobile.data.CustomerApi
+import com.velora.mobile.data.CheckoutOfflineCodec
+import com.velora.mobile.data.CustomerOfflineScope
+import com.velora.mobile.data.CustomerOfflineStore
+import com.velora.mobile.data.CartOfflineCodec
+import com.velora.mobile.data.CustomerOfflineOrderQueue
+import com.velora.mobile.data.MobileOfflineOrderItemRequest
+import com.velora.mobile.data.MobileOfflineOrderRequest
+import com.velora.mobile.data.MobileOfflineSyncOutcome
+import com.velora.mobile.data.MobileOfflineSyncState
+import com.velora.mobile.data.MobileOfflineOrderQueueStatus
+import com.velora.mobile.data.MobileCheckoutOfflineContext
 import com.velora.mobile.data.MobileCheckoutWarehouse
 import com.velora.mobile.data.MobileCustomerAddress
 import com.velora.mobile.data.MobileFulfillmentType
@@ -18,6 +35,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.time.Instant
+import java.util.UUID
 
 data class CheckoutUiState(
     val loading: Boolean = true,
@@ -47,6 +67,15 @@ data class CheckoutUiState(
     val createdOrder:
         MobileOrder? = null,
 
+    val offlineOperationId:
+        String? = null,
+
+    val offlineSyncState:
+        MobileOfflineSyncState? = null,
+
+    val message:
+        String = "",
+
     val error:
         String = ""
 )
@@ -74,6 +103,57 @@ class CheckoutViewModel(
     private val orderApi =
         OrderApi(client)
 
+    private val offlineStore =
+        CustomerOfflineStore(
+            application
+        )
+
+    private val offlineCodec =
+        CheckoutOfflineCodec()
+
+    private val cartOfflineCodec =
+        CartOfflineCodec()
+
+    private val offlineOrderQueue =
+        CustomerOfflineOrderQueue(
+            application
+        )
+
+    private val connectivityManager =
+        application.getSystemService(
+            Context.CONNECTIVITY_SERVICE
+        ) as ConnectivityManager
+
+    private val connectivityRequest =
+        NetworkRequest.Builder()
+            .addCapability(
+                NetworkCapabilities.NET_CAPABILITY_INTERNET
+            )
+            .build()
+
+    private var networkCallbackRegistered =
+        false
+
+    private val networkCallback =
+        object :
+            ConnectivityManager.NetworkCallback() {
+
+            override fun onCapabilitiesChanged(
+                network: Network,
+                networkCapabilities:
+                    NetworkCapabilities
+            ) {
+
+                if (
+                    hasValidatedInternet(
+                        networkCapabilities
+                    )
+                ) {
+                    attemptAutomaticSync()
+                }
+            }
+        }
+
     private val _state =
         MutableStateFlow(
             CheckoutUiState()
@@ -84,7 +164,137 @@ class CheckoutViewModel(
             _state.asStateFlow()
 
     init {
+        restoreQueuedOperation()
+        registerConnectivityCallback()
+        syncIfAlreadyConnected()
         load()
+    }
+
+    private fun registerConnectivityCallback() {
+
+        if (
+            networkCallbackRegistered
+        ) {
+            return
+        }
+
+        try {
+
+            connectivityManager
+                .registerNetworkCallback(
+                    connectivityRequest,
+                    networkCallback
+                )
+
+            networkCallbackRegistered =
+                true
+
+        } catch (
+            exception: SecurityException
+        ) {
+
+            _state.value =
+                _state.value.copy(
+                    error =
+                        "No fue posible activar la detección automática de conectividad."
+                )
+        }
+    }
+
+    private fun syncIfAlreadyConnected() {
+
+        if (
+            Build.VERSION.SDK_INT <
+                Build.VERSION_CODES.M
+        ) {
+            return
+        }
+
+        val network =
+            connectivityManager
+                .activeNetwork
+                ?: return
+
+        val capabilities =
+            connectivityManager
+                .getNetworkCapabilities(
+                    network
+                )
+                ?: return
+
+        if (
+            hasValidatedInternet(
+                capabilities
+            )
+        ) {
+            attemptAutomaticSync()
+        }
+    }
+
+    private fun hasValidatedInternet(
+        capabilities:
+            NetworkCapabilities
+    ): Boolean {
+
+        if (
+            Build.VERSION.SDK_INT <
+                Build.VERSION_CODES.M
+        ) {
+            return false
+        }
+
+        return capabilities
+            .hasCapability(
+                NetworkCapabilities
+                    .NET_CAPABILITY_INTERNET
+            ) &&
+            capabilities
+                .hasCapability(
+                    NetworkCapabilities
+                        .NET_CAPABILITY_VALIDATED
+                )
+    }
+
+    private fun attemptAutomaticSync() {
+
+        val current =
+            _state.value
+
+        val operationId =
+            current.offlineOperationId
+
+        if (
+            current.placingOrder ||
+            operationId.isNullOrBlank() ||
+            current.offlineSyncState !=
+                MobileOfflineSyncState.PENDING
+        ) {
+            return
+        }
+
+        syncQueuedOrder(
+            operationId
+        )
+    }
+
+    override fun onCleared() {
+
+        if (
+            networkCallbackRegistered
+        ) {
+
+            runCatching {
+                connectivityManager
+                    .unregisterNetworkCallback(
+                        networkCallback
+                    )
+            }
+
+            networkCallbackRegistered =
+                false
+        }
+
+        super.onCleared()
     }
 
     fun load() {
@@ -110,38 +320,318 @@ class CheckoutViewModel(
                         val addresses =
                             customerApi.addresses()
 
-                        Pair(
-                            warehouses,
-                            addresses
+                        MobileCheckoutOfflineContext(
+                            warehouses =
+                                warehouses,
+                            addresses =
+                                addresses
                         )
                     }
 
-                val warehouses =
-                    result.first
+                withContext(
+                    Dispatchers.IO
+                ) {
+                    offlineStore.save(
+                        CustomerOfflineScope.CHECKOUT,
+                        offlineCodec.encode(
+                            result
+                        )
+                    )
+                }
 
-                val addresses =
-                    result.second
+                applyContext(
+                    context = result,
+                    message = ""
+                )
 
-                val defaultAddress =
-                    addresses.firstOrNull {
-                        it.defaultAddress
-                    } ?: addresses.firstOrNull()
+            } catch (
+                exception: Exception
+            ) {
+
+                if (
+                    exception !is IOException
+                ) {
+                    _state.value =
+                        _state.value.copy(
+                            loading = false,
+                            error =
+                                exception.message
+                                    ?: "No fue posible preparar el checkout."
+                        )
+
+                    return@launch
+                }
+
+                val cached =
+                    runCatching {
+                        withContext(
+                            Dispatchers.IO
+                        ) {
+                            offlineStore
+                                .load(
+                                    CustomerOfflineScope.CHECKOUT
+                                )
+                                ?.let {
+                                    offlineCodec.decode(
+                                        it
+                                    )
+                                }
+                        }
+                    }
+                        .getOrNull()
+
+                if (cached != null) {
+                    applyContext(
+                        context = cached,
+                        message =
+                            "Checkout disponible con datos guardados."
+                    )
+                } else {
+                    _state.value =
+                        _state.value.copy(
+                            loading = false,
+                            error =
+                                "No existe información guardada para preparar el checkout sin conexión."
+                        )
+                }
+            }
+        }
+    }
+
+    private fun applyContext(
+        context:
+            MobileCheckoutOfflineContext,
+        message: String
+    ) {
+
+        val defaultAddress =
+            context.addresses
+                .firstOrNull {
+                    it.defaultAddress
+                }
+                ?: context.addresses
+                    .firstOrNull()
+
+        val current =
+            _state.value
+
+        val effectiveMessage =
+            if (
+                !current.offlineOperationId
+                    .isNullOrBlank()
+            ) {
+                current.message
+            }
+            else {
+                message
+            }
+
+        _state.value =
+            current.copy(
+                loading = false,
+                warehouses =
+                    context.warehouses,
+                addresses =
+                    context.addresses,
+                fulfillmentType =
+                    MobileFulfillmentType.DELIVERY,
+                selectedWarehouseId =
+                    context.warehouses
+                        .firstOrNull()
+                        ?.warehouseId,
+                selectedAddressId =
+                    defaultAddress?.id,
+                message =
+                    effectiveMessage,
+                error = ""
+            )
+    }
+
+    private fun restoreQueuedOperation() {
+
+        val entries =
+            runCatching {
+
+                offlineOrderQueue
+                    .recoverStaleSyncing()
+
+                offlineOrderQueue
+                    .entries()
+            }
+                .getOrNull()
+                ?: return
+
+        val conflict =
+            entries.firstOrNull {
+                it.status ==
+                    MobileOfflineOrderQueueStatus.CONFLICT
+            }
+
+        val pending =
+            entries.firstOrNull {
+                it.status ==
+                    MobileOfflineOrderQueueStatus.PENDING ||
+                it.status ==
+                    MobileOfflineOrderQueueStatus.SYNCING
+            }
+
+        val entry =
+            conflict
+                ?: pending
+                ?: return
+
+        val syncState =
+            if (
+                entry.status ==
+                    MobileOfflineOrderQueueStatus.CONFLICT
+            ) {
+                MobileOfflineSyncState.CONFLICT
+            }
+            else {
+                MobileOfflineSyncState.PENDING
+            }
+
+        val message =
+            if (
+                syncState ==
+                    MobileOfflineSyncState.CONFLICT
+            ) {
+                entry.conflictMessage
+                    ?: "El pedido guardado necesita revisión antes de sincronizarse."
+            }
+            else {
+                "Tiene un pedido guardado pendiente de sincronización."
+            }
+
+        _state.value =
+            _state.value.copy(
+                offlineOperationId =
+                    entry.clientOperationId,
+                offlineSyncState =
+                    syncState,
+                message =
+                    message,
+                error = ""
+            )
+    }
+
+    fun retryOfflineConflict() {
+
+        val current =
+            _state.value
+
+        val operationId =
+            current.offlineOperationId
+
+        if (
+            current.placingOrder ||
+            operationId.isNullOrBlank() ||
+            current.offlineSyncState !=
+                MobileOfflineSyncState.CONFLICT
+        ) {
+            return
+        }
+
+        _state.value =
+            current.copy(
+                placingOrder = true,
+                message =
+                    "Reintentando el pedido guardado...",
+                error = ""
+            )
+
+        viewModelScope.launch {
+
+            try {
+
+                val outcome =
+                    withContext(
+                        Dispatchers.IO
+                    ) {
+
+                        val changed =
+                            offlineOrderQueue
+                                .retryConflict(
+                                    operationId
+                                )
+
+                        if (!changed) {
+                            throw IllegalStateException(
+                                "El pedido ya no se encuentra en conflicto."
+                            )
+                        }
+
+                        offlineOrderQueue
+                            .syncOperation(
+                                operationId
+                            )
+                    }
+
+                applySyncOutcome(
+                    outcome
+                )
+
+            } catch (
+                exception: Exception
+            ) {
 
                 _state.value =
-                    CheckoutUiState(
-                        loading = false,
-                        warehouses =
-                            warehouses,
-                        addresses =
-                            addresses,
-                        fulfillmentType =
-                            MobileFulfillmentType.DELIVERY,
-                        selectedWarehouseId =
-                            warehouses
-                                .firstOrNull()
-                                ?.warehouseId,
-                        selectedAddressId =
-                            defaultAddress?.id
+                    _state.value.copy(
+                        placingOrder = false,
+                        error =
+                            exception.message
+                                ?: "No fue posible reintentar el pedido."
+                    )
+            }
+        }
+    }
+
+    fun discardOfflineOrder() {
+
+        val current =
+            _state.value
+
+        val operationId =
+            current.offlineOperationId
+
+        if (
+            current.placingOrder ||
+            operationId.isNullOrBlank()
+        ) {
+            return
+        }
+
+        viewModelScope.launch {
+
+            try {
+
+                val removed =
+                    withContext(
+                        Dispatchers.IO
+                    ) {
+                        offlineOrderQueue
+                            .discard(
+                                operationId
+                            )
+                    }
+
+                if (!removed) {
+                    throw IllegalStateException(
+                        "El pedido guardado ya no existe."
+                    )
+                }
+
+                _state.value =
+                    _state.value.copy(
+                        offlineOperationId =
+                            null,
+                        offlineSyncState =
+                            null,
+                        createdOrder =
+                            null,
+                        message =
+                            "Pedido guardado descartado. Puede revisar la bolsa y generar uno nuevo.",
+                        error = ""
                     )
 
             } catch (
@@ -150,10 +640,9 @@ class CheckoutViewModel(
 
                 _state.value =
                     _state.value.copy(
-                        loading = false,
                         error =
                             exception.message
-                                ?: "No fue posible preparar el checkout."
+                                ?: "No fue posible descartar el pedido guardado."
                     )
             }
         }
@@ -263,6 +752,20 @@ class CheckoutViewModel(
             return
         }
 
+        val queuedOperationId =
+            current.offlineOperationId
+
+        if (
+            !queuedOperationId
+                .isNullOrBlank()
+        ) {
+            syncQueuedOrder(
+                queuedOperationId
+            )
+
+            return
+        }
+
         if (
             current.warehouses.isEmpty()
         ) {
@@ -309,6 +812,7 @@ class CheckoutViewModel(
             current.copy(
                 placingOrder = true,
                 error = "",
+                message = "",
                 createdOrder = null
             )
 
@@ -316,39 +820,118 @@ class CheckoutViewModel(
 
             try {
 
-                val order =
+                val request =
                     withContext(
                         Dispatchers.IO
                     ) {
-                        orderApi.create(
+
+                        val cartPayload =
+                            offlineStore.load(
+                                CustomerOfflineScope.CART
+                            )
+                                ?: throw IllegalStateException(
+                                    "No existe una bolsa guardada para generar el pedido."
+                                )
+
+                        val cart =
+                            cartOfflineCodec.decode(
+                                cartPayload
+                            )
+
+                        if (
+                            cart.items.isEmpty()
+                        ) {
+                            throw IllegalStateException(
+                                "La bolsa está vacía."
+                            )
+                        }
+
+                        MobileOfflineOrderRequest(
+                            clientOperationId =
+                                UUID.randomUUID()
+                                    .toString(),
+
+                            clientCreatedAt =
+                                Instant.now()
+                                    .toString(),
+
+                            sourceCartId =
+                                cart.id,
+
                             warehouseId =
                                 warehouseId,
+
                             fulfillmentType =
                                 current.fulfillmentType,
+
                             addressId =
                                 if (
                                     current.fulfillmentType ==
                                         MobileFulfillmentType.DELIVERY
                                 ) {
                                     current.selectedAddressId
-                                } else {
+                                }
+                                else {
                                     null
                                 },
+
                             notes =
                                 current.notes
                                     .trim()
                                     .takeIf {
                                         it.isNotEmpty()
-                                    }
+                                    },
+
+                            items =
+                                cart.items.map {
+                                    item ->
+
+                                    MobileOfflineOrderItemRequest(
+                                        variantId =
+                                            item.variantId,
+
+                                        quantity =
+                                            item.quantity
+                                    )
+                                }
                         )
                     }
 
+                withContext(
+                    Dispatchers.IO
+                ) {
+                    offlineOrderQueue.enqueue(
+                        request
+                    )
+                }
+
                 _state.value =
                     _state.value.copy(
-                        placingOrder = false,
-                        createdOrder = order,
+                        offlineOperationId =
+                            request.clientOperationId,
+
+                        offlineSyncState =
+                            MobileOfflineSyncState.PENDING,
+
+                        message =
+                            "Pedido guardado. Intentando sincronizar...",
+
                         error = ""
                     )
+
+                val outcome =
+                    withContext(
+                        Dispatchers.IO
+                    ) {
+                        offlineOrderQueue
+                            .syncOperation(
+                                request.clientOperationId
+                            )
+                    }
+
+                applySyncOutcome(
+                    outcome
+                )
 
             } catch (
                 exception: Exception
@@ -360,6 +943,146 @@ class CheckoutViewModel(
                         error =
                             exception.message
                                 ?: "No fue posible generar el pedido."
+                    )
+            }
+        }
+    }
+
+    private fun syncQueuedOrder(
+        clientOperationId:
+            String
+    ) {
+
+        if (
+            _state.value
+                .placingOrder
+        ) {
+            return
+        }
+
+        _state.value =
+            _state.value.copy(
+                placingOrder = true,
+                error = "",
+                message =
+                    "Intentando sincronizar el pedido guardado..."
+            )
+
+        viewModelScope.launch {
+
+            try {
+
+                val outcome =
+                    withContext(
+                        Dispatchers.IO
+                    ) {
+                        offlineOrderQueue
+                            .syncOperation(
+                                clientOperationId
+                            )
+                    }
+
+                applySyncOutcome(
+                    outcome
+                )
+
+            } catch (
+                exception: Exception
+            ) {
+
+                _state.value =
+                    _state.value.copy(
+                        placingOrder = false,
+                        error =
+                            exception.message
+                                ?: "No fue posible sincronizar el pedido guardado."
+                    )
+            }
+        }
+    }
+
+    private fun applySyncOutcome(
+        outcome:
+            MobileOfflineSyncOutcome
+    ) {
+
+        when (
+            outcome.state
+        ) {
+
+            MobileOfflineSyncState.SYNCED -> {
+
+                val order =
+                    outcome.order
+
+                if (order == null) {
+                    _state.value =
+                        _state.value.copy(
+                            placingOrder = false,
+                            error =
+                                "La sincronización finalizó sin devolver el pedido."
+                        )
+
+                    return
+                }
+
+                offlineStore.remove(
+                    CustomerOfflineScope.CART
+                )
+
+                offlineOrderQueue
+                    .acknowledgeSynced(
+                        outcome.clientOperationId
+                    )
+
+                _state.value =
+                    _state.value.copy(
+                        placingOrder = false,
+                        createdOrder =
+                            order,
+                        offlineOperationId =
+                            null,
+                        offlineSyncState =
+                            MobileOfflineSyncState.SYNCED,
+                        message =
+                            "Pedido sincronizado correctamente.",
+                        error = ""
+                    )
+            }
+
+            MobileOfflineSyncState.PENDING -> {
+
+                _state.value =
+                    _state.value.copy(
+                        placingOrder = false,
+                        createdOrder =
+                            null,
+                        offlineOperationId =
+                            outcome.clientOperationId,
+                        offlineSyncState =
+                            MobileOfflineSyncState.PENDING,
+                        message =
+                            outcome.message
+                                ?: "Pedido guardado sin conexión. Se sincronizará al recuperar Internet.",
+                        error = ""
+                    )
+            }
+
+            MobileOfflineSyncState.CONFLICT -> {
+
+                _state.value =
+                    _state.value.copy(
+                        placingOrder = false,
+                        createdOrder =
+                            null,
+                        offlineOperationId =
+                            outcome.clientOperationId,
+                        offlineSyncState =
+                            MobileOfflineSyncState.CONFLICT,
+                        message =
+                            outcome.message
+                                ?: "El pedido necesita revisión antes de sincronizarse.",
+                        error = ""
                     )
             }
         }
