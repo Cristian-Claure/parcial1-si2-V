@@ -8,6 +8,7 @@ import {
 import { filter } from 'rxjs';
 
 import { AuthService } from './core/auth/auth.service';
+import { CartService } from './core/cart/cart.service';
 
 import {
   CustomerOfflineOrderQueueService
@@ -33,6 +34,7 @@ export class App {
     inject(CustomerOfflineOrderQueueService);
 
   readonly auth = inject(AuthService);
+  readonly cart = inject(CartService);
 
   readonly products = signal<Product[]>([]);
   readonly categories = signal<Category[]>([]);
@@ -69,6 +71,7 @@ export class App {
       });
 
     this.loadCatalog();
+    this.loadCustomerCart();
   }
 
   lowestPrice(product: Product): number | null {
@@ -91,6 +94,19 @@ export class App {
       .split('?')[0];
 
     return path === '/';
+  }
+
+  private loadCustomerCart(): void {
+    if (
+      this.auth.currentUser()?.role !==
+      'CUSTOMER'
+    ) {
+      return;
+    }
+
+    this.cart.load().subscribe({
+      error: () => undefined
+    });
   }
 
   private loadCatalog(): void {
