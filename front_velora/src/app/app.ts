@@ -14,7 +14,9 @@ import {
 
 import {
   FeedbackOutlet
-} from './shared/feedback/feedback-outlet';
+} from './shared/feedback/feedback-outlet';import {
+  ProductAssistant
+} from './shared/product-assistant/product-assistant';
 import { CartService } from './core/cart/cart.service';
 
 import {
@@ -33,7 +35,8 @@ import { CatalogService } from './core/catalog/catalog.service';
     RouterLink,
     RouterOutlet,
     FeedbackOutlet,
-    ConfirmDialog
+    ConfirmDialog,
+    ProductAssistant
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss'

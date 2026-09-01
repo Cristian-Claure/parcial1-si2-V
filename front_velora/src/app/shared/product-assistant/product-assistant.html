@@ -1,0 +1,236 @@
+<button
+  type="button"
+  class="assistant-launcher"
+  [class.active]="open()"
+  aria-label="Abrir asesora VÉLORA AI"
+  (click)="toggle()"
+>
+  <span
+    class="assistant-launcher__mark"
+    aria-hidden="true"
+  >
+    V
+  </span>
+
+  <span class="assistant-launcher__copy">
+    <strong>VÉLORA AI</strong>
+    <small>Asesora de estilo</small>
+  </span>
+</button>
+
+@if (open()) {
+  <button
+    type="button"
+    class="assistant-backdrop"
+    aria-label="Cerrar VÉLORA AI"
+    (click)="close()"
+  ></button>
+
+  <aside
+    class="assistant-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Asistente de producto VÉLORA AI"
+  >
+    <header class="assistant-header">
+      <div>
+        <span>VÉLORA AI · PRODUCT ADVISOR</span>
+        <h2>
+          Encuentre su próxima pieza.
+        </h2>
+        <p>
+          Recomendaciones creadas únicamente
+          sobre el catálogo real de VÉLORA.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        aria-label="Cerrar asistente"
+        (click)="close()"
+      >
+        ×
+      </button>
+    </header>
+
+    <div
+      class="assistant-conversation"
+      aria-live="polite"
+    >
+      @for (
+        message of messages();
+        track $index
+      ) {
+        <article
+          class="assistant-message"
+          [class.user]="
+            message.role === 'user'
+          "
+        >
+          <span>
+            {{
+              message.role === 'user'
+                ? 'USTED'
+                : 'VÉLORA AI'
+            }}
+          </span>
+
+          <p>{{ message.content }}</p>
+        </article>
+      }
+
+      @if (busy()) {
+        <article
+          class="
+            assistant-message
+            assistant-message--thinking
+          "
+        >
+          <span>VÉLORA AI</span>
+          <p>
+            Revisando la colección
+            <i>·</i><i>·</i><i>·</i>
+          </p>
+        </article>
+      }
+    </div>
+
+    @if (errorMessage()) {
+      <div
+        class="assistant-error"
+        role="alert"
+      >
+        {{ errorMessage() }}
+      </div>
+    }
+
+    @if (recommendations().length) {
+      <section class="assistant-results">
+        <div
+          class="assistant-results__heading"
+        >
+          <span>
+            SELECCIÓN PARA USTED
+          </span>
+
+          <strong>
+            {{ recommendations().length }}
+            recomendación(es)
+          </strong>
+        </div>
+
+        <div class="assistant-products">
+          @for (
+            item of recommendations();
+            track item.product.id
+          ) {
+            <article
+              class="assistant-product"
+            >
+              <div
+                class="assistant-product__image"
+              >
+                @if (
+                  imageUrl(item.product);
+                  as image
+                ) {
+                  <img
+                    [src]="image"
+                    [alt]="item.product.name"
+                  />
+                }
+                @else {
+                  <span>V</span>
+                }
+              </div>
+
+              <div
+                class="assistant-product__copy"
+              >
+                <small>
+                  {{
+                    item.product.categoryName
+                  }}
+                </small>
+
+                <h3>
+                  {{ item.product.name }}
+                </h3>
+
+                @if (
+                  lowestPrice(
+                    item.product
+                  );
+                  as price
+                ) {
+                  <strong>
+                    Desde Bs {{ price }}
+                  </strong>
+                }
+
+                <p>
+                  {{ item.reason }}
+                </p>
+
+                <a
+                  [routerLink]="[
+                    '/catalogo',
+                    item.product.slug
+                  ]"
+                  (click)="close()"
+                >
+                  Ver pieza →
+                </a>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+    @else if (
+      messages().length === 1
+    ) {
+      <div class="assistant-prompts">
+        @for (
+          prompt of quickPrompts;
+          track prompt
+        ) {
+          <button
+            type="button"
+            (click)="usePrompt(prompt)"
+          >
+            {{ prompt }}
+          </button>
+        }
+      </div>
+    }
+
+    <footer class="assistant-composer">
+      <textarea
+        rows="2"
+        maxlength="800"
+        [value]="input()"
+        placeholder="Ej. Busco un vestido oscuro para una cena, talla M y hasta Bs 600..."
+        (input)="updateInput($event)"
+        (keydown.control.enter)="send()"
+      ></textarea>
+
+      <button
+        type="button"
+        [disabled]="!canSend()"
+        (click)="send()"
+      >
+        {{
+          busy()
+            ? 'Pensando...'
+            : 'Consultar'
+        }}
+      </button>
+
+      <small>
+        VÉLORA AI sólo recomienda productos
+        presentes en la colección actual.
+      </small>
+    </footer>
+  </aside>
+}

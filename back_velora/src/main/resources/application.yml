@@ -39,3 +39,6 @@ velora:
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
     success-url: ${STRIPE_SUCCESS_URL:http://localhost:4200/pago/stripe/retorno}
     cancel-url: ${STRIPE_CANCEL_URL:http://localhost:4200/mis-pedidos}
+  ai:
+    base-url: ${VELORA_AI_BASE_URL:http://127.0.0.1:8001}
+    internal-token: ${VELORA_AI_INTERNAL_TOKEN:}

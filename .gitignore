@@ -79,3 +79,6 @@ front_velora/src/app/app.ts.backup-route-fix
 # Build output
 # IDE
 mobile_velora/app/google-services.json
+ai_velora/**/__pycache__/
+ai_velora/**/*.pyc
+ai_velora/**/*.pyo
