@@ -1200,39 +1200,55 @@ private fun CustomerTile(
     onClick: (() -> Unit)? = null
 ) {
 
-    val tileModifier =
+    val interactionModifier =
         if (onClick == null) {
-            modifier
-                .background(
-                    VeloraColors.Card
-                )
-                .padding(
-                    18.dp
-                )
-        } else {
-            modifier
-                .background(
-                    VeloraColors.Card
-                )
-                .clickable(
-                    onClick = onClick
-                )
-                .padding(
-                    18.dp
-                )
+            Modifier
+        }
+        else {
+            Modifier.clickable(
+                onClick = onClick
+            )
         }
 
-    Box(
+    Card(
         modifier =
-            tileModifier
+            modifier.then(
+                interactionModifier
+            ),
+        shape =
+            MaterialTheme
+                .shapes
+                .medium,
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    VeloraColors.Card
+            ),
+        border =
+            CardDefaults.outlinedCardBorder()
     ) {
-        Column {
+
+        Column(
+            modifier =
+                Modifier.padding(
+                    horizontal =
+                        18.dp,
+                    vertical =
+                        20.dp
+                )
+        ) {
+
             Text(
-                title,
+                text =
+                    title,
                 color =
                     VeloraColors.Ink,
                 fontWeight =
-                    FontWeight.Bold
+                    FontWeight.Bold,
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleSmall
             )
 
             Spacer(
@@ -1242,10 +1258,37 @@ private fun CustomerTile(
             )
 
             Text(
-                subtitle,
+                text =
+                    subtitle,
                 color =
-                    VeloraColors.Muted
+                    VeloraColors.Muted,
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodySmall
             )
+
+            if (onClick != null) {
+
+                Spacer(
+                    Modifier.height(
+                        12.dp
+                    )
+                )
+
+                Text(
+                    text =
+                        "VER →",
+                    color =
+                        VeloraColors.Terracotta,
+                    fontWeight =
+                        FontWeight.Bold,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall
+                )
+            }
         }
     }
 }
