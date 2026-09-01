@@ -268,6 +268,33 @@ h1 {
   font-weight: 700;
 }
 
+.favorite-button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 10px;
+  border: 1px solid var(--velora-border-strong);
+  border-radius: var(--velora-radius-pill);
+  background: transparent;
+  color: var(--velora-ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition:
+    background var(--velora-transition-fast),
+    border-color var(--velora-transition-fast);
+}
+
+.favorite-button:hover:not(:disabled) {
+  border-color: var(--velora-terracotta);
+  background: var(--velora-surface-soft);
+}
+
+.favorite-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .product-notes {
   margin-top: 26px;
   display: grid;

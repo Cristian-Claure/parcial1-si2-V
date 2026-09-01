@@ -32,6 +32,10 @@ import {
   CatalogService
 } from '../../../core/catalog/catalog.service';
 
+import {
+  FavoritesService
+} from '../../../core/favorites/favorites.service';
+
 @Component({
   selector: 'app-product-detail',
   standalone: true,
@@ -42,6 +46,9 @@ import {
 export class ProductDetail {
   readonly auth = inject(AuthService);
   readonly cart = inject(CartService);
+
+  readonly favorites =
+    inject(FavoritesService);
 
   private readonly catalog =
     inject(CatalogService);
@@ -71,6 +78,9 @@ export class ProductDetail {
     signal('');
 
   readonly adding =
+    signal(false);
+
+  readonly favoriteBusy =
     signal(false);
 
   constructor() {
@@ -148,6 +158,12 @@ export class ProductDetail {
       this.cart.load().subscribe({
         error: () => undefined
       });
+
+      this.favorites
+        .load()
+        .subscribe({
+          error: () => undefined
+        });
     }
   }
 
@@ -270,6 +286,84 @@ export class ProductDetail {
     this.selectedImageUrl.set(
       imageUrl
     );
+  }
+
+  toggleFavorite(
+    product: Product
+  ): void {
+    const user =
+      this.auth.currentUser();
+
+    if (!user) {
+      void this.router.navigate(
+        ['/login']
+      );
+
+      return;
+    }
+
+    if (user.role !== 'CUSTOMER') {
+      this.error.set(
+        'Los favoritos están disponibles únicamente para clientes.'
+      );
+
+      return;
+    }
+
+    if (this.favoriteBusy()) {
+      return;
+    }
+
+    this.favoriteBusy.set(true);
+    this.error.set('');
+
+    const onSuccess =
+      () => {
+        this.favoriteBusy.set(
+          false
+        );
+      };
+
+    const onError =
+      (
+        error: HttpErrorResponse
+      ) => {
+        this.favoriteBusy.set(
+          false
+        );
+
+        const message =
+          error.error?.message;
+
+        this.error.set(
+          typeof message ===
+            'string' &&
+          message.trim().length
+            ? message
+            : 'No fue posible actualizar sus favoritos.'
+        );
+      };
+
+    if (
+      this.favorites
+        .isFavorite(product.id)
+    ) {
+      this.favorites
+        .remove(product.id)
+        .subscribe({
+          next: onSuccess,
+          error: onError
+        });
+
+      return;
+    }
+
+    this.favorites
+      .add(product.id)
+      .subscribe({
+        next: onSuccess,
+        error: onError
+      });
   }
 
   addToCart(

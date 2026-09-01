@@ -42,7 +42,10 @@ import com.velora.mobile.ui.theme.VeloraColors
 fun CustomerProductDetail(
     product: MobileProduct,
     addingVariantId: String?,
+    isFavorite: Boolean,
+    favoriteBusy: Boolean,
     onAddToCart: (String) -> Unit,
+    onToggleFavorite: () -> Unit,
     onBackToCatalog: () -> Unit,
     onOpenCart: () -> Unit
 ) {
@@ -525,6 +528,33 @@ fun CustomerProductDetail(
                     VeloraColors.Error
             )
         }
+
+        OutlinedButton(
+            modifier =
+                Modifier.fillMaxWidth(),
+            enabled =
+                !favoriteBusy,
+            onClick =
+                onToggleFavorite
+        ) {
+            Text(
+                if (favoriteBusy) {
+                    "ACTUALIZANDO..."
+                }
+                else if (isFavorite) {
+                    "♥ GUARDADO EN FAVORITOS"
+                }
+                else {
+                    "♡ GUARDAR EN FAVORITOS"
+                }
+            )
+        }
+
+        Spacer(
+            Modifier.height(
+                10.dp
+            )
+        )
 
         ProductInformation(
             title =

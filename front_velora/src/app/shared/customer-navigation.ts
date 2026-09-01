@@ -25,7 +25,7 @@ export const CUSTOMER_NAV_ITEMS: ShellNavItem[] = [
   },
   {
     label: 'Favoritos',
-    disabled: true
+    route: '/favoritos'
   },
   {
     label: 'Probador virtual',

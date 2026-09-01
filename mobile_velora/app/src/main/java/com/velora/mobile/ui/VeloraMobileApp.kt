@@ -235,10 +235,14 @@ private fun CustomerHome(
     onLogout: () -> Unit,
     cartViewModel: CartViewModel = viewModel(),
     checkoutViewModel: CheckoutViewModel = viewModel(),
-    ordersViewModel: OrdersViewModel = viewModel()
+    ordersViewModel: OrdersViewModel = viewModel(),
+    favoritesViewModel: FavoritesViewModel = viewModel()
 ) {
     val cartState by
         cartViewModel.state.collectAsState()
+
+    val favoritesState by
+        favoritesViewModel.state.collectAsState()
 
     var customerScreen by remember {
         mutableStateOf(
@@ -290,6 +294,13 @@ private fun CustomerHome(
                                     CustomerScreen.CART
                             ) {
                                 cartViewModel.load()
+                            }
+
+                            if (
+                                destination ==
+                                    CustomerScreen.FAVORITES
+                            ) {
+                                favoritesViewModel.load()
                             }
 
                             customerScreen =
@@ -578,6 +589,8 @@ private fun CustomerHome(
                         modifier =
                             Modifier.weight(1f),
                         onClick = {
+                            favoritesViewModel.load()
+
                             customerScreen =
                                 CustomerScreen.FAVORITES
                         }
@@ -667,39 +680,37 @@ private fun CustomerHome(
 
             CustomerScreen.FAVORITES -> {
 
-                Text(
-                    text =
-                        "FAVORITOS",
-                    color =
-                        VeloraColors.Terracotta,
-                    fontWeight =
-                        FontWeight.Bold
-                )
+                CustomerFavoritesSection(
+                    state =
+                        favoritesState,
 
-                Spacer(
-                    Modifier.height(8.dp)
-                )
+                    onRetry =
+                        favoritesViewModel::load,
 
-                Text(
-                    text =
-                        "Las piezas que inspiran su estilo.",
-                    color =
-                        VeloraColors.Ink,
-                    style =
-                        MaterialTheme
-                            .typography
-                            .headlineMedium
-                )
+                    onExplore = {
+                        customerScreen =
+                            CustomerScreen.CATALOG
+                    },
 
-                Spacer(
-                    Modifier.height(12.dp)
-                )
+                    onOpenProduct = {
+                        product ->
 
-                Text(
-                    text =
-                        "Aquí podrá reunir las prendas que desea volver a encontrar fácilmente.",
-                    color =
-                        VeloraColors.Muted
+                        selectedProduct =
+                            product
+
+                        customerScreen =
+                            CustomerScreen
+                                .PRODUCT_DETAIL
+                    },
+
+                    onRemove = {
+                        product ->
+
+                        favoritesViewModel
+                            .toggle(
+                                product
+                            )
+                    }
                 )
             }
 
@@ -800,9 +811,15 @@ private fun CustomerHome(
                     CustomerTile(
                         title = "FAVORITOS",
                         subtitle =
-                            "Disponible próximamente",
+                            "Sus piezas guardadas",
                         modifier =
-                            Modifier.weight(1f)
+                            Modifier.weight(1f),
+                        onClick = {
+                            favoritesViewModel.load()
+
+                            customerScreen =
+                                CustomerScreen.FAVORITES
+                        }
                     )
                 }
 
@@ -900,8 +917,27 @@ private fun CustomerHome(
                         addingVariantId =
                             cartState.busyVariantId,
 
+                        isFavorite =
+                            favoritesState
+                                .favoriteProductIds
+                                .contains(
+                                    product.id
+                                ),
+
+                        favoriteBusy =
+                            favoritesState
+                                .busyProductId ==
+                                product.id,
+
                         onAddToCart =
                             cartViewModel::addVariant,
+
+                        onToggleFavorite = {
+                            favoritesViewModel
+                                .toggle(
+                                    product
+                                )
+                        },
 
                         onBackToCatalog = {
                             selectedProduct =

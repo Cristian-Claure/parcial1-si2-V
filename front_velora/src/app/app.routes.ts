@@ -25,6 +25,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/register/register').then((m) => m.Register)
   },
   {
+    path: 'favoritos',
+    canActivate: [authGuard, roleGuard(['CUSTOMER'])],
+    loadComponent: () =>
+      import('./features/favorites/favorites').then((m) => m.FavoritesPage)
+  },
+  {
     path: 'bolsa',
     canActivate: [authGuard, roleGuard(['CUSTOMER'])],
     loadComponent: () =>

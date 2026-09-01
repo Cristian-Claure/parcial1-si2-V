@@ -1,0 +1,141 @@
+<app-authenticated-shell
+  title="Favoritos VÉLORA"
+  subtitle="Cliente"
+  [navItems]="navItems"
+  [userLabel]="userLabel()"
+  (logoutRequested)="logout()"
+>
+  <section class="favorites-heading">
+    <span>MI SELECCIÓN</span>
+
+    <h1>
+      Piezas que desea volver a encontrar.
+    </h1>
+
+    <p>
+      Guarde productos por estilo y vuelva a ellos
+      cuando esté lista para elegir color y talla.
+    </p>
+  </section>
+
+  @if (errorMessage()) {
+    <div class="feedback error">
+      {{ errorMessage() }}
+    </div>
+  }
+
+  @if (loading()) {
+    <section class="state-card">
+      <span>CARGANDO</span>
+      <h2>Preparando sus favoritos...</h2>
+    </section>
+  }
+  @else if (!favoriteProducts().length) {
+    <section class="state-card empty">
+      <div class="empty-mark">♡</div>
+
+      <span>SU COLECCIÓN PERSONAL</span>
+
+      <h2>
+        Todavía no guardó ninguna pieza.
+      </h2>
+
+      <p>
+        Explore la colección y utilice
+        “Guardar en favoritos” desde el detalle
+        de cualquier producto.
+      </p>
+
+      <a
+        routerLink="/catalogo"
+        class="primary-link"
+      >
+        EXPLORAR COLECCIÓN
+      </a>
+    </section>
+  }
+  @else {
+    <section class="favorites-grid">
+      @for (
+        product of favoriteProducts();
+        track product.id
+      ) {
+        <article class="favorite-card">
+          <a
+            [routerLink]="[
+              '/catalogo',
+              product.slug
+            ]"
+            class="image-wrap"
+          >
+            @if (
+              primaryImage(product);
+              as image
+            ) {
+              <img
+                [src]="image"
+                [alt]="product.name"
+              />
+            }
+            @else {
+              <div class="image-placeholder">
+                V
+              </div>
+            }
+          </a>
+
+          <div class="favorite-info">
+            <span>
+              {{ product.categoryName }}
+            </span>
+
+            <h2>
+              {{ product.name }}
+            </h2>
+
+            @if (
+              lowestPrice(product);
+              as price
+            ) {
+              <strong>
+                Desde BOB {{ price }}
+              </strong>
+            }
+
+            <div class="favorite-actions">
+              <a
+                [routerLink]="[
+                  '/catalogo',
+                  product.slug
+                ]"
+                class="primary-link"
+              >
+                VER PRODUCTO
+              </a>
+
+              <button
+                type="button"
+                class="remove-button"
+                [disabled]="
+                  busyProductId() ===
+                    product.id
+                "
+                (click)="remove(product)"
+              >
+                @if (
+                  busyProductId() ===
+                    product.id
+                ) {
+                  RETIRANDO...
+                }
+                @else {
+                  RETIRAR
+                }
+              </button>
+            </div>
+          </div>
+        </article>
+      }
+    </section>
+  }
+</app-authenticated-shell>
