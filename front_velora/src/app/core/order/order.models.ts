@@ -26,6 +26,27 @@ export interface CreateOrderPayload {
   notes: string | null;
 }
 
+export interface SyncOfflineOrderItemPayload {
+  variantId: string;
+  quantity: number;
+}
+
+export interface SyncOfflineOrderPayload {
+  clientOperationId: string;
+  clientCreatedAt: string;
+  sourceCartId: string | null;
+
+  warehouseId: string;
+
+  fulfillmentType:
+    | 'DELIVERY'
+    | 'PICKUP';
+
+  addressId: string | null;
+  notes: string | null;
+
+  items: SyncOfflineOrderItemPayload[];
+}
 export interface OrderItem {
   id: string;
   variantId: string;

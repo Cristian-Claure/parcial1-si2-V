@@ -8,6 +8,10 @@ import {
 import { filter } from 'rxjs';
 
 import { AuthService } from './core/auth/auth.service';
+
+import {
+  CustomerOfflineOrderQueueService
+} from './core/offline/customer-offline-order-queue.service';
 import {
   Category,
   Product
@@ -24,6 +28,9 @@ import { CatalogService } from './core/catalog/catalog.service';
 export class App {
   private readonly router = inject(Router);
   private readonly catalog = inject(CatalogService);
+
+  private readonly customerOfflineOrders =
+    inject(CustomerOfflineOrderQueueService);
 
   readonly auth = inject(AuthService);
 
