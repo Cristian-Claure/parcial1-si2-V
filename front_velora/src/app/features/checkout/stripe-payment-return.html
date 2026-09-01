@@ -1,0 +1,77 @@
+<main class="stripe-return">
+  <section class="return-card">
+    @if (loading()) {
+      <span class="return-kicker">PAGO SEGURO</span>
+      <div class="return-mark pending">…</div>
+      <h1>Estamos validando su compra.</h1>
+      <p>
+        VÉLORA está sincronizando la confirmación
+        segura de Stripe. No necesita realizar
+        ninguna acción adicional.
+      </p>
+    }
+    @else if (payment(); as current) {
+      @if (current.status === 'PAID') {
+        <span class="return-kicker">PAGO CONFIRMADO</span>
+        <div class="return-mark success">✓</div>
+        <h1>Su compra está confirmada.</h1>
+        <p>
+          Recibimos correctamente
+          <strong>
+            Bs {{ current.amount }}
+          </strong>
+          para el pedido
+          <strong>
+            {{ current.orderNumber }}
+          </strong>.
+          Ya puede seguir el estado de su pedido
+          desde Mis pedidos.
+        </p>
+      }
+      @else if (current.status === 'PENDING') {
+        <span class="return-kicker">CONFIRMACIÓN EN CURSO</span>
+        <div class="return-mark pending">i</div>
+        <h1>Su pago está siendo verificado.</h1>
+        <p>
+          El checkout ya finalizó y estamos
+          esperando la confirmación segura de
+          Stripe. No repita el pago; el estado
+          se actualizará automáticamente.
+        </p>
+      }
+      @else if (current.status === 'REFUNDED') {
+        <span class="return-kicker">REEMBOLSO REGISTRADO</span>
+        <div class="return-mark success">✓</div>
+        <h1>Este pago fue reembolsado.</h1>
+        <p>
+          Puede revisar el historial completo
+          desde Mis pedidos.
+        </p>
+      }
+      @else {
+        <span class="return-kicker">PAGO NO COMPLETADO</span>
+        <div class="return-mark error">!</div>
+        <h1>Este pago no pudo completarse.</h1>
+        <p>
+          Revise Mis pedidos antes de iniciar
+          un nuevo intento.
+        </p>
+      }
+    }
+    @else if (errorMessage()) {
+      <span class="return-kicker">VÉLORA</span>
+      <div class="return-mark error">!</div>
+      <h1>No pudimos verificar el pago.</h1>
+      <p>{{ errorMessage() }}</p>
+    }
+
+    <div class="return-actions">
+      <button type="button" (click)="goToOrders()">
+        Ver mis pedidos
+      </button>
+      <a routerLink="/catalogo">
+        Seguir explorando
+      </a>
+    </div>
+  </section>
+</main>

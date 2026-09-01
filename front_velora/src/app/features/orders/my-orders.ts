@@ -133,22 +133,10 @@ export class MyOrders {
         'Pago presencial al recoger la compra.'
     },
     {
-      value: 'CARD',
-      label: 'Tarjeta',
-      description:
-        'Tarjeta de débito o crédito.'
-    },
-    {
-      value: 'QR',
-      label: 'QR',
-      description:
-        'Pago mediante código QR.'
-    },
-    {
       value: 'WEB',
-      label: 'Pago web',
+      label: 'Tarjeta · Stripe',
       description:
-        'Pago mediante proveedor web.'
+        'Pago online seguro mediante Stripe Checkout.'
     }
   ];
 
@@ -288,6 +276,40 @@ export class MyOrders {
       order.id
     );
 
+    if (method === 'WEB') {
+      this.paymentsService
+        .createStripeCheckout(
+          order.id
+        )
+        .subscribe({
+          next: (checkout) => {
+            this.feedback.info(
+              'Checkout seguro preparado',
+              'Será redirigido a Stripe para completar el pago.'
+            );
+
+            globalThis.location.assign(
+              checkout.checkoutUrl
+            );
+          },
+
+          error: (
+            error: HttpErrorResponse
+          ) => {
+            this.busyOrderId.set(null);
+
+            this.errorMessage.set(
+              this.readError(
+                error,
+                'No fue posible iniciar el pago seguro con Stripe.'
+              )
+            );
+          }
+        });
+
+      return;
+    }
+
     this.paymentsService.create(
       order.id,
       {
@@ -313,8 +335,7 @@ export class MyOrders {
 
         if (
           method === 'CARD' ||
-          method === 'QR' ||
-          method === 'WEB'
+          method === 'QR'
         ) {
           this.successMessage.set(
             'La solicitud de pago fue registrada. Permanecerá pendiente hasta que el proveedor de pago o la operación VÉLORA la confirme.'

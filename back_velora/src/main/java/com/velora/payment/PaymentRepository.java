@@ -54,6 +54,19 @@ public interface PaymentRepository
                 @Param("paymentId") UUID paymentId
         );
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        select p
+        from PaymentEntity p
+        where p.provider = :provider
+          and p.externalReference = :externalReference
+    """)
+    Optional<PaymentEntity>
+        findForUpdateByProviderAndExternalReference(
+                @Param("provider") String provider,
+                @Param("externalReference") String externalReference
+        );
+
     @Query("""
         select coalesce(sum(p.amount), 0)
         from PaymentEntity p

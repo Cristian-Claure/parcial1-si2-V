@@ -34,3 +34,8 @@ velora:
       password: ${VELORA_ADMIN_PASSWORD:}
       first-name: ${VELORA_ADMIN_FIRST_NAME:Admin}
       last-name: ${VELORA_ADMIN_LAST_NAME:Velora}
+  stripe:
+    secret-key: ${STRIPE_SECRET_KEY:}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+    success-url: ${STRIPE_SUCCESS_URL:http://localhost:4200/pago/stripe/retorno}
+    cancel-url: ${STRIPE_CANCEL_URL:http://localhost:4200/mis-pedidos}

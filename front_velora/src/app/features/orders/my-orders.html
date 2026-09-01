@@ -262,17 +262,13 @@
 
                   <p>
                     @if (
-                      payment.method ===
-                        'CARD' ||
-                      payment.method ===
-                        'QR' ||
-                      payment.method ===
-                        'WEB'
+                      payment.provider ===
+                        'STRIPE'
                     ) {
-                      Solicitud registrada.
-                      La integración con el
-                      proveedor externo aún debe
-                      confirmar la transacción.
+                      Stripe está procesando este
+                      intento. La confirmación
+                      final llegará automáticamente
+                      mediante webhook firmado.
                     }
                     @else if (
                       payment.method === 'COD'
@@ -371,18 +367,12 @@
 
                 @if (
                   selectedMethod(order) ===
-                    'CARD' ||
-                  selectedMethod(order) ===
-                    'QR' ||
-                  selectedMethod(order) ===
                     'WEB'
                 ) {
                   <div class="provider-warning">
-                    Esta modalidad se registrará
-                    como pendiente. La conexión
-                    con una pasarela bancaria
-                    externa todavía no está
-                    habilitada.
+                    Será redirigido a Stripe Checkout.
+                    VÉLORA no recibe ni almacena
+                    los datos de su tarjeta.
                   </div>
                 }
 

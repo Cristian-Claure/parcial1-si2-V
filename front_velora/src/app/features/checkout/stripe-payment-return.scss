@@ -1,0 +1,112 @@
+.stripe-return {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background:
+    radial-gradient(
+      circle at top,
+      var(--velora-surface-soft),
+      var(--velora-ivory) 58%
+    );
+}
+
+.return-card {
+  width: min(620px, 100%);
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  border: 1px solid var(--velora-border-strong);
+  border-radius: var(--velora-radius-lg);
+  background: var(--velora-card);
+  padding: clamp(30px, 7vw, 58px);
+  box-shadow: var(--velora-shadow-lg);
+}
+
+.return-kicker {
+  color: var(--velora-terracotta);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+}
+
+.return-mark {
+  width: 72px;
+  height: 72px;
+  margin: 20px 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-family: var(--velora-font-display);
+  font-size: 30px;
+}
+
+.return-mark.success {
+  color: var(--velora-success);
+  background:
+    color-mix(in srgb, var(--velora-success) 10%, transparent);
+}
+
+.return-mark.pending {
+  color: var(--velora-info);
+  background:
+    color-mix(in srgb, var(--velora-info) 9%, transparent);
+}
+
+.return-mark.error {
+  color: var(--velora-error);
+  background:
+    color-mix(in srgb, var(--velora-error) 9%, transparent);
+}
+
+.return-card h1 {
+  margin: 0 0 12px;
+  color: var(--velora-ink);
+  font-family: var(--velora-font-display);
+  font-size: clamp(34px, 6vw, 52px);
+  font-weight: 400;
+}
+
+.return-card p {
+  max-width: 500px;
+  margin: 0;
+  color: var(--velora-muted);
+  line-height: 1.7;
+}
+
+.return-actions {
+  width: 100%;
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.return-actions button,
+.return-actions a {
+  min-height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--velora-radius-sm);
+  padding: 11px 16px;
+  font: inherit;
+  text-decoration: none;
+}
+
+.return-actions button {
+  border: 1px solid var(--velora-ink);
+  background: var(--velora-ink);
+  color: var(--velora-ivory);
+  cursor: pointer;
+}
+
+.return-actions a {
+  border: 1px solid var(--velora-border-strong);
+  color: var(--velora-ink);
+}
+
+@media (max-width: 520px) {
+  .return-actions {
+    grid-template-columns: 1fr;
+  }
+}

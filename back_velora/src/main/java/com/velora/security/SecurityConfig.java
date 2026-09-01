@@ -80,7 +80,8 @@ public class SecurityConfig {
                                 "/api/health",
                                 "/actuator/health",
                                 "/api/auth/register",
-                                "/api/auth/login"
+                                "/api/auth/login",
+                                "/api/payments/stripe/webhook"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/manager/**").hasRole("STORE_MANAGER")
