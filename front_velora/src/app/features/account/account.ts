@@ -5,7 +5,7 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/auth/auth.service';
 import { Product } from '../../core/catalog/catalog.models';
@@ -31,7 +31,8 @@ type CustomerKind = 'B2C' | 'B2B';
   standalone: true,
   imports: [
     AuthenticatedShell,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    RouterLink
   ],
   templateUrl: './account.html',
   styleUrl: './account.scss'

@@ -604,3 +604,80 @@ textarea {
     justify-content: flex-start;
   }
 }
+/* POINT 4 · Account experience completion */
+
+.account-shortcuts {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.account-shortcuts a {
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--velora-border);
+  border-radius: var(--velora-radius-md);
+  background: var(--velora-card);
+  color: var(--velora-ink);
+  padding: 22px;
+  text-decoration: none;
+  box-shadow: var(--velora-shadow-sm);
+  transition:
+    transform var(--velora-transition-fast),
+    box-shadow var(--velora-transition-fast),
+    border-color var(--velora-transition-fast);
+}
+
+.account-shortcuts a:hover {
+  transform: translateY(-3px);
+  border-color: var(--velora-border-strong);
+  box-shadow: var(--velora-shadow-md);
+}
+
+.account-shortcuts a > span {
+  color: var(--velora-terracotta);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.account-shortcuts h2 {
+  margin: 9px 0;
+  font-family: var(--velora-font-display);
+  font-size: 25px;
+  font-weight: 400;
+}
+
+.account-shortcuts p {
+  margin: 0;
+  color: var(--velora-muted);
+  line-height: 1.55;
+}
+
+.account-shortcuts strong {
+  margin-top: auto;
+  padding-top: 18px;
+  color: var(--velora-terracotta);
+  font-size: 12px;
+}
+
+.panel,
+.address-form,
+.address-card,
+.product-card {
+  border-radius: var(--velora-radius-md);
+}
+
+@media (max-width: 900px) {
+  .account-shortcuts {
+    grid-template-columns: 1fr;
+  }
+
+  .account-shortcuts a {
+    min-height: 155px;
+  }
+}

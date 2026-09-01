@@ -404,3 +404,89 @@
     text-align: left;
   }
 }
+/* POINT 4 · Orders experience completion */
+
+.order-card {
+  border-radius: var(--velora-radius-md);
+  overflow: hidden;
+  box-shadow: var(--velora-shadow-sm);
+  transition:
+    transform var(--velora-transition-fast),
+    box-shadow var(--velora-transition-fast),
+    border-color var(--velora-transition-fast);
+}
+
+.order-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--velora-border-strong);
+  box-shadow: var(--velora-shadow-md);
+}
+
+.order-header {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(
+        in srgb,
+        var(--velora-champagne) 8%,
+        transparent
+      ),
+      transparent 42%
+    );
+}
+
+.payment-section {
+  background:
+    linear-gradient(
+      180deg,
+      var(--velora-ivory),
+      var(--velora-card)
+    );
+}
+
+.status {
+  border: 1px solid transparent;
+  font-weight: 600;
+}
+
+.status.reserved {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--velora-warning) 24%,
+      transparent
+    );
+}
+
+.status.fulfilled {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--velora-success) 24%,
+      transparent
+    );
+}
+
+.status.cancelled {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--velora-error) 24%,
+      transparent
+    );
+}
+
+@media (max-width: 560px) {
+  .order-body,
+  .payment-section {
+    padding: 17px;
+  }
+
+  .order-header {
+    padding: 16px 17px;
+  }
+
+  .order-footer {
+    padding: 13px 17px;
+  }
+}

@@ -9,42 +9,89 @@
     <span>MI BOLSA</span>
 
     <div class="heading-row">
-      <div>
+      <div class="heading-copy">
         <h1>Su selección.</h1>
 
         <p>
-          Revise variantes y cantidades antes
-          de continuar con su compra.
+          Revise cada variante y ajuste las cantidades
+          antes de reservar su pedido.
         </p>
       </div>
 
       @if (cart.totalItems() > 0) {
-        <button
-          type="button"
-          class="clear-button"
-          [disabled]="clearing()"
-          (click)="clear()"
-        >
-          {{
-            clearing()
-              ? 'Vaciando...'
-              : 'Vaciar bolsa'
-          }}
-        </button>
+        <div class="heading-actions">
+          <span class="item-count-chip">
+            {{ cart.totalItems() }}
+            {{
+              cart.totalItems() === 1
+                ? 'pieza'
+                : 'piezas'
+            }}
+          </span>
+
+          <button
+            type="button"
+            class="clear-button"
+            [disabled]="
+              clearing() ||
+              busyItemId() !== null
+            "
+            (click)="clear()"
+          >
+            {{
+              clearing()
+                ? 'Vaciando...'
+                : 'Vaciar bolsa'
+            }}
+          </button>
+        </div>
       }
     </div>
   </section>
 
   @if (errorMessage()) {
-    <div class="cart-feedback">
-      <strong>No pudimos completar la acción.</strong>
-      <span>{{ errorMessage() }}</span>
+    <div
+      class="cart-feedback"
+      role="alert"
+      aria-live="assertive"
+    >
+      <span class="feedback-mark">!</span>
+
+      <div>
+        <strong>No pudimos completar la acción.</strong>
+        <span>{{ errorMessage() }}</span>
+      </div>
     </div>
   }
 
   @if (loading()) {
-    <section class="loading-state">
-      Cargando su selección...
+    <section
+      class="loading-state"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div class="loading-copy">
+        <span>PREPARANDO SU BOLSA</span>
+        <strong>Cargando su selección...</strong>
+      </div>
+
+      <div class="skeleton-row">
+        <span></span>
+        <div>
+          <i></i>
+          <i></i>
+          <i></i>
+        </div>
+      </div>
+
+      <div class="skeleton-row">
+        <span></span>
+        <div>
+          <i></i>
+          <i></i>
+          <i></i>
+        </div>
+      </div>
     </section>
   }
   @else if (cart.cart().items.length === 0) {
@@ -54,12 +101,14 @@
       <span>BOLSA VACÍA</span>
 
       <h2>
-        Encuentre una pieza para comenzar.
+        Su próxima pieza VÉLORA
+        puede comenzar aquí.
       </h2>
 
       <p>
-        Explore la colección y seleccione
-        el color y la talla que prefiera.
+        Explore la colección, elija color y talla,
+        y vuelva cuando encuentre una pieza que
+        quiera hacer suya.
       </p>
 
       <button
@@ -80,7 +129,15 @@
           item of cart.cart().items;
           track item.id
         ) {
-          <article class="cart-item">
+          <article
+            class="cart-item"
+            [class.busy]="
+              busyItemId() === item.id
+            "
+            [attr.aria-busy]="
+              busyItemId() === item.id
+            "
+          >
 
             <div class="item-visual">
               @if (
@@ -98,9 +155,20 @@
             </div>
 
             <div class="item-info">
-              <span class="sku">
-                {{ item.sku }}
-              </span>
+              <div class="item-meta">
+                <span class="sku">
+                  {{ item.sku }}
+                </span>
+
+                @if (item.colorHex) {
+                  <span class="color-preview">
+                    <i
+                      [style.background]="item.colorHex"
+                    ></i>
+                    {{ item.color }}
+                  </span>
+                }
+              </div>
 
               <h2>
                 {{ item.productName }}
@@ -120,46 +188,67 @@
                     {{ item.size }}
                   </strong>
                 </span>
+
+                <span>
+                  Precio unitario
+                  <strong>
+                    Bs {{ item.unitPrice }}
+                  </strong>
+                </span>
               </div>
 
-              <strong class="unit-price">
-                Bs {{ item.unitPrice }}
-              </strong>
+              @if (
+                busyItemId() === item.id
+              ) {
+                <span class="updating-copy">
+                  Actualizando selección...
+                </span>
+              }
             </div>
 
             <div class="item-controls">
 
-              <div class="quantity">
-                <button
-                  type="button"
-                  [disabled]="
-                    item.quantity <= 1 ||
-                    busyItemId() === item.id
-                  "
-                  (click)="decrease(item)"
-                >
-                  −
-                </button>
+              <div class="quantity-block">
+                <small>CANTIDAD</small>
 
-                <span>
-                  {{ item.quantity }}
-                </span>
+                <div class="quantity">
+                  <button
+                    type="button"
+                    aria-label="Disminuir cantidad"
+                    [disabled]="
+                      item.quantity <= 1 ||
+                      busyItemId() === item.id
+                    "
+                    (click)="decrease(item)"
+                  >
+                    −
+                  </button>
 
-                <button
-                  type="button"
-                  [disabled]="
-                    item.quantity >= 99 ||
-                    busyItemId() === item.id
-                  "
-                  (click)="increase(item)"
-                >
-                  +
-                </button>
+                  <span>
+                    {{ item.quantity }}
+                  </span>
+
+                  <button
+                    type="button"
+                    aria-label="Aumentar cantidad"
+                    [disabled]="
+                      item.quantity >= 99 ||
+                      busyItemId() === item.id
+                    "
+                    (click)="increase(item)"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
-              <strong class="subtotal">
-                Bs {{ item.subtotal }}
-              </strong>
+              <div class="item-subtotal">
+                <small>SUBTOTAL</small>
+
+                <strong>
+                  Bs {{ item.subtotal }}
+                </strong>
+              </div>
 
               <button
                 type="button"
@@ -169,7 +258,7 @@
                 "
                 (click)="remove(item)"
               >
-                Retirar
+                Retirar de la bolsa
               </button>
 
             </div>
@@ -190,7 +279,7 @@
         </h2>
 
         <div class="summary-row">
-          <span>Productos</span>
+          <span>Piezas</span>
           <strong>
             {{ cart.totalItems() }}
           </strong>
@@ -204,15 +293,23 @@
           </strong>
         </div>
 
-        <p class="summary-note">
-          El carrito no reserva inventario.
-          La disponibilidad se confirma al
-          generar el pedido.
-        </p>
+        <div class="inventory-note">
+          <span>i</span>
+
+          <p>
+            La bolsa no reserva inventario.
+            La disponibilidad se valida y se
+            reserva al confirmar el pedido.
+          </p>
+        </div>
 
         <button
           type="button"
           class="checkout-button"
+          [disabled]="
+            busyItemId() !== null ||
+            clearing()
+          "
           (click)="checkout()"
         >
           Continuar compra →
@@ -225,6 +322,11 @@
         >
           Seguir explorando
         </button>
+
+        <small class="summary-footnote">
+          Compra protegida por la validación
+          de stock de VÉLORA.
+        </small>
 
       </aside>
 
