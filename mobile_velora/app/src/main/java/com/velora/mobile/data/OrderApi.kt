@@ -3,6 +3,23 @@ package com.velora.mobile.data
 import org.json.JSONArray
 import org.json.JSONObject
 
+data class MobileOfflineOrderItemRequest(
+    val variantId: String,
+    val quantity: Int
+)
+
+data class MobileOfflineOrderRequest(
+    val clientOperationId: String,
+    val clientCreatedAt: String,
+    val sourceCartId: String?,
+    val warehouseId: String,
+    val fulfillmentType:
+        MobileFulfillmentType,
+    val addressId: String?,
+    val notes: String?,
+    val items:
+        List<MobileOfflineOrderItemRequest>
+)
 enum class MobileFulfillmentType {
     DELIVERY,
     PICKUP,
@@ -68,6 +85,167 @@ data class MobileOrder(
 class OrderApi(
     private val client: ApiClient
 ) {
+    fun syncOffline(
+        request:
+            MobileOfflineOrderRequest
+    ): MobileOrder {
+
+        require(
+            request.clientOperationId
+                .isNotBlank()
+        ) {
+            "clientOperationId es obligatorio."
+        }
+
+        require(
+            request.clientCreatedAt
+                .isNotBlank()
+        ) {
+            "clientCreatedAt es obligatorio."
+        }
+
+        require(
+            request.warehouseId
+                .isNotBlank()
+        ) {
+            "warehouseId es obligatorio."
+        }
+
+        require(
+            request.items.isNotEmpty()
+        ) {
+            "El pedido offline debe contener al menos un producto."
+        }
+
+        require(
+            request.fulfillmentType ==
+                MobileFulfillmentType.DELIVERY ||
+            request.fulfillmentType ==
+                MobileFulfillmentType.PICKUP
+        ) {
+            "El pedido offline solo admite DELIVERY o PICKUP."
+        }
+
+        if (
+            request.fulfillmentType ==
+                MobileFulfillmentType.DELIVERY &&
+            request.addressId
+                .isNullOrBlank()
+        ) {
+            throw IllegalArgumentException(
+                "La dirección es obligatoria para DELIVERY."
+            )
+        }
+
+        val items =
+            JSONArray()
+
+        request.items
+            .forEach { item ->
+
+                require(
+                    item.variantId
+                        .isNotBlank()
+                ) {
+                    "variantId es obligatorio."
+                }
+
+                require(
+                    item.quantity > 0
+                ) {
+                    "La cantidad debe ser mayor a cero."
+                }
+
+                items.put(
+                    JSONObject()
+                        .put(
+                            "variantId",
+                            item.variantId
+                        )
+                        .put(
+                            "quantity",
+                            item.quantity
+                        )
+                )
+            }
+
+        val body =
+            JSONObject()
+                .put(
+                    "clientOperationId",
+                    request.clientOperationId
+                )
+                .put(
+                    "clientCreatedAt",
+                    request.clientCreatedAt
+                )
+                .put(
+                    "warehouseId",
+                    request.warehouseId
+                )
+                .put(
+                    "fulfillmentType",
+                    request
+                        .fulfillmentType
+                        .name
+                )
+                .put(
+                    "items",
+                    items
+                )
+
+        if (
+            request.sourceCartId
+                .isNullOrBlank()
+        ) {
+            body.put(
+                "sourceCartId",
+                JSONObject.NULL
+            )
+        } else {
+            body.put(
+                "sourceCartId",
+                request.sourceCartId
+            )
+        }
+
+        if (
+            request.fulfillmentType ==
+                MobileFulfillmentType.DELIVERY
+        ) {
+            body.put(
+                "addressId",
+                request.addressId
+            )
+        } else {
+            body.put(
+                "addressId",
+                JSONObject.NULL
+            )
+        }
+
+        if (
+            request.notes
+                .isNullOrBlank()
+        ) {
+            body.put(
+                "notes",
+                JSONObject.NULL
+            )
+        } else {
+            body.put(
+                "notes",
+                request.notes.trim()
+            )
+        }
+
+        return parseOrder(
+            client.postObject(
+                "/customer/orders/offline-sync",
+                body
+            )
+        )
+    }
 
     fun create(
         warehouseId: String,

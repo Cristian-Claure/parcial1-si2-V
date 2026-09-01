@@ -50,7 +50,7 @@ public class CartService {
         UserEntity user = requireCustomer(userId);
         ProductVariantEntity variant = requirePurchasableVariant(request.variantId());
 
-        ShoppingCartEntity cart = activeCart(user);
+        ShoppingCartEntity cart = activeCartForUpdate(user);
 
         ShoppingCartItemEntity item = items
                 .findByCartIdAndVariantId(cart.getId(), variant.getId())
@@ -88,6 +88,8 @@ public class CartService {
     ) {
         requireCustomer(userId);
 
+        lockActiveCart(userId);
+
         ShoppingCartItemEntity item = items
                 .findActiveItemForCustomer(itemId, userId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -110,6 +112,8 @@ public class CartService {
     ) {
         requireCustomer(userId);
 
+        lockActiveCart(userId);
+
         ShoppingCartItemEntity item = items
                 .findActiveItemForCustomer(itemId, userId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -129,12 +133,18 @@ public class CartService {
     public void clearCart(UUID userId) {
         requireCustomer(userId);
 
-        carts.findByUserIdAndStatus(userId, CartStatus.ACTIVE)
-                .ifPresent(cart -> items.deleteAllByCartId(cart.getId()));
+        carts.findForUpdateByUserAndStatus(
+                userId,
+                CartStatus.ACTIVE
+        ).ifPresent(
+                cart -> items.deleteAllByCartId(
+                        cart.getId()
+                )
+        );
     }
 
-    private ShoppingCartEntity activeCart(UserEntity user) {
-        return carts.findByUserIdAndStatus(user.getId(), CartStatus.ACTIVE)
+    private ShoppingCartEntity activeCartForUpdate(UserEntity user) {
+        return carts.findForUpdateByUserAndStatus(user.getId(), CartStatus.ACTIVE)
                 .orElseGet(() -> {
                     ShoppingCartEntity cart = new ShoppingCartEntity();
                     cart.setUser(user);
@@ -143,6 +153,17 @@ public class CartService {
                 });
     }
 
+    private void lockActiveCart(
+            UUID userId
+    ) {
+        carts.findForUpdateByUserAndStatus(
+                userId,
+                CartStatus.ACTIVE
+        ).orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Artículo del carrito no encontrado."
+        ));
+    }
     private ProductVariantEntity requirePurchasableVariant(UUID variantId) {
         ProductVariantEntity variant = variants.findById(variantId)
                 .orElseThrow(() -> new ResponseStatusException(

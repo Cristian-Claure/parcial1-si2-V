@@ -5,7 +5,314 @@
   [userLabel]="userLabel()"
   (logoutRequested)="logout()"
 >
-  @if (createdOrder(); as order) {
+  @if (offlineConflict(); as conflict) {
+
+    <section class="offline-conflict-state">
+
+      <div class="conflict-mark">
+        !
+      </div>
+
+      <span>
+        REVISIÓN NECESARIA
+      </span>
+
+      <h1>
+        La disponibilidad de su selección cambió.
+      </h1>
+
+      <p>
+        VÉLORA intentó sincronizar el pedido
+        guardado en este dispositivo, pero uno
+        o más productos ya no pudieron reservarse.
+      </p>
+
+      <div class="conflict-message">
+
+        <strong>
+          No se realizó ninguna reserva ni cobro.
+        </strong>
+
+        <p>
+          @if (conflict.conflictMessage) {
+            {{ conflict.conflictMessage }}
+          }
+          @else {
+            La disponibilidad cambió mientras
+            estuvo sin conexión.
+          }
+        </p>
+
+      </div>
+
+      <div class="conflict-items">
+
+        @for (
+          item of conflict.displayItems;
+          track item.variantId
+        ) {
+
+          <article class="conflict-item">
+
+            <div>
+              <strong>
+                {{ item.productName }}
+              </strong>
+
+              <small>
+                {{ item.color }}
+                ·
+                {{ item.size }}
+                ·
+                {{ item.sku }}
+              </small>
+            </div>
+
+            <div class="conflict-item-detail">
+              <span>
+                x{{ item.quantity }}
+              </span>
+
+              <strong>
+                Bs {{ item.unitPrice }}
+              </strong>
+            </div>
+
+          </article>
+
+        }
+
+      </div>
+
+      <div class="conflict-facts">
+
+        <article>
+          <span>Estado</span>
+          <strong>Requiere revisión</strong>
+        </article>
+
+        <article>
+          <span>Inventario</span>
+          <strong>No reservado</strong>
+        </article>
+
+        <article>
+          <span>Pago</span>
+          <strong>No realizado</strong>
+        </article>
+
+      </div>
+
+      <div class="connection-card conflict-connection">
+
+        <span class="connection-dot"></span>
+
+        <div>
+          <strong>
+            {{
+              offline.online()
+                ? 'Conexión disponible'
+                : 'Sin conexión'
+            }}
+          </strong>
+
+          <p>
+            {{
+              offline.online()
+                ? 'Puede volver a validar la misma selección contra el inventario actual.'
+                : 'Conéctese para volver a validar la disponibilidad.'
+            }}
+          </p>
+        </div>
+
+      </div>
+
+      <div class="conflict-actions">
+
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="
+            resolvingOfflineConflict() ||
+            !offline.online()
+          "
+          (click)="retryOfflineConflict()"
+        >
+          @if (resolvingOfflineConflict()) {
+            Validando...
+          }
+          @else {
+            Volver a validar selección
+          }
+        </button>
+
+        <button
+          type="button"
+          class="secondary-button"
+          [disabled]="resolvingOfflineConflict()"
+          (click)="router.navigate(['/bolsa'])"
+        >
+          Revisar bolsa
+        </button>
+
+      </div>
+
+      <button
+        type="button"
+        class="conflict-discard-button"
+        [disabled]="resolvingOfflineConflict()"
+        (click)="discardOfflineConflict()"
+      >
+        Descartar este intento guardado
+      </button>
+
+      <p class="conflict-help">
+        Descartar este intento no elimina los
+        productos que todavía conserva en su bolsa.
+      </p>
+
+    </section>
+
+  }
+  @else if (offlineQueuedOperationId()) {
+
+    <section class="offline-order-state">
+
+      <div class="offline-mark">
+        ↻
+      </div>
+
+      <span>
+        PEDIDO GUARDADO
+      </span>
+
+      <h1>
+        Su compra quedó segura en este dispositivo.
+      </h1>
+
+      <p>
+        Guardamos una copia exacta de su selección
+        para sincronizarla cuando vuelva la conexión.
+      </p>
+
+      <div class="offline-warning">
+
+        <strong>
+          Todavía no reservamos inventario.
+        </strong>
+
+        <p>
+          El stock será validado por VÉLORA al
+          sincronizar. Tampoco se realizará ningún
+          cobro mientras permanezca sin conexión.
+        </p>
+
+      </div>
+
+      <div
+        class="connection-card"
+        [class.connected]="offline.online()"
+      >
+
+        @if (offline.online()) {
+
+          <span class="connection-dot"></span>
+
+          <div>
+            <strong>
+              Conexión disponible
+            </strong>
+
+            <p>
+              La cola se sincroniza automáticamente.
+              Revise Mis pedidos para confirmar el
+              registro definitivo.
+            </p>
+          </div>
+
+        }
+        @else {
+
+          <span class="connection-dot"></span>
+
+          <div>
+            <strong>
+              Pendiente de sincronización
+            </strong>
+
+            <p>
+              Puede cerrar o continuar navegando.
+              VÉLORA conservará este pedido en el
+              dispositivo.
+            </p>
+          </div>
+
+        }
+
+      </div>
+
+      <div class="offline-facts">
+
+        <article>
+          <span>
+            Pedidos pendientes
+          </span>
+
+          <strong>
+            {{ offline.pendingCount() }}
+          </strong>
+        </article>
+
+        <article>
+          <span>
+            Conflictos
+          </span>
+
+          <strong>
+            {{ offline.conflictCount() }}
+          </strong>
+        </article>
+
+        <article>
+          <span>
+            Estado
+          </span>
+
+          <strong>
+            {{
+              offline.online()
+                ? 'Sincronizando'
+                : 'Guardado localmente'
+            }}
+          </strong>
+        </article>
+
+      </div>
+
+      <div class="success-actions">
+
+        <button
+          type="button"
+          class="primary-button"
+          (click)="goToCatalog()"
+        >
+          Seguir explorando
+        </button>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="router.navigate(['/bolsa'])"
+        >
+          Volver a la bolsa
+        </button>
+
+      </div>
+
+    </section>
+
+  }
+  @else if (createdOrder(); as order) {
 
     <section class="order-success">
 

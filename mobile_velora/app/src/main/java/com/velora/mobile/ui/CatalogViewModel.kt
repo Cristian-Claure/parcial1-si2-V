@@ -4,6 +4,9 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.velora.mobile.data.CatalogApi
+import com.velora.mobile.data.CatalogOfflineCodec
+import com.velora.mobile.data.CustomerOfflineScope
+import com.velora.mobile.data.CustomerOfflineStore
 import com.velora.mobile.data.MobileProduct
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 data class CatalogUiState(
     val loading: Boolean = true,
@@ -24,6 +28,14 @@ class CatalogViewModel(
 
     private val api = CatalogApi()
 
+    private val offlineStore =
+        CustomerOfflineStore(
+            application
+        )
+
+    private val offlineCodec =
+        CatalogOfflineCodec()
+
     private val _state =
         MutableStateFlow(CatalogUiState())
 
@@ -36,30 +48,102 @@ class CatalogViewModel(
 
     fun loadProducts() {
         viewModelScope.launch {
-            _state.value = CatalogUiState(
-                loading = true
-            )
+            _state.value =
+                CatalogUiState(
+                    loading = true
+                )
 
             try {
                 val products =
-                    withContext(Dispatchers.IO) {
+                    withContext(
+                        Dispatchers.IO
+                    ) {
                         api.products()
                     }
-                    .filter {
-                        it.status == "ACTIVE"
-                    }
+                        .filter {
+                            it.status ==
+                                "ACTIVE"
+                        }
 
-                _state.value = CatalogUiState(
-                    loading = false,
-                    products = products
-                )
-            } catch (exception: Exception) {
-                _state.value = CatalogUiState(
-                    loading = false,
-                    error =
-                        exception.message
-                            ?: "No se pudo cargar el catálogo."
-                )
+                withContext(
+                    Dispatchers.IO
+                ) {
+                    offlineStore.save(
+                        CustomerOfflineScope.CATALOG,
+                        offlineCodec.encode(
+                            products
+                        )
+                    )
+                }
+
+                _state.value =
+                    CatalogUiState(
+                        loading = false,
+                        products = products
+                    )
+
+            } catch (
+                exception: Exception
+            ) {
+
+                if (
+                    exception !is IOException
+                ) {
+                    _state.value =
+                        CatalogUiState(
+                            loading = false,
+                            error =
+                                exception.message
+                                    ?: "No se pudo cargar el catálogo."
+                        )
+
+                    return@launch
+                }
+
+                val cachedProducts =
+                    runCatching {
+                        withContext(
+                            Dispatchers.IO
+                        ) {
+                            offlineStore
+                                .load(
+                                    CustomerOfflineScope.CATALOG
+                                )
+                                ?.let {
+                                    payload ->
+
+                                    offlineCodec
+                                        .decode(
+                                            payload
+                                        )
+                                        .filter {
+                                            it.status ==
+                                                "ACTIVE"
+                                        }
+                                }
+                        }
+                    }
+                        .getOrNull()
+
+                if (
+                    cachedProducts != null
+                ) {
+                    _state.value =
+                        CatalogUiState(
+                            loading = false,
+                            products =
+                                cachedProducts
+                        )
+                }
+                else {
+                    _state.value =
+                        CatalogUiState(
+                            loading = false,
+                            error =
+                                exception.message
+                                    ?: "No se pudo cargar el catálogo."
+                        )
+                }
             }
         }
     }

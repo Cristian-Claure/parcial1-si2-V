@@ -4,7 +4,8 @@ import { Injectable, inject } from '@angular/core';
 import {
   CheckoutWarehouse,
   CreateOrderPayload,
-  Order
+  Order,
+  SyncOfflineOrderPayload
 } from './order.models';
 
 @Injectable({ providedIn: 'root' })
@@ -26,6 +27,14 @@ export class OrderService {
     );
   }
 
+  syncOffline(
+    payload: SyncOfflineOrderPayload
+  ) {
+    return this.http.post<Order>(
+      '/api/customer/orders/offline-sync',
+      payload
+    );
+  }
   list() {
     return this.http.get<Order[]>(
       '/api/customer/orders'

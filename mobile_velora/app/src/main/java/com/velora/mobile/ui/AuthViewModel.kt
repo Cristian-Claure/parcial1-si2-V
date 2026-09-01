@@ -23,7 +23,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _state = MutableStateFlow(
         AuthUiState(
-            authenticated = session.token() != null && session.role() == "CUSTOMER",
+            authenticated = session.hasCustomerSession(),
             firstName = session.firstName(),
             email = session.email()
         )
