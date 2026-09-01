@@ -39,8 +39,18 @@ class CatalogOfflineCodec {
                                 variant.color
                             )
                             .put(
+                                "colorHex",
+                                variant.colorHex
+                                    ?: JSONObject.NULL
+                            )
+                            .put(
                                 "price",
                                 variant.price
+                            )
+                            .put(
+                                "compareAtPrice",
+                                variant.compareAtPrice
+                                    ?: JSONObject.NULL
                             )
                             .put(
                                 "currency",
@@ -49,6 +59,43 @@ class CatalogOfflineCodec {
                             .put(
                                 "active",
                                 variant.active
+                            )
+                    )
+                }
+
+            val images =
+                JSONArray()
+
+            product.images
+                .forEach { image ->
+
+                    images.put(
+                        JSONObject()
+                            .put(
+                                "id",
+                                image.id
+                            )
+                            .put(
+                                "variantId",
+                                image.variantId
+                                    ?: JSONObject.NULL
+                            )
+                            .put(
+                                "imageUrl",
+                                image.imageUrl
+                            )
+                            .put(
+                                "altText",
+                                image.altText
+                                    ?: JSONObject.NULL
+                            )
+                            .put(
+                                "sortOrder",
+                                image.sortOrder
+                            )
+                            .put(
+                                "primary",
+                                image.primary
                             )
                     )
                 }
@@ -68,6 +115,10 @@ class CatalogOfflineCodec {
                         product.name
                     )
                     .put(
+                        "slug",
+                        product.slug
+                    )
+                    .put(
                         "description",
                         product.description
                             ?: JSONObject.NULL
@@ -78,12 +129,31 @@ class CatalogOfflineCodec {
                             ?: JSONObject.NULL
                     )
                     .put(
+                        "composition",
+                        product.composition
+                            ?: JSONObject.NULL
+                    )
+                    .put(
+                        "careInstructions",
+                        product.careInstructions
+                            ?: JSONObject.NULL
+                    )
+                    .put(
+                        "fitNotes",
+                        product.fitNotes
+                            ?: JSONObject.NULL
+                    )
+                    .put(
                         "status",
                         product.status
                     )
                     .put(
                         "variants",
                         variants
+                    )
+                    .put(
+                        "images",
+                        images
                     )
             )
         }
@@ -154,9 +224,21 @@ class CatalogOfflineCodec {
                                             "color"
                                         ),
 
+                                    colorHex =
+                                        nullableString(
+                                            variant,
+                                            "colorHex"
+                                        ),
+
                                     price =
                                         variant.getDouble(
                                             "price"
+                                        ),
+
+                                    compareAtPrice =
+                                        nullableDouble(
+                                            variant,
+                                            "compareAtPrice"
                                         ),
 
                                     currency =
@@ -175,12 +257,75 @@ class CatalogOfflineCodec {
                         }
                     }
 
+                val imagesJson =
+                    product.optJSONArray(
+                        "images"
+                    )
+                        ?: JSONArray()
+
+                val images =
+                    buildList {
+
+                        for (
+                            imageIndex in
+                            0 until imagesJson.length()
+                        ) {
+
+                            val image =
+                                imagesJson
+                                    .getJSONObject(
+                                        imageIndex
+                                    )
+
+                            add(
+                                MobileImage(
+                                    id =
+                                        image.getString(
+                                            "id"
+                                        ),
+
+                                    variantId =
+                                        nullableString(
+                                            image,
+                                            "variantId"
+                                        ),
+
+                                    imageUrl =
+                                        image.getString(
+                                            "imageUrl"
+                                        ),
+
+                                    altText =
+                                        nullableString(
+                                            image,
+                                            "altText"
+                                        ),
+
+                                    sortOrder =
+                                        image.optInt(
+                                            "sortOrder",
+                                            0
+                                        ),
+
+                                    primary =
+                                        image.optBoolean(
+                                            "primary",
+                                            false
+                                        )
+                                )
+                            )
+                        }
+                    }
+
+                val id =
+                    product.getString(
+                        "id"
+                    )
+
                 add(
                     MobileProduct(
                         id =
-                            product.getString(
-                                "id"
-                            ),
+                            id,
 
                         categoryName =
                             product.optString(
@@ -192,6 +337,13 @@ class CatalogOfflineCodec {
                             product.getString(
                                 "name"
                             ),
+
+                        slug =
+                            nullableString(
+                                product,
+                                "slug"
+                            )
+                                ?: id,
 
                         description =
                             nullableString(
@@ -205,6 +357,24 @@ class CatalogOfflineCodec {
                                 "brand"
                             ),
 
+                        composition =
+                            nullableString(
+                                product,
+                                "composition"
+                            ),
+
+                        careInstructions =
+                            nullableString(
+                                product,
+                                "careInstructions"
+                            ),
+
+                        fitNotes =
+                            nullableString(
+                                product,
+                                "fitNotes"
+                            ),
+
                         status =
                             product.optString(
                                 "status",
@@ -212,7 +382,10 @@ class CatalogOfflineCodec {
                             ),
 
                         variants =
-                            variants
+                            variants,
+
+                        images =
+                            images
                     )
                 )
             }
@@ -238,5 +411,25 @@ class CatalogOfflineCodec {
             .takeIf {
                 it.isNotBlank()
             }
+    }
+
+    private fun nullableDouble(
+        json: JSONObject,
+        key: String
+    ): Double? {
+
+        if (
+            !json.has(key) ||
+            json.isNull(key)
+        ) {
+            return null
+        }
+
+        return runCatching {
+            json.getDouble(
+                key
+            )
+        }
+            .getOrNull()
     }
 }
