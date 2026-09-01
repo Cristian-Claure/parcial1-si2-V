@@ -46,6 +46,10 @@ import {
   ShellNavItem
 } from '../../shared/authenticated-shell/authenticated-shell';
 
+import {
+  CUSTOMER_NAV_ITEMS
+} from '../../shared/customer-navigation';
+
 interface PaymentOption {
   value: PaymentMethod;
   label: string;
@@ -98,36 +102,8 @@ export class MyOrders {
   readonly errorMessage =
     signal<string | null>(null);
 
-  readonly navItems: ShellNavItem[] = [
-    {
-      label: 'Inicio',
-      route: '/'
-    },
-    {
-      label: 'Explorar productos',
-      route: '/catalogo'
-    },
-    {
-      label: 'Mi cuenta',
-      route: '/mi-cuenta'
-    },
-    {
-      label: 'Bolsa',
-      route: '/bolsa'
-    },
-    {
-      label: 'Mis pedidos',
-      route: '/mis-pedidos'
-    },
-    {
-      label: 'Favoritos',
-      disabled: true
-    },
-    {
-      label: 'Probador virtual',
-      disabled: true
-    }
-  ];
+  readonly navItems: ShellNavItem[] =
+    CUSTOMER_NAV_ITEMS;
 
   private readonly methods: PaymentOption[] = [
     {

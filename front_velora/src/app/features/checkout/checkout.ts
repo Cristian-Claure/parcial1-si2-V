@@ -63,6 +63,10 @@ import {
 } from '../../shared/authenticated-shell/authenticated-shell';
 
 import {
+  CUSTOMER_NAV_ITEMS
+} from '../../shared/customer-navigation';
+
+import {
   OnlinePaymentPanel
 } from './online-payment-panel';
 
@@ -136,36 +140,8 @@ export class Checkout {
         ) ?? null
     );
 
-  readonly navItems: ShellNavItem[] = [
-    {
-      label: 'Inicio',
-      route: '/'
-    },
-    {
-      label: 'Explorar productos',
-      route: '/catalogo'
-    },
-    {
-      label: 'Mi cuenta',
-      route: '/mi-cuenta'
-    },
-    {
-      label: 'Bolsa',
-      route: '/bolsa'
-    },
-    {
-      label: 'Mis pedidos',
-      route: '/mis-pedidos'
-    },
-    {
-      label: 'Favoritos',
-      disabled: true
-    },
-    {
-      label: 'Probador virtual',
-      disabled: true
-    }
-  ];
+  readonly navItems: ShellNavItem[] =
+    CUSTOMER_NAV_ITEMS;
 
   readonly form =
     this.fb.nonNullable.group({
