@@ -1,8 +1,10 @@
 package com.velora.mobile.ui
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,11 +14,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +39,131 @@ fun CustomerCatalogSection(
     viewModel: CatalogViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+
+    var catalogSearchTerm by
+        rememberSaveable {
+            mutableStateOf("")
+        }
+
+    var catalogCategory by
+        rememberSaveable {
+            mutableStateOf("TODAS")
+        }
+
+    var catalogSortMode by
+        rememberSaveable {
+            mutableStateOf("FEATURED")
+        }
+
+    val categories =
+        state.products
+            .map {
+                it.categoryName.trim()
+            }
+            .filter {
+                it.isNotBlank()
+            }
+            .distinct()
+            .sorted()
+
+    val normalizedSearch =
+        normalizeCatalogText(
+            catalogSearchTerm
+        )
+
+    val filteredProducts =
+        state.products.filter {
+            product ->
+
+            val matchesCategory =
+                catalogCategory ==
+                    "TODAS" ||
+                    product.categoryName ==
+                    catalogCategory
+
+            if (!matchesCategory) {
+                false
+            }
+            else if (
+                normalizedSearch.isBlank()
+            ) {
+                true
+            }
+            else {
+                val searchable =
+                    buildList {
+                        add(product.name)
+                        add(product.categoryName)
+
+                        product.brand?.let {
+                            add(it)
+                        }
+
+                        product.description?.let {
+                            add(it)
+                        }
+
+                        product.variants
+                            .filter {
+                                it.active
+                            }
+                            .forEach {
+                                variant ->
+
+                                add(variant.color)
+                                add(variant.size)
+                            }
+                    }
+                        .joinToString(" ")
+
+                normalizeCatalogText(
+                    searchable
+                ).contains(
+                    normalizedSearch
+                )
+            }
+        }
+
+    val visibleProducts =
+        when (catalogSortMode) {
+            "PRICE_ASC" ->
+                filteredProducts.sortedBy {
+                    product ->
+
+                    product.variants
+                        .filter {
+                            it.active
+                        }
+                        .minByOrNull {
+                            it.price
+                        }
+                        ?.price
+                        ?: Double.MAX_VALUE
+                }
+
+            "PRICE_DESC" ->
+                filteredProducts.sortedByDescending {
+                    product ->
+
+                    product.variants
+                        .filter {
+                            it.active
+                        }
+                        .minByOrNull {
+                            it.price
+                        }
+                        ?.price
+                        ?: -1.0
+                }
+
+            "NAME_ASC" ->
+                filteredProducts.sortedBy {
+                    it.name.lowercase()
+                }
+
+            else ->
+                filteredProducts
+        }
 
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -51,6 +183,192 @@ fun CustomerCatalogSection(
         )
 
         Spacer(Modifier.height(18.dp))
+
+        OutlinedTextField(
+            modifier =
+                Modifier.fillMaxWidth(),
+            value =
+                catalogSearchTerm,
+            onValueChange = {
+                catalogSearchTerm = it
+            },
+            singleLine = true,
+            label = {
+                Text("Buscar")
+            },
+            placeholder = {
+                Text(
+                    "Vestidos, negro, talla M..."
+                )
+            }
+        )
+
+        Spacer(
+            Modifier.height(14.dp)
+        )
+
+        Text(
+            text =
+                "CATEGORÍAS",
+            color =
+                VeloraColors.Terracotta,
+            fontWeight =
+                FontWeight.Bold
+        )
+
+        Spacer(
+            Modifier.height(8.dp)
+        )
+
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(
+                        rememberScrollState()
+                    ),
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    8.dp
+                )
+        ) {
+
+            FilterChip(
+                selected =
+                    catalogCategory ==
+                        "TODAS",
+                onClick = {
+                    catalogCategory =
+                        "TODAS"
+                },
+                label = {
+                    Text("Todas")
+                }
+            )
+
+            categories.forEach {
+                category ->
+
+                FilterChip(
+                    selected =
+                        catalogCategory ==
+                            category,
+                    onClick = {
+                        catalogCategory =
+                            category
+                    },
+                    label = {
+                        Text(category)
+                    }
+                )
+            }
+        }
+
+        Spacer(
+            Modifier.height(14.dp)
+        )
+
+        Text(
+            text =
+                "ORDENAR",
+            color =
+                VeloraColors.Terracotta,
+            fontWeight =
+                FontWeight.Bold
+        )
+
+        Spacer(
+            Modifier.height(8.dp)
+        )
+
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(
+                        rememberScrollState()
+                    ),
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    8.dp
+                )
+        ) {
+
+            FilterChip(
+                selected =
+                    catalogSortMode ==
+                        "FEATURED",
+                onClick = {
+                    catalogSortMode =
+                        "FEATURED"
+                },
+                label = {
+                    Text("Recomendados")
+                }
+            )
+
+            FilterChip(
+                selected =
+                    catalogSortMode ==
+                        "PRICE_ASC",
+                onClick = {
+                    catalogSortMode =
+                        "PRICE_ASC"
+                },
+                label = {
+                    Text("Menor precio")
+                }
+            )
+
+            FilterChip(
+                selected =
+                    catalogSortMode ==
+                        "PRICE_DESC",
+                onClick = {
+                    catalogSortMode =
+                        "PRICE_DESC"
+                },
+                label = {
+                    Text("Mayor precio")
+                }
+            )
+
+            FilterChip(
+                selected =
+                    catalogSortMode ==
+                        "NAME_ASC",
+                onClick = {
+                    catalogSortMode =
+                        "NAME_ASC"
+                },
+                label = {
+                    Text("A–Z")
+                }
+            )
+        }
+
+        Spacer(
+            Modifier.height(12.dp)
+        )
+
+        Text(
+            text =
+                if (
+                    visibleProducts.size ==
+                        1
+                ) {
+                    "1 pieza encontrada"
+                }
+                else {
+                    "${visibleProducts.size} piezas encontradas"
+                },
+            color =
+                VeloraColors.Muted
+        )
+
+        Spacer(
+            Modifier.height(18.dp)
+        )
 
         when {
             state.loading -> {
@@ -80,6 +398,28 @@ fun CustomerCatalogSection(
                 )
             }
 
+            visibleProducts.isEmpty() -> {
+                Text(
+                    text =
+                        "No encontramos piezas que coincidan con su búsqueda.",
+                    color =
+                        VeloraColors.Muted
+                )
+
+                TextButton(
+                    onClick = {
+                        catalogSearchTerm = ""
+                        catalogCategory = "TODAS"
+                        catalogSortMode =
+                            "FEATURED"
+                    }
+                ) {
+                    Text(
+                        "LIMPIAR FILTROS"
+                    )
+                }
+            }
+
             else -> {
                 LazyColumn(
                     modifier = Modifier
@@ -89,7 +429,7 @@ fun CustomerCatalogSection(
                         Arrangement.spacedBy(12.dp)
                 ) {
                     items(
-                        items = state.products,
+                        items = visibleProducts,
                         key = { it.id }
                     ) { product ->
                         ProductCard(
@@ -103,6 +443,19 @@ fun CustomerCatalogSection(
         }
     }
 }
+
+private fun normalizeCatalogText(
+    value: String
+): String =
+    java.text.Normalizer
+        .normalize(
+            value.trim().lowercase(),
+            java.text.Normalizer.Form.NFD
+        )
+        .replace(
+            Regex("[\u0300-\u036f]"),
+            ""
+        )
 
 @Composable
 private fun ProductCard(
