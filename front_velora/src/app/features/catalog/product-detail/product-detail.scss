@@ -1,0 +1,367 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: var(--velora-ivory);
+  color: var(--velora-ink);
+}
+
+header {
+  min-height: 80px;
+  padding: 0 6vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--velora-border);
+}
+
+.brand {
+  color: var(--velora-ink);
+  font-family: var(--velora-font-display);
+  font-size: 25px;
+  letter-spacing: .22em;
+  text-decoration: none;
+}
+
+nav {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+nav a,
+.back-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+main {
+  padding: 42px 6vw 80px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 28px;
+  color: var(--velora-muted);
+  font-size: 13px;
+}
+
+.product-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.08fr)
+    minmax(340px, .92fr);
+  gap: clamp(34px, 6vw, 88px);
+  align-items: start;
+}
+
+.main-image {
+  min-height: 620px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: var(--velora-radius-lg);
+  background: var(--velora-ink);
+}
+
+.main-image img {
+  width: 100%;
+  height: 620px;
+  object-fit: cover;
+}
+
+.image-placeholder {
+  display: grid;
+  gap: 10px;
+  place-items: center;
+  color: var(--velora-champagne);
+}
+
+.image-placeholder strong {
+  font-family: var(--velora-font-display);
+  font-size: 90px;
+  font-weight: 400;
+}
+
+.image-placeholder span {
+  letter-spacing: .28em;
+}
+
+.thumbnails {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.thumbnails button {
+  width: 74px;
+  height: 92px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--velora-border);
+  border-radius: var(--velora-radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.thumbnails button.selected {
+  border-color: var(--velora-ink);
+}
+
+.thumbnails img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-info {
+  position: sticky;
+  top: 30px;
+}
+
+.category,
+.brand-name,
+.selector-group > span,
+.product-notes span,
+.future-experience > span {
+  display: block;
+  color: var(--velora-terracotta);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.brand-name {
+  margin-top: 8px;
+  color: var(--velora-muted);
+}
+
+h1 {
+  margin: 14px 0;
+  font-family: var(--velora-font-display);
+  font-size: clamp(40px, 5vw, 64px);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.description {
+  color: var(--velora-muted);
+  line-height: 1.7;
+}
+
+.price {
+  margin: 24px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.price strong {
+  font-family: var(--velora-font-display);
+  font-size: 28px;
+}
+
+.price span {
+  color: var(--velora-muted-light);
+  text-decoration: line-through;
+}
+
+.selector-group {
+  margin-top: 22px;
+}
+
+.color-options,
+.size-options {
+  margin-top: 9px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-options button,
+.size-options button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--velora-border);
+  border-radius: var(--velora-radius-pill);
+  background: var(--velora-card);
+  color: var(--velora-ink);
+  cursor: pointer;
+}
+
+.size-options button {
+  min-width: 44px;
+  border-radius: var(--velora-radius-sm);
+}
+
+.color-options button.selected,
+.size-options button.selected {
+  border-color: var(--velora-ink);
+  background: var(--velora-ink);
+  color: var(--velora-ivory);
+}
+
+.color-options i {
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  display: inline-block;
+  vertical-align: middle;
+  border: 1px solid rgba(0, 0, 0, .14);
+  border-radius: 50%;
+}
+
+.selection {
+  margin-top: 20px;
+  padding: 14px;
+  display: grid;
+  gap: 5px;
+  border-radius: var(--velora-radius-md);
+  background: var(--velora-surface-soft);
+}
+
+.selection span {
+  color: var(--velora-muted);
+  font-size: 11px;
+}
+
+.add-button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 15px 18px;
+  border: 1px solid var(--velora-ink);
+  border-radius: var(--velora-radius-sm);
+  background: var(--velora-ink);
+  color: var(--velora-ivory);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.add-button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.feedback,
+.state-card {
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  border-radius: var(--velora-radius-sm);
+}
+
+.feedback.success {
+  background: var(--velora-surface-soft);
+  color: var(--velora-success);
+}
+
+.feedback.error {
+  background: var(--velora-surface-soft);
+  color: var(--velora-error);
+}
+
+.feedback a {
+  margin-left: 10px;
+  color: inherit;
+  font-weight: 700;
+}
+
+.favorite-button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 10px;
+  border: 1px solid var(--velora-border-strong);
+  border-radius: var(--velora-radius-pill);
+  background: transparent;
+  color: var(--velora-ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition:
+    background var(--velora-transition-fast),
+    border-color var(--velora-transition-fast);
+}
+
+.favorite-button:hover:not(:disabled) {
+  border-color: var(--velora-terracotta);
+  background: var(--velora-surface-soft);
+}
+
+.favorite-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.product-notes {
+  margin-top: 26px;
+  display: grid;
+  gap: 14px;
+}
+
+.product-notes section {
+  padding-top: 14px;
+  border-top: 1px solid var(--velora-border);
+}
+
+.product-notes p {
+  margin: 6px 0 0;
+  color: var(--velora-muted);
+  line-height: 1.6;
+}
+
+.future-experience {
+  margin-top: 26px;
+  padding: 18px;
+  border: 1px solid var(--velora-border);
+  border-radius: var(--velora-radius-md);
+  background: var(--velora-card);
+}
+
+.future-experience strong {
+  display: block;
+  margin-top: 7px;
+}
+
+.future-experience p {
+  margin-bottom: 0;
+  color: var(--velora-muted);
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .product-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .product-info {
+    position: static;
+  }
+
+  .main-image,
+  .main-image img {
+    min-height: 460px;
+    height: 460px;
+  }
+}
+
+@media (max-width: 620px) {
+  header {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  main {
+    padding-top: 28px;
+  }
+
+  .main-image,
+  .main-image img {
+    min-height: 390px;
+    height: 390px;
+  }
+}

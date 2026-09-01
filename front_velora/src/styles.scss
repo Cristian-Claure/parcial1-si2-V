@@ -1,9 +1,79 @@
+:root {
+  --velora-ivory: #f8f4ef;
+  --velora-surface: #f4f0ea;
+  --velora-surface-soft: #efe7df;
+  --velora-card: #fffdfa;
+  --velora-card-muted: #eae1d8;
+
+  --velora-ink: #201d1b;
+  --velora-ink-soft: #403a36;
+  --velora-muted: #786e68;
+  --velora-muted-light: #9b8f87;
+
+  --velora-champagne: #c7a989;
+  --velora-terracotta: #a97760;
+  --velora-dusty-rose: #c79a98;
+  --velora-rose-gold: #b98273;
+
+  --velora-success: #66825f;
+  --velora-warning: #a47a3e;
+  --velora-error: #a05f59;
+  --velora-info: #6e7887;
+
+  --velora-border: rgba(32, 29, 27, 0.12);
+  --velora-border-strong: rgba(32, 29, 27, 0.22);
+
+  --velora-shadow-sm:
+    0 8px 24px rgba(45, 35, 30, 0.07);
+
+  --velora-shadow-md:
+    0 18px 48px rgba(45, 35, 30, 0.11);
+
+  --velora-shadow-lg:
+    0 32px 80px rgba(45, 35, 30, 0.15);
+
+  --velora-radius-sm: 10px;
+  --velora-radius-md: 16px;
+  --velora-radius-lg: 24px;
+  --velora-radius-xl: 32px;
+  --velora-radius-pill: 999px;
+
+  --velora-space-1: 4px;
+  --velora-space-2: 8px;
+  --velora-space-3: 12px;
+  --velora-space-4: 16px;
+  --velora-space-5: 20px;
+  --velora-space-6: 24px;
+  --velora-space-8: 32px;
+  --velora-space-10: 40px;
+  --velora-space-12: 48px;
+  --velora-space-16: 64px;
+
+  --velora-font-body:
+    Montserrat,
+    Inter,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+
+  --velora-font-display:
+    Georgia,
+    "Times New Roman",
+    serif;
+
+  --velora-content: 1380px;
+
+  --velora-transition-fast: 160ms ease;
+  --velora-transition: 220ms ease;
+}
+
 * {
   box-sizing: border-box;
 }
 
 html {
   scroll-behavior: smooth;
+  background: var(--velora-surface);
 }
 
 html,
@@ -14,17 +84,170 @@ body {
 }
 
 body {
-  font-family:
-    Montserrat,
-    Inter,
-    "Segoe UI",
-    Arial,
-    sans-serif;
+  background: var(--velora-surface);
+  color: var(--velora-ink);
+  font-family: var(--velora-font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
 a {
   -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  outline-color: var(--velora-terracotta);
+}
+
+::selection {
+  background: rgba(169, 119, 96, 0.22);
+  color: var(--velora-ink);
+}
+
+/* Cycle 3 · CUSTOMER Home experience */
+
+.bag-button {
+  text-decoration: none;
+}
+
+.customer-journey {
+  padding:
+    var(--velora-space-16)
+    max(
+      var(--velora-space-8),
+      calc(
+        (100vw - var(--velora-content)) /
+        2
+      )
+    );
+  background: var(--velora-card);
+  border-top: 1px solid var(--velora-border);
+  border-bottom: 1px solid var(--velora-border);
+}
+
+.journey-intro {
+  max-width: 720px;
+}
+
+.journey-intro > span {
+  color: var(--velora-terracotta);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.journey-intro h2 {
+  margin: 14px 0 0;
+  color: var(--velora-ink);
+  font-family: var(--velora-font-display);
+  font-size: clamp(38px, 4.5vw, 64px);
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.journey-intro h2 em {
+  color: var(--velora-terracotta);
+  font-weight: 400;
+}
+
+.journey-grid {
+  margin-top: var(--velora-space-10);
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: var(--velora-space-4);
+}
+
+.journey-card {
+  min-height: 230px;
+  padding: var(--velora-space-6);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--velora-border);
+  border-radius: var(--velora-radius-md);
+  background: var(--velora-ivory);
+  color: var(--velora-ink);
+  text-decoration: none;
+  box-shadow: var(--velora-shadow-sm);
+  transition:
+    transform var(--velora-transition-fast),
+    box-shadow var(--velora-transition-fast),
+    border-color var(--velora-transition-fast);
+}
+
+.journey-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--velora-border-strong);
+  box-shadow: var(--velora-shadow-md);
+}
+
+.journey-card--accent {
+  background: var(--velora-ink);
+  color: var(--velora-ivory);
+}
+
+.journey-card small {
+  color: var(--velora-terracotta);
+  font-family: var(--velora-font-display);
+}
+
+.journey-card strong {
+  margin-top: auto;
+  font-family: var(--velora-font-display);
+  font-size: 28px;
+  font-weight: 400;
+}
+
+.journey-card span {
+  margin-top: var(--velora-space-2);
+  color: var(--velora-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.journey-card--accent span {
+  color: rgba(248, 244, 239, 0.68);
+}
+
+.journey-card b {
+  margin-top: var(--velora-space-5);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .journey-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .journey-card {
+    min-height: 190px;
+  }
+}
+
+@media (max-width: 650px) {
+  .customer-journey {
+    padding:
+      var(--velora-space-12)
+      var(--velora-space-4);
+  }
+
+  .journey-intro h2 {
+    font-size: 40px;
+  }
 }

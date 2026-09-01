@@ -1,0 +1,149 @@
+:host {
+  pointer-events: none;
+}
+
+.toast-region {
+  position: fixed;
+  z-index: 3000;
+  top: 22px;
+  right: 22px;
+  width: min(420px, calc(100vw - 32px));
+  display: grid;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 28px;
+  gap: 12px;
+  align-items: start;
+  border: 1px solid var(--velora-border-strong);
+  border-radius: var(--velora-radius-md);
+  background: color-mix(
+    in srgb,
+    var(--velora-card) 96%,
+    transparent
+  );
+  color: var(--velora-ink);
+  padding: 15px;
+  box-shadow: var(--velora-shadow-lg);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+  animation: velora-toast-in 190ms ease-out;
+}
+
+.toast::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius:
+    var(--velora-radius-md)
+    0 0
+    var(--velora-radius-md);
+  background: var(--velora-info);
+}
+
+.toast.success::before {
+  background: var(--velora-success);
+}
+
+.toast.error::before {
+  background: var(--velora-error);
+}
+
+.toast.warning::before {
+  background: var(--velora-warning);
+}
+
+.toast.info::before {
+  background: var(--velora-info);
+}
+
+.toast-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--velora-border);
+  border-radius: 50%;
+  background: var(--velora-surface-soft);
+  color: var(--velora-info);
+  font-family: var(--velora-font-display);
+  font-size: 18px;
+}
+
+.toast.success .toast-mark {
+  color: var(--velora-success);
+}
+
+.toast.error .toast-mark {
+  color: var(--velora-error);
+}
+
+.toast.warning .toast-mark {
+  color: var(--velora-warning);
+}
+
+.toast-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.toast-copy strong {
+  color: var(--velora-ink);
+  font-size: 13px;
+}
+
+.toast-copy p {
+  margin: 0;
+  color: var(--velora-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.toast-close {
+  width: 28px;
+  height: 28px;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--velora-muted);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.toast-close:hover {
+  color: var(--velora-ink);
+}
+
+@keyframes velora-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 620px) {
+  .toast-region {
+    top: 14px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

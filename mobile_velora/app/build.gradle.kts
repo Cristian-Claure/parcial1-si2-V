@@ -42,6 +42,14 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
 
     /*
+     * Imágenes remotas del catálogo CUSTOMER.
+     * Coil Compose renderiza las imágenes y OkHttp
+     * permite resolver URLs HTTP/HTTPS.
+     */
+    implementation("io.coil-kt.coil3:coil-compose:3.6.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.0")
+
+    /*
      * Generación local del QR de pago.
      * No realiza red ni procesa pagos.
      */

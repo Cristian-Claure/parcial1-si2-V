@@ -17,6 +17,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.velora.mobile.data.MobileOrder
+import com.velora.mobile.data.MobileProduct
 import com.velora.mobile.ui.theme.VeloraColors
 
 private enum class AuthScreen {
@@ -25,9 +26,13 @@ private enum class AuthScreen {
 }
 
 private enum class CustomerScreen {
+    HOME,
     CATALOG,
-    ORDERS,
+    PRODUCT_DETAIL,
+    FAVORITES,
     CART,
+    ACCOUNT,
+    ORDERS,
     CHECKOUT,
     PAYMENT
 }
@@ -230,14 +235,24 @@ private fun CustomerHome(
     onLogout: () -> Unit,
     cartViewModel: CartViewModel = viewModel(),
     checkoutViewModel: CheckoutViewModel = viewModel(),
-    ordersViewModel: OrdersViewModel = viewModel()
+    ordersViewModel: OrdersViewModel = viewModel(),
+    favoritesViewModel: FavoritesViewModel = viewModel()
 ) {
     val cartState by
         cartViewModel.state.collectAsState()
 
+    val favoritesState by
+        favoritesViewModel.state.collectAsState()
+
     var customerScreen by remember {
         mutableStateOf(
-            CustomerScreen.CATALOG
+            CustomerScreen.HOME
+        )
+    }
+
+    var selectedProduct by remember {
+        mutableStateOf<MobileProduct?>(
+            null
         )
     }
 
@@ -256,8 +271,67 @@ private fun CustomerHome(
         cartViewModel.load()
     }
 
-    AuthCanvas {
-        BrandHeader()
+    Scaffold(
+        containerColor =
+            VeloraColors.Surface,
+        bottomBar = {
+            when (customerScreen) {
+                CustomerScreen.HOME,
+                CustomerScreen.CATALOG,
+                CustomerScreen.FAVORITES,
+                CustomerScreen.CART,
+                CustomerScreen.ACCOUNT -> {
+                    CustomerBottomNavigation(
+                        currentScreen =
+                            customerScreen,
+                        cartCount =
+                            cartState.cart.totalItems,
+                        onSelect = {
+                            destination ->
+
+                            if (
+                                destination ==
+                                    CustomerScreen.CART
+                            ) {
+                                cartViewModel.load()
+                            }
+
+                            if (
+                                destination ==
+                                    CustomerScreen.FAVORITES
+                            ) {
+                                favoritesViewModel.load()
+                            }
+
+                            customerScreen =
+                                destination
+                        }
+                    )
+                }
+
+                else -> Unit
+            }
+        }
+    ) { innerPadding ->
+
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        innerPadding
+                    )
+                    .padding(
+                        horizontal =
+                            24.dp,
+                        vertical =
+                            18.dp
+                    )
+                    .verticalScroll(
+                        rememberScrollState()
+                    )
+        ) {
+            BrandHeader()
 
         Spacer(
             Modifier.height(28.dp)
@@ -295,6 +369,421 @@ private fun CustomerHome(
 
         when (customerScreen) {
 
+            CustomerScreen.HOME -> {
+
+                Text(
+                    text =
+                        "VÉLORA PARA USTED",
+                    color =
+                        VeloraColors.Terracotta,
+                    fontWeight =
+                        FontWeight.Bold,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelMedium
+                )
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                Text(
+                    text =
+                        "Hola, $firstName.",
+                    color =
+                        VeloraColors.Ink,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .displaySmall
+                )
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                Text(
+                    text =
+                        "Descubra piezas para cada momento y continúe su experiencia donde la dejó.",
+                    color =
+                        VeloraColors.Muted,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodyLarge
+                )
+
+                Spacer(
+                    Modifier.height(24.dp)
+                )
+
+                Card(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    shape =
+                        MaterialTheme
+                            .shapes
+                            .large,
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                VeloraColors.Ink
+                        )
+                ) {
+
+                    Column(
+                        modifier =
+                            Modifier.padding(
+                                24.dp
+                            )
+                    ) {
+
+                        Text(
+                            text =
+                                "NUEVA COLECCIÓN",
+                            color =
+                                VeloraColors.Champagne,
+                            fontWeight =
+                                FontWeight.Bold,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelMedium
+                        )
+
+                        Spacer(
+                            Modifier.height(10.dp)
+                        )
+
+                        Text(
+                            text =
+                                "Encuentre la pieza que define su estilo.",
+                            color =
+                                VeloraColors.Ivory,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .headlineMedium
+                        )
+
+                        Spacer(
+                            Modifier.height(10.dp)
+                        )
+
+                        Text(
+                            text =
+                                "Prendas, calzado y accesorios seleccionados para acompañarla.",
+                            color =
+                                VeloraColors.MutedLight,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodyMedium
+                        )
+
+                        Spacer(
+                            Modifier.height(20.dp)
+                        )
+
+                        Button(
+                            modifier =
+                                Modifier.fillMaxWidth(),
+                            onClick = {
+                                customerScreen =
+                                    CustomerScreen.CATALOG
+                            },
+                            colors =
+                                ButtonDefaults
+                                    .buttonColors(
+                                        containerColor =
+                                            VeloraColors.Ivory,
+                                        contentColor =
+                                            VeloraColors.Ink
+                                    )
+                        ) {
+                            Text(
+                                "EXPLORAR COLECCIÓN"
+                            )
+                        }
+                    }
+                }
+
+                Spacer(
+                    Modifier.height(28.dp)
+                )
+
+                Text(
+                    text =
+                        "CONTINÚE SU EXPERIENCIA",
+                    color =
+                        VeloraColors.Terracotta,
+                    fontWeight =
+                        FontWeight.Bold,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelMedium
+                )
+
+                Spacer(
+                    Modifier.height(12.dp)
+                )
+
+                CustomerTile(
+                    title =
+                        "MI BOLSA",
+                    subtitle =
+                        if (
+                            cartState.cart.totalItems ==
+                                0
+                        ) {
+                            "Su próxima elección comienza aquí"
+                        }
+                        else {
+                            "${cartState.cart.totalItems} producto(s) esperando por usted"
+                        },
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    onClick = {
+                        cartViewModel.load()
+
+                        customerScreen =
+                            CustomerScreen.CART
+                    }
+                )
+
+                Spacer(
+                    Modifier.height(12.dp)
+                )
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            12.dp
+                        )
+                ) {
+
+                    CustomerTile(
+                        title =
+                            "PEDIDOS",
+                        subtitle =
+                            "Estado e historial",
+                        modifier =
+                            Modifier.weight(1f),
+                        onClick = {
+                            ordersViewModel.load()
+
+                            customerScreen =
+                                CustomerScreen.ORDERS
+                        }
+                    )
+
+                    CustomerTile(
+                        title =
+                            "FAVORITOS",
+                        subtitle =
+                            "Sus piezas guardadas",
+                        modifier =
+                            Modifier.weight(1f),
+                        onClick = {
+                            favoritesViewModel.load()
+
+                            customerScreen =
+                                CustomerScreen.FAVORITES
+                        }
+                    )
+                }
+
+                Spacer(
+                    Modifier.height(12.dp)
+                )
+
+                CustomerTile(
+                    title =
+                        "MI CUENTA",
+                    subtitle =
+                        "Perfil, pedidos y preferencias",
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    onClick = {
+                        customerScreen =
+                            CustomerScreen.ACCOUNT
+                    }
+                )
+
+                Spacer(
+                    Modifier.height(28.dp)
+                )
+
+                Surface(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    shape =
+                        MaterialTheme
+                            .shapes
+                            .medium,
+                    color =
+                        VeloraColors.SurfaceSoft
+                ) {
+
+                    Column(
+                        modifier =
+                            Modifier.padding(
+                                20.dp
+                            )
+                    ) {
+
+                        Text(
+                            text =
+                                "PRÓXIMAMENTE",
+                            color =
+                                VeloraColors.RoseGold,
+                            fontWeight =
+                                FontWeight.Bold,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall
+                        )
+
+                        Spacer(
+                            Modifier.height(6.dp)
+                        )
+
+                        Text(
+                            text =
+                                "Probador virtual VÉLORA",
+                            color =
+                                VeloraColors.Ink,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleMedium
+                        )
+
+                        Text(
+                            text =
+                                "Experiencia de cámara, realidad aumentada y visualización digital.",
+                            color =
+                                VeloraColors.Muted,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodyMedium
+                        )
+                    }
+                }
+            }
+
+            CustomerScreen.FAVORITES -> {
+
+                CustomerFavoritesSection(
+                    state =
+                        favoritesState,
+
+                    onRetry =
+                        favoritesViewModel::load,
+
+                    onExplore = {
+                        customerScreen =
+                            CustomerScreen.CATALOG
+                    },
+
+                    onOpenProduct = {
+                        product ->
+
+                        selectedProduct =
+                            product
+
+                        customerScreen =
+                            CustomerScreen
+                                .PRODUCT_DETAIL
+                    },
+
+                    onRemove = {
+                        product ->
+
+                        favoritesViewModel
+                            .toggle(
+                                product
+                            )
+                    }
+                )
+            }
+
+            CustomerScreen.ACCOUNT -> {
+
+                Text(
+                    text =
+                        "MI CUENTA",
+                    color =
+                        VeloraColors.Terracotta,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Spacer(
+                    Modifier.height(8.dp)
+                )
+
+                Text(
+                    text =
+                        firstName,
+                    color =
+                        VeloraColors.Ink,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .headlineMedium
+                )
+
+                Text(
+                    text =
+                        email,
+                    color =
+                        VeloraColors.Muted
+                )
+
+                Spacer(
+                    Modifier.height(24.dp)
+                )
+
+                CustomerTile(
+                    title =
+                        "MIS PEDIDOS",
+                    subtitle =
+                        "Historial, estados y pagos",
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    onClick = {
+                        ordersViewModel.load()
+
+                        customerScreen =
+                            CustomerScreen.ORDERS
+                    }
+                )
+
+                Spacer(
+                    Modifier.height(12.dp)
+                )
+
+                OutlinedButton(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    onClick = {
+                        selectedOrder = null
+                        onLogout()
+                    }
+                ) {
+                    Text(
+                        "CERRAR SESIÓN"
+                    )
+                }
+            }
+
             CustomerScreen.CATALOG -> {
 
                 Row(
@@ -322,9 +811,15 @@ private fun CustomerHome(
                     CustomerTile(
                         title = "FAVORITOS",
                         subtitle =
-                            "Disponible próximamente",
+                            "Sus piezas guardadas",
                         modifier =
-                            Modifier.weight(1f)
+                            Modifier.weight(1f),
+                        onClick = {
+                            favoritesViewModel.load()
+
+                            customerScreen =
+                                CustomerScreen.FAVORITES
+                        }
                     )
                 }
 
@@ -335,6 +830,18 @@ private fun CustomerHome(
                 CustomerCatalogSection(
                     onAddToCart =
                         cartViewModel::addVariant,
+
+                    onOpenProduct = {
+                        product ->
+
+                        selectedProduct =
+                            product
+
+                        customerScreen =
+                            CustomerScreen
+                                .PRODUCT_DETAIL
+                    },
+
                     addingVariantId =
                         cartState.busyVariantId
                 )
@@ -363,6 +870,94 @@ private fun CustomerHome(
                     Text(
                         text =
                             "VER BOLSA (${cartState.cart.totalItems})"
+                    )
+                }
+            }
+
+            CustomerScreen.PRODUCT_DETAIL -> {
+
+                val product =
+                    selectedProduct
+
+                if (
+                    product == null
+                ) {
+                    Text(
+                        text =
+                            "No existe un producto seleccionado.",
+                        color =
+                            VeloraColors.Error
+                    )
+
+                    Spacer(
+                        Modifier.height(
+                            12.dp
+                        )
+                    )
+
+                    OutlinedButton(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        onClick = {
+                            customerScreen =
+                                CustomerScreen
+                                    .CATALOG
+                        }
+                    ) {
+                        Text(
+                            "VOLVER AL CATÁLOGO"
+                        )
+                    }
+                }
+                else {
+                    CustomerProductDetail(
+                        product =
+                            product,
+
+                        addingVariantId =
+                            cartState.busyVariantId,
+
+                        isFavorite =
+                            favoritesState
+                                .favoriteProductIds
+                                .contains(
+                                    product.id
+                                ),
+
+                        favoriteBusy =
+                            favoritesState
+                                .busyProductId ==
+                                product.id,
+
+                        onAddToCart =
+                            cartViewModel::addVariant,
+
+                        onToggleFavorite = {
+                            favoritesViewModel
+                                .toggle(
+                                    product
+                                )
+                        },
+
+                        onBackToCatalog = {
+                            selectedProduct =
+                                null
+
+                            customerScreen =
+                                CustomerScreen
+                                    .CATALOG
+                        },
+
+                        onOpenCart = {
+                            selectedProduct =
+                                null
+
+                            cartViewModel.load()
+
+                            customerScreen =
+                                CustomerScreen
+                                    .CART
+                        }
                     )
                 }
             }
@@ -529,28 +1124,194 @@ private fun CustomerHome(
         Spacer(
             Modifier.height(24.dp)
         )
+        }
+    }
+}
 
-        Button(
+@Composable
+private fun CustomerBottomNavigation(
+    currentScreen:
+        CustomerScreen,
+    cartCount:
+        Int,
+    onSelect:
+        (CustomerScreen) -> Unit
+) {
+
+    Surface(
+        color =
+            VeloraColors.Card,
+        tonalElevation =
+            8.dp,
+        shadowElevation =
+            10.dp
+    ) {
+
+        Row(
             modifier =
-                Modifier.fillMaxWidth(),
-            onClick = {
-                selectedOrder = null
-
-                customerScreen =
-                    CustomerScreen.CATALOG
-
-                onLogout()
-            },
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor =
-                        VeloraColors.Ink,
-                    contentColor =
-                        VeloraColors.Surface
-                )
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(
+                        horizontal =
+                            4.dp,
+                        vertical =
+                            6.dp
+                    ),
+            horizontalArrangement =
+                Arrangement.SpaceEvenly
         ) {
+
+            CustomerNavAction(
+                label =
+                    "Inicio",
+                marker =
+                    "⌂",
+                selected =
+                    currentScreen ==
+                        CustomerScreen.HOME,
+                modifier =
+                    Modifier.weight(1f),
+                onClick = {
+                    onSelect(
+                        CustomerScreen.HOME
+                    )
+                }
+            )
+
+            CustomerNavAction(
+                label =
+                    "Explorar",
+                marker =
+                    "◇",
+                selected =
+                    currentScreen ==
+                        CustomerScreen.CATALOG,
+                modifier =
+                    Modifier.weight(1f),
+                onClick = {
+                    onSelect(
+                        CustomerScreen.CATALOG
+                    )
+                }
+            )
+
+            CustomerNavAction(
+                label =
+                    "Favoritos",
+                marker =
+                    "♡",
+                selected =
+                    currentScreen ==
+                        CustomerScreen.FAVORITES,
+                modifier =
+                    Modifier.weight(1f),
+                onClick = {
+                    onSelect(
+                        CustomerScreen.FAVORITES
+                    )
+                }
+            )
+
+            CustomerNavAction(
+                label =
+                    if (cartCount > 0) {
+                        "Bolsa $cartCount"
+                    }
+                    else {
+                        "Bolsa"
+                    },
+                marker =
+                    "▱",
+                selected =
+                    currentScreen ==
+                        CustomerScreen.CART,
+                modifier =
+                    Modifier.weight(1f),
+                onClick = {
+                    onSelect(
+                        CustomerScreen.CART
+                    )
+                }
+            )
+
+            CustomerNavAction(
+                label =
+                    "Cuenta",
+                marker =
+                    "○",
+                selected =
+                    currentScreen ==
+                        CustomerScreen.ACCOUNT,
+                modifier =
+                    Modifier.weight(1f),
+                onClick = {
+                    onSelect(
+                        CustomerScreen.ACCOUNT
+                    )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun CustomerNavAction(
+    label:
+        String,
+    marker:
+        String,
+    selected:
+        Boolean,
+    modifier:
+        Modifier = Modifier,
+    onClick:
+        () -> Unit
+) {
+
+    TextButton(
+        modifier =
+            modifier,
+        onClick =
+            onClick,
+        colors =
+            ButtonDefaults
+                .textButtonColors(
+                    contentColor =
+                        if (selected) {
+                            VeloraColors
+                                .Terracotta
+                        }
+                        else {
+                            VeloraColors
+                                .Muted
+                        }
+                )
+    ) {
+
+        Column(
+            horizontalAlignment =
+                Alignment.CenterHorizontally
+        ) {
+
             Text(
-                "CERRAR SESIÓN"
+                text =
+                    marker,
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleMedium
+            )
+
+            Text(
+                text =
+                    label,
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelSmall,
+                maxLines =
+                    1
             )
         }
     }
@@ -564,39 +1325,55 @@ private fun CustomerTile(
     onClick: (() -> Unit)? = null
 ) {
 
-    val tileModifier =
+    val interactionModifier =
         if (onClick == null) {
-            modifier
-                .background(
-                    VeloraColors.Card
-                )
-                .padding(
-                    18.dp
-                )
-        } else {
-            modifier
-                .background(
-                    VeloraColors.Card
-                )
-                .clickable(
-                    onClick = onClick
-                )
-                .padding(
-                    18.dp
-                )
+            Modifier
+        }
+        else {
+            Modifier.clickable(
+                onClick = onClick
+            )
         }
 
-    Box(
+    Card(
         modifier =
-            tileModifier
+            modifier.then(
+                interactionModifier
+            ),
+        shape =
+            MaterialTheme
+                .shapes
+                .medium,
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    VeloraColors.Card
+            ),
+        border =
+            CardDefaults.outlinedCardBorder()
     ) {
-        Column {
+
+        Column(
+            modifier =
+                Modifier.padding(
+                    horizontal =
+                        18.dp,
+                    vertical =
+                        20.dp
+                )
+        ) {
+
             Text(
-                title,
+                text =
+                    title,
                 color =
                     VeloraColors.Ink,
                 fontWeight =
-                    FontWeight.Bold
+                    FontWeight.Bold,
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleSmall
             )
 
             Spacer(
@@ -606,10 +1383,37 @@ private fun CustomerTile(
             )
 
             Text(
-                subtitle,
+                text =
+                    subtitle,
                 color =
-                    VeloraColors.Muted
+                    VeloraColors.Muted,
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodySmall
             )
+
+            if (onClick != null) {
+
+                Spacer(
+                    Modifier.height(
+                        12.dp
+                    )
+                )
+
+                Text(
+                    text =
+                        "VER →",
+                    color =
+                        VeloraColors.Terracotta,
+                    fontWeight =
+                        FontWeight.Bold,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall
+                )
+            }
         }
     }
 }

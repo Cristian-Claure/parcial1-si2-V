@@ -4,6 +4,7 @@ import {
 
 import {
   Component,
+  computed,
   inject,
   signal
 } from '@angular/core';
@@ -29,6 +30,12 @@ import {
 import {
   CatalogService
 } from '../../core/catalog/catalog.service';
+
+type CatalogSortOrder =
+  | 'FEATURED'
+  | 'PRICE_ASC'
+  | 'PRICE_DESC'
+  | 'NAME_ASC';
 
 @Component({
   selector: 'app-public-catalog',
@@ -64,6 +71,146 @@ export class PublicCatalog {
 
   readonly addingProductId =
     signal<string | null>(null);
+
+  readonly searchTerm =
+    signal('');
+
+  readonly selectedCategory =
+    signal('ALL');
+
+  readonly sortOrder =
+    signal<CatalogSortOrder>(
+      'FEATURED'
+    );
+
+  readonly categories =
+    computed(() => {
+      const values =
+        this.products()
+          .map(
+            (product) =>
+              product.categoryName
+                ?.trim() ?? ''
+          )
+          .filter(
+            (value) =>
+              value.length > 0
+          );
+
+      return Array
+        .from(
+          new Set(values)
+        )
+        .sort(
+          (left, right) =>
+            left.localeCompare(
+              right,
+              'es'
+            )
+        );
+    });
+
+  readonly hasActiveFilters =
+    computed(
+      () =>
+        this.searchTerm().trim().length >
+          0 ||
+        this.selectedCategory() !==
+          'ALL' ||
+        this.sortOrder() !==
+          'FEATURED'
+    );
+
+  readonly visibleProducts =
+    computed(() => {
+      const term =
+        this.normalizeSearch(
+          this.searchTerm()
+        );
+
+      const category =
+        this.selectedCategory();
+
+      const filtered =
+        this.products().filter(
+          (product) => {
+            if (
+              category !== 'ALL' &&
+              product.categoryName !==
+                category
+            ) {
+              return false;
+            }
+
+            if (!term) {
+              return true;
+            }
+
+            const variants =
+              product.variants.flatMap(
+                (variant) => [
+                  variant.color,
+                  variant.size
+                ]
+              );
+
+            const searchable =
+              [
+                product.name,
+                product.brand ?? '',
+                product.description ?? '',
+                product.categoryName ?? '',
+                ...variants
+              ].join(' ');
+
+            return this
+              .normalizeSearch(
+                searchable
+              )
+              .includes(term);
+          }
+        );
+
+      switch (this.sortOrder()) {
+        case 'PRICE_ASC':
+          return [...filtered].sort(
+            (left, right) =>
+              (
+                this.lowestPrice(left) ??
+                Number.MAX_SAFE_INTEGER
+              ) -
+              (
+                this.lowestPrice(right) ??
+                Number.MAX_SAFE_INTEGER
+              )
+          );
+
+        case 'PRICE_DESC':
+          return [...filtered].sort(
+            (left, right) =>
+              (
+                this.lowestPrice(right) ??
+                -1
+              ) -
+              (
+                this.lowestPrice(left) ??
+                -1
+              )
+          );
+
+        case 'NAME_ASC':
+          return [...filtered].sort(
+            (left, right) =>
+              left.name.localeCompare(
+                right.name,
+                'es'
+              )
+          );
+
+        default:
+          return filtered;
+      }
+    });
 
   constructor() {
     this.catalog.publicProducts().subscribe({
@@ -111,6 +258,60 @@ export class PublicCatalog {
     }
   }
 
+  updateSearch(
+    value: string
+  ): void {
+    this.searchTerm.set(value);
+  }
+
+  updateCategory(
+    value: string
+  ): void {
+    this.selectedCategory.set(
+      value
+    );
+  }
+
+  updateSort(
+    value: string
+  ): void {
+    switch (value) {
+      case 'PRICE_ASC':
+      case 'PRICE_DESC':
+      case 'NAME_ASC':
+        this.sortOrder.set(value);
+        break;
+
+      default:
+        this.sortOrder.set(
+          'FEATURED'
+        );
+    }
+  }
+
+  clearFilters(): void {
+    this.searchTerm.set('');
+    this.selectedCategory.set(
+      'ALL'
+    );
+    this.sortOrder.set(
+      'FEATURED'
+    );
+  }
+
+  private normalizeSearch(
+    value: string
+  ): string {
+    return value
+      .trim()
+      .toLocaleLowerCase('es')
+      .normalize('NFD')
+      .replace(
+        /[\u0300-\u036f]/g,
+        ''
+      );
+  }
+
   lowestPrice(
     product: Product
   ): number | null {
@@ -134,6 +335,71 @@ export class PublicCatalog {
     return product.variants.filter(
       (variant) => variant.active
     );
+  }
+
+  colorOptions(
+    product: Product
+  ): ProductVariant[] {
+    const active =
+      this.activeVariants(product);
+
+    return active.filter(
+      (variant, index) =>
+        active.findIndex(
+          (candidate) =>
+            candidate.color ===
+            variant.color
+        ) === index
+    );
+  }
+
+  sizeOptions(
+    product: Product
+  ): ProductVariant[] {
+    const color =
+      this.selectedVariant(product)
+        ?.color;
+
+    if (!color) {
+      return [];
+    }
+
+    return this
+      .activeVariants(product)
+      .filter(
+        (variant) =>
+          variant.color === color
+      );
+  }
+
+  selectColor(
+    product: Product,
+    color: string
+  ): void {
+    const current =
+      this.selectedVariant(product);
+
+    const candidates =
+      this.activeVariants(product)
+        .filter(
+          (variant) =>
+            variant.color === color
+        );
+
+    const next =
+      candidates.find(
+        (variant) =>
+          variant.size ===
+          current?.size
+      ) ??
+      candidates[0];
+
+    if (next) {
+      this.selectVariant(
+        product.id,
+        next.id
+      );
+    }
   }
 
   selectedVariantId(

@@ -1,0 +1,53 @@
+@if (confirm.current(); as request) {
+  <div
+    class="confirm-backdrop"
+    (click)="confirm.cancel()"
+  >
+    <section
+      class="confirm-card"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="velora-confirm-title"
+      aria-describedby="velora-confirm-message"
+      (click)="$event.stopPropagation()"
+    >
+      <span class="confirm-kicker">
+        {{ request.eyebrow }}
+      </span>
+
+      <div
+        class="confirm-mark"
+        [class.destructive]="request.destructive"
+      >
+        {{ request.destructive ? '!' : 'V' }}
+      </div>
+
+      <h2 id="velora-confirm-title">
+        {{ request.title }}
+      </h2>
+
+      <p id="velora-confirm-message">
+        {{ request.message }}
+      </p>
+
+      <div class="confirm-actions">
+        <button
+          type="button"
+          class="confirm-cancel"
+          (click)="confirm.cancel()"
+        >
+          {{ request.cancelLabel }}
+        </button>
+
+        <button
+          type="button"
+          class="confirm-accept"
+          [class.destructive]="request.destructive"
+          (click)="confirm.accept()"
+        >
+          {{ request.confirmLabel }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

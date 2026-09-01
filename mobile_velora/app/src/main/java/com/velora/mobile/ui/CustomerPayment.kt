@@ -81,10 +81,13 @@ fun CustomerPaymentSection(
         if (
             state.error.isNotBlank()
         ) {
-            Text(
-                text = state.error,
-                color =
-                    VeloraColors.Error
+            VeloraFeedbackCard(
+                message =
+                    state.error,
+                tone =
+                    VeloraFeedbackTone.Error,
+                modifier =
+                    Modifier.fillMaxWidth()
             )
 
             Spacer(

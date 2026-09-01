@@ -51,15 +51,32 @@
           </a>
         }
 
-        <button
-          class="bag-button bag-button--disabled"
-          type="button"
-          disabled
-          title="Disponible próximamente"
-        >
-          Bolsa
-          <span>0</span>
-        </button>
+        @if (
+          auth.currentUser()?.role ===
+          'CUSTOMER'
+        ) {
+          <a
+            class="bag-button"
+            routerLink="/bolsa"
+            aria-label="Abrir mi bolsa"
+          >
+            Bolsa
+            <span>
+              {{ cart.totalItems() }}
+            </span>
+          </a>
+        }
+        @else {
+          <button
+            class="bag-button bag-button--disabled"
+            type="button"
+            disabled
+            title="Inicie sesión como cliente para usar su bolsa"
+          >
+            Bolsa
+            <span>0</span>
+          </button>
+        }
       </div>
     </header>
 
@@ -87,12 +104,25 @@
               <span>→</span>
             </a>
 
-            <a
-              class="secondary-button"
-              href="#experiencia"
-            >
-              Conocer VÉLORA
-            </a>
+            @if (
+              auth.currentUser()?.role ===
+              'CUSTOMER'
+            ) {
+              <a
+                class="secondary-button"
+                routerLink="/bolsa"
+              >
+                Continuar mi compra
+              </a>
+            }
+            @else {
+              <a
+                class="secondary-button"
+                routerLink="/registro"
+              >
+                Crear mi cuenta
+              </a>
+            }
           </div>
 
           <div class="hero-meta">
@@ -106,7 +136,7 @@
             </div>
             <div>
               <strong>AR</strong>
-              <span>Probador virtual</span>
+              <span>Probador virtual · Próximamente</span>
             </div>
           </div>
         </div>
@@ -138,6 +168,116 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <section
+        class="customer-journey"
+        aria-label="Accesos rápidos"
+      >
+        @if (
+          auth.currentUser()?.role ===
+          'CUSTOMER'
+        ) {
+          <div class="journey-intro">
+            <span>SU EXPERIENCIA</span>
+
+            <h2>
+              Todo lo que necesita,
+              <em>a un toque.</em>
+            </h2>
+          </div>
+
+          <div class="journey-grid">
+            <a
+              class="journey-card"
+              routerLink="/catalogo"
+            >
+              <small>01</small>
+              <strong>Explorar</strong>
+              <span>
+                Descubrir nuevas piezas y combinaciones.
+              </span>
+              <b>Ver colección →</b>
+            </a>
+
+            <a
+              class="journey-card journey-card--accent"
+              routerLink="/bolsa"
+            >
+              <small>02</small>
+              <strong>Mi bolsa</strong>
+              <span>
+                {{
+                  cart.totalItems() === 0
+                    ? 'Su próxima elección comienza aquí.'
+                    : cart.totalItems() +
+                      ' producto(s) esperando por usted.'
+                }}
+              </span>
+              <b>Continuar compra →</b>
+            </a>
+
+            <a
+              class="journey-card"
+              routerLink="/mis-pedidos"
+            >
+              <small>03</small>
+              <strong>Mis pedidos</strong>
+              <span>
+                Revise compras, estados y pagos.
+              </span>
+              <b>Ver pedidos →</b>
+            </a>
+          </div>
+        }
+        @else {
+          <div class="journey-intro">
+            <span>COMPRE A SU MANERA</span>
+
+            <h2>
+              Descubra VÉLORA
+              <em>sin complicaciones.</em>
+            </h2>
+          </div>
+
+          <div class="journey-grid">
+            <a
+              class="journey-card"
+              routerLink="/catalogo"
+            >
+              <small>01</small>
+              <strong>Explore libremente</strong>
+              <span>
+                Descubra la colección antes de registrarse.
+              </span>
+              <b>Ver colección →</b>
+            </a>
+
+            <a
+              class="journey-card journey-card--accent"
+              routerLink="/registro"
+            >
+              <small>02</small>
+              <strong>Cree su cuenta</strong>
+              <span>
+                Prepare su bolsa, pedidos y direcciones.
+              </span>
+              <b>Comenzar →</b>
+            </a>
+
+            <a
+              class="journey-card"
+              routerLink="/login"
+            >
+              <small>03</small>
+              <strong>Ya tengo cuenta</strong>
+              <span>
+                Continúe exactamente donde lo dejó.
+              </span>
+              <b>Ingresar →</b>
+            </a>
+          </div>
+        }
       </section>
 
       <section class="featured-section" id="destacados">
@@ -358,3 +498,6 @@
 } @else {
   <router-outlet />
 }
+
+<app-feedback-outlet />
+<app-confirm-dialog />

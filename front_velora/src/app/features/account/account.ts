@@ -5,9 +5,11 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { ConfirmService } from '../../core/feedback/confirm.service';
+import { FeedbackService } from '../../core/feedback/feedback.service';
 import { Product } from '../../core/catalog/catalog.models';
 import { CatalogService } from '../../core/catalog/catalog.service';
 import {
@@ -20,6 +22,10 @@ import {
   ShellNavItem
 } from '../../shared/authenticated-shell/authenticated-shell';
 
+import {
+  CUSTOMER_NAV_ITEMS
+} from '../../shared/customer-navigation';
+
 type CustomerKind = 'B2C' | 'B2B';
 
 @Component({
@@ -27,7 +33,8 @@ type CustomerKind = 'B2C' | 'B2B';
   standalone: true,
   imports: [
     AuthenticatedShell,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    RouterLink
   ],
   templateUrl: './account.html',
   styleUrl: './account.scss'
@@ -39,6 +46,8 @@ export class Account {
   private readonly customer = inject(CustomerService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
+  private readonly confirm = inject(ConfirmService);
+  private readonly feedback = inject(FeedbackService);
 
   readonly products = signal<Product[]>([]);
   readonly addresses = signal<CustomerAddress[]>([]);
@@ -56,15 +65,8 @@ export class Account {
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
 
-  readonly navItems: ShellNavItem[] = [
-    { label: 'Inicio', route: '/' },
-    { label: 'Explorar productos', route: '/catalogo' },
-    { label: 'Mi cuenta', route: '/mi-cuenta' },
-    { label: 'Bolsa', route: '/bolsa' },
-    { label: 'Mis pedidos', route: '/mis-pedidos' },
-    { label: 'Favoritos', disabled: true },
-    { label: 'Probador virtual', disabled: true }
-  ];
+  readonly navItems: ShellNavItem[] =
+    CUSTOMER_NAV_ITEMS;
 
   readonly profileForm = this.fb.nonNullable.group({
     firstName: [
@@ -232,6 +234,11 @@ export class Account {
         this.successMessage.set(
           'Perfil actualizado correctamente.'
         );
+
+        this.feedback.success(
+          'Perfil actualizado',
+          'Sus datos personales quedaron guardados correctamente.'
+        );
       },
       error: (error: HttpErrorResponse) => {
         this.profileSaving.set(false);
@@ -346,6 +353,13 @@ export class Account {
             : 'Dirección registrada correctamente.'
         );
 
+        this.feedback.success(
+          'Dirección guardada',
+          addressId
+            ? 'La dirección fue actualizada.'
+            : 'La nueva dirección quedó registrada.'
+        );
+
         this.loadAddresses();
       },
       error: (error: HttpErrorResponse) => {
@@ -360,10 +374,22 @@ export class Account {
     });
   }
 
-  deleteAddress(address: CustomerAddress): void {
-    const confirmed = window.confirm(
-      `¿Eliminar la dirección "${address.label}"?`
-    );
+  async deleteAddress(
+    address: CustomerAddress
+  ): Promise<void> {
+    const confirmed =
+      await this.confirm.ask({
+        eyebrow: 'DIRECCIONES',
+        title:
+          `¿Eliminar "${address.label}"?`,
+        message:
+          'Esta dirección dejará de estar disponible para futuras entregas.',
+        confirmLabel:
+          'Eliminar dirección',
+        cancelLabel:
+          'Conservar dirección',
+        destructive: true
+      });
 
     if (!confirmed) {
       return;
@@ -377,6 +403,11 @@ export class Account {
       next: () => {
         this.successMessage.set(
           'Dirección eliminada correctamente.'
+        );
+
+        this.feedback.success(
+          'Dirección eliminada',
+          'La dirección dejó de estar disponible para nuevas entregas.'
         );
 
         this.loadAddresses();

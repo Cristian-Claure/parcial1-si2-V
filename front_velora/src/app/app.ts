@@ -8,6 +8,14 @@ import {
 import { filter } from 'rxjs';
 
 import { AuthService } from './core/auth/auth.service';
+import {
+  ConfirmDialog
+} from './shared/feedback/confirm-dialog';
+
+import {
+  FeedbackOutlet
+} from './shared/feedback/feedback-outlet';
+import { CartService } from './core/cart/cart.service';
 
 import {
   CustomerOfflineOrderQueueService
@@ -21,7 +29,12 @@ import { CatalogService } from './core/catalog/catalog.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterLink, RouterOutlet],
+  imports: [
+    RouterLink,
+    RouterOutlet,
+    FeedbackOutlet,
+    ConfirmDialog
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -33,6 +46,7 @@ export class App {
     inject(CustomerOfflineOrderQueueService);
 
   readonly auth = inject(AuthService);
+  readonly cart = inject(CartService);
 
   readonly products = signal<Product[]>([]);
   readonly categories = signal<Category[]>([]);
@@ -69,6 +83,7 @@ export class App {
       });
 
     this.loadCatalog();
+    this.loadCustomerCart();
   }
 
   lowestPrice(product: Product): number | null {
@@ -91,6 +106,19 @@ export class App {
       .split('?')[0];
 
     return path === '/';
+  }
+
+  private loadCustomerCart(): void {
+    if (
+      this.auth.currentUser()?.role !==
+      'CUSTOMER'
+    ) {
+      return;
+    }
+
+    this.cart.load().subscribe({
+      error: () => undefined
+    });
   }
 
   private loadCatalog(): void {

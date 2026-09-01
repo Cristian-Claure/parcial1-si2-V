@@ -169,3 +169,72 @@ a.nav-item:hover {
 .back-button:hover {
   color: #f3dfcb;
 }
+/* POINT 4 · CUSTOMER responsive shell completion */
+
+@media (max-width: 900px) {
+  .sidebar {
+    gap: 22px;
+    padding: 24px 22px;
+  }
+
+  .identity {
+    padding: 14px 0;
+  }
+
+  .shell-content {
+    padding: 24px 22px 40px;
+  }
+}
+
+@media (max-width: 620px) {
+  .sidebar {
+    gap: 18px;
+    padding: 20px 16px;
+  }
+
+  .brand small {
+    display: none;
+  }
+
+  .identity {
+    padding: 12px 0;
+  }
+
+  nav {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    scrollbar-width: thin;
+  }
+
+  .nav-item {
+    flex: 0 0 auto;
+    min-width: max-content;
+    padding: 9px 11px;
+    border: 1px solid rgba(255,255,255,.08);
+    font-size: 12px;
+  }
+
+  .nav-item.disabled {
+    display: none;
+  }
+
+  .sidebar-footer {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .back-home {
+    margin-top: 0;
+  }
+
+  .logout {
+    grid-column: 1 / -1;
+  }
+
+  .shell-content {
+    padding: 22px 16px 36px;
+  }
+}

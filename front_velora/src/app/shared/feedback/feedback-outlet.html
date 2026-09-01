@@ -1,0 +1,37 @@
+<div
+  class="toast-region"
+  aria-live="polite"
+  aria-relevant="additions"
+>
+  @for (
+    toast of feedback.toasts();
+    track toast.id
+  ) {
+    <article
+      class="toast"
+      [class.success]="toast.tone === 'success'"
+      [class.error]="toast.tone === 'error'"
+      [class.warning]="toast.tone === 'warning'"
+      [class.info]="toast.tone === 'info'"
+      role="status"
+    >
+      <span class="toast-mark">
+        {{ icon(toast.tone) }}
+      </span>
+
+      <div class="toast-copy">
+        <strong>{{ toast.title }}</strong>
+        <p>{{ toast.message }}</p>
+      </div>
+
+      <button
+        type="button"
+        class="toast-close"
+        aria-label="Cerrar mensaje"
+        (click)="feedback.dismiss(toast.id)"
+      >
+        ×
+      </button>
+    </article>
+  }
+</div>

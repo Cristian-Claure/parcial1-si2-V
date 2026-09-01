@@ -54,6 +54,104 @@
       precios disponibles en nuestro catálogo.
     </p>
 
+    <section
+      class="catalog-tools"
+      aria-label="Buscar y filtrar productos"
+    >
+      <label class="catalog-field catalog-search">
+        <span>Buscar</span>
+
+        <input
+          type="search"
+          [value]="searchTerm()"
+          placeholder="Vestidos, zapatos, negro, talla M..."
+          (input)="
+            updateSearch(
+              $any($event.target).value
+            )
+          "
+        />
+      </label>
+
+      <label class="catalog-field">
+        <span>Categoría</span>
+
+        <select
+          [value]="selectedCategory()"
+          (change)="
+            updateCategory(
+              $any($event.target).value
+            )
+          "
+        >
+          <option value="ALL">
+            Todas
+          </option>
+
+          @for (
+            category of categories();
+            track category
+          ) {
+            <option [value]="category">
+              {{ category }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label class="catalog-field">
+        <span>Ordenar</span>
+
+        <select
+          [value]="sortOrder()"
+          (change)="
+            updateSort(
+              $any($event.target).value
+            )
+          "
+        >
+          <option value="FEATURED">
+            Recomendados
+          </option>
+
+          <option value="PRICE_ASC">
+            Precio: menor a mayor
+          </option>
+
+          <option value="PRICE_DESC">
+            Precio: mayor a menor
+          </option>
+
+          <option value="NAME_ASC">
+            Nombre A–Z
+          </option>
+        </select>
+      </label>
+
+      <div class="catalog-results">
+        <span>
+          <strong>
+            {{ visibleProducts().length }}
+          </strong>
+
+          {{
+            visibleProducts().length === 1
+              ? 'pieza encontrada'
+              : 'piezas encontradas'
+          }}
+        </span>
+
+        @if (hasActiveFilters()) {
+          <button
+            type="button"
+            (click)="clearFilters()"
+          >
+            Limpiar filtros
+          </button>
+        }
+      </div>
+    </section>
+
     @if (message()) {
       <div class="catalog-feedback success">
         <span>✓</span>
@@ -88,7 +186,7 @@
     <div class="products">
 
       @for (
-        product of products();
+        product of visibleProducts();
         track product.id
       ) {
         <article class="product-card">
@@ -107,100 +205,189 @@
               />
             }
             @else {
-              <span>VÉLORA</span>
+              <div class="visual-placeholder">
+                <strong>V</strong>
+                <span>VÉLORA</span>
+              </div>
             }
+
+            <span class="visual-badge">
+              {{ product.categoryName }}
+            </span>
           </div>
 
           <div class="product-copy">
-            <span>
-              {{ product.categoryName }}
-            </span>
+            <div class="product-meta">
+              <span class="product-category">
+                {{ product.categoryName }}
+              </span>
+
+              @if (product.brand) {
+                <span class="product-brand">
+                  {{ product.brand }}
+                </span>
+              }
+            </div>
 
             <h2>
               {{ product.name }}
             </h2>
 
-            <p>
-              {{ product.description }}
-            </p>
+            <a
+              class="product-detail-link"
+              [routerLink]="[
+                '/catalogo',
+                product.slug
+              ]"
+            >
+              Ver detalle →
+            </a>
+
+            @if (product.description) {
+              <p class="product-description">
+                {{ product.description }}
+              </p>
+            }
 
             @if (
               lowestPrice(product);
               as price
             ) {
-              <strong class="starting-price">
-                Desde Bs {{ price }}
-              </strong>
+              <div class="price-block">
+                <span>Desde</span>
+
+                <strong>
+                  Bs {{ price }}
+                </strong>
+              </div>
             }
 
             @if (
               activeVariants(product).length
             ) {
-              <label class="variant-selector">
-                <span>
-                  Seleccione color y talla
-                </span>
+              <div class="variant-picker">
 
-                <select
-                  [value]="
-                    selectedVariantId(
-                      product.id
-                    )
-                  "
-                  (change)="
-                    selectVariant(
-                      product.id,
-                      $any($event.target).value
-                    )
-                  "
-                >
-                  @for (
-                    variant of
-                      activeVariants(product);
-                    track variant.id
-                  ) {
-                    <option
-                      [value]="variant.id"
-                    >
-                      {{ variant.color }}
-                      ·
-                      Talla {{ variant.size }}
-                      ·
-                      Bs {{ variant.price }}
-                    </option>
-                  }
-                </select>
-              </label>
+                <div class="variant-group">
+                  <span class="variant-label">
+                    Color
+                  </span>
 
-              @if (
-                selectedVariant(product);
-                as variant
-              ) {
-                <div class="selected-variant">
-                  <div>
-                    @if (variant.colorHex) {
-                      <span
-                        class="color-dot"
-                        [style.background]="
-                          variant.colorHex
+                  <div class="color-options">
+                    @for (
+                      option of
+                        colorOptions(product);
+                      track option.color
+                    ) {
+                      <button
+                        type="button"
+                        class="color-option"
+                        [class.is-selected]="
+                          selectedVariant(product)
+                            ?.color ===
+                          option.color
                         "
-                      ></span>
+                        [attr.aria-pressed]="
+                          selectedVariant(product)
+                            ?.color ===
+                          option.color
+                        "
+                        [attr.aria-label]="
+                          'Seleccionar color ' +
+                          option.color
+                        "
+                        (click)="
+                          selectColor(
+                            product,
+                            option.color
+                          )
+                        "
+                      >
+                        @if (option.colorHex) {
+                          <span
+                            class="color-swatch"
+                            [style.background]="
+                              option.colorHex
+                            "
+                          ></span>
+                        }
+
+                        <span>
+                          {{ option.color }}
+                        </span>
+                      </button>
                     }
+                  </div>
+                </div>
 
-                    <span>
-                      {{ variant.color }}
+                @if (
+                  selectedVariant(product);
+                  as variant
+                ) {
+                  <div class="variant-group">
+                    <span class="variant-label">
+                      Talla
                     </span>
 
-                    <span>
-                      Talla {{ variant.size }}
-                    </span>
+                    <div class="size-options">
+                      @for (
+                        sizeVariant of
+                          sizeOptions(product);
+                        track sizeVariant.id
+                      ) {
+                        <button
+                          type="button"
+                          class="size-option"
+                          [class.is-selected]="
+                            selectedVariantId(
+                              product.id
+                            ) ===
+                            sizeVariant.id
+                          "
+                          [attr.aria-pressed]="
+                            selectedVariantId(
+                              product.id
+                            ) ===
+                            sizeVariant.id
+                          "
+                          (click)="
+                            selectVariant(
+                              product.id,
+                              sizeVariant.id
+                            )
+                          "
+                        >
+                          {{ sizeVariant.size }}
+                        </button>
+                      }
+                    </div>
                   </div>
 
-                  <strong>
-                    Bs {{ variant.price }}
-                  </strong>
-                </div>
-              }
+                  <div class="selected-variant">
+                    <div>
+                      @if (variant.colorHex) {
+                        <span
+                          class="color-dot"
+                          [style.background]="
+                            variant.colorHex
+                          "
+                        ></span>
+                      }
+
+                      <span>
+                        {{ variant.color }}
+                      </span>
+
+                      <span>
+                        Talla {{ variant.size }}
+                      </span>
+                    </div>
+
+                    <strong>
+                      Bs {{ variant.price }}
+                    </strong>
+                  </div>
+                }
+              </div>
 
               <button
                 type="button"
@@ -240,9 +427,17 @@
       }
       @empty {
         @if (!loading()) {
-          <p>
-            Aún no existen productos publicados.
-          </p>
+          @if (hasActiveFilters()) {
+            <p class="empty-results">
+              No encontramos piezas que coincidan
+              con su búsqueda. Pruebe otros filtros.
+            </p>
+          }
+          @else {
+            <p class="empty-results">
+              Aún no existen productos publicados.
+            </p>
+          }
         }
       }
 

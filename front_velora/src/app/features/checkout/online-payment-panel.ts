@@ -32,6 +32,10 @@ import {
   PaymentService
 } from '../../core/payment/payment.service';
 
+import {
+  FeedbackService
+} from '../../core/feedback/feedback.service';
+
 type OnlineMethod =
   | 'CARD'
   | 'QR';
@@ -59,6 +63,9 @@ export class OnlinePaymentPanel {
 
   private readonly payments =
     inject(PaymentService);
+
+  private readonly feedback =
+    inject(FeedbackService);
 
   private readonly fb =
     inject(FormBuilder);
@@ -398,6 +405,11 @@ export class OnlinePaymentPanel {
         this.successMessage.set(
           'El intento de pago fue cancelado. Puede seleccionar otro método.'
         );
+
+        this.feedback.info(
+          'Intento de pago cancelado',
+          'Puede seleccionar otro método para completar el pedido.'
+        );
       },
 
       error: (
@@ -478,6 +490,11 @@ export class OnlinePaymentPanel {
             `Pago ${payment.method} confirmado por Bs ${payment.amount}.`
           );
 
+          this.feedback.success(
+            'Pago confirmado',
+            `Registramos Bs ${payment.amount} mediante ${payment.method}.`
+          );
+
           this.paymentCompleted.emit(
             payment
           );
@@ -521,6 +538,11 @@ export class OnlinePaymentPanel {
 
       this.successMessage.set(
         'QR generado correctamente. Escanee el código y confirme el pago.'
+      );
+
+      this.feedback.info(
+        'QR listo para pagar',
+        'Escanee el código desde su banca móvil y luego confirme el pago.'
       );
     }
     catch {

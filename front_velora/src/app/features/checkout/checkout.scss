@@ -925,3 +925,87 @@ textarea:focus {
     width: 100%;
   }
 }
+/* POINT 4 · Checkout experience completion */
+
+.checkout-assurances {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.checkout-assurances article {
+  min-height: 104px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid var(--velora-border);
+  border-radius: var(--velora-radius-md);
+  background: var(--velora-card);
+  padding: 16px;
+  box-shadow: var(--velora-shadow-sm);
+}
+
+.checkout-assurances article > span {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--velora-champagne);
+  border-radius: 50%;
+  color: var(--velora-terracotta);
+  font-family: var(--velora-font-display);
+  font-size: 11px;
+}
+
+.checkout-assurances article > div {
+  display: grid;
+  gap: 5px;
+}
+
+.checkout-assurances strong {
+  color: var(--velora-ink);
+  font-family: var(--velora-font-display);
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.checkout-assurances small {
+  color: var(--velora-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.fulfillment-card,
+.address-option,
+.warehouse-card,
+.checkout-panel,
+.order-summary {
+  transition:
+    border-color var(--velora-transition-fast),
+    box-shadow var(--velora-transition-fast),
+    transform var(--velora-transition-fast);
+}
+
+.fulfillment-card:hover,
+.address-option:hover,
+.warehouse-card:hover {
+  border-color: var(--velora-border-strong);
+  box-shadow: var(--velora-shadow-sm);
+}
+
+.confirm-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 820px) {
+  .checkout-assurances {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-assurances article {
+    min-height: auto;
+  }
+}
