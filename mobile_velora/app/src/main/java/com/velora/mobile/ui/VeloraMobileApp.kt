@@ -354,11 +354,15 @@ private fun CustomerHome(
 
                 Text(
                     text =
-                        "TU ESPACIO VÉLORA",
+                        "VÉLORA PARA USTED",
                     color =
                         VeloraColors.Terracotta,
                     fontWeight =
-                        FontWeight.Bold
+                        FontWeight.Bold,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelMedium
                 )
 
                 Spacer(
@@ -367,13 +371,13 @@ private fun CustomerHome(
 
                 Text(
                     text =
-                        "Moda que acompaña cada momento.",
+                        "Hola, $firstName.",
                     color =
                         VeloraColors.Ink,
                     style =
                         MaterialTheme
                             .typography
-                            .headlineLarge
+                            .displaySmall
                 )
 
                 Spacer(
@@ -382,52 +386,126 @@ private fun CustomerHome(
 
                 Text(
                     text =
-                        "Descubra nuevas piezas, continúe su compra o revise sus pedidos.",
+                        "Descubra piezas para cada momento y continúe su experiencia donde la dejó.",
                     color =
-                        VeloraColors.Muted
+                        VeloraColors.Muted,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodyLarge
                 )
 
                 Spacer(
                     Modifier.height(24.dp)
                 )
 
-                Row(
+                Card(
                     modifier =
                         Modifier.fillMaxWidth(),
-                    horizontalArrangement =
-                        Arrangement.spacedBy(
-                            12.dp
+                    shape =
+                        MaterialTheme
+                            .shapes
+                            .large,
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                VeloraColors.Ink
                         )
                 ) {
 
-                    CustomerTile(
-                        title =
-                            "EXPLORAR",
-                        subtitle =
-                            "Descubrir la colección",
+                    Column(
                         modifier =
-                            Modifier.weight(1f),
-                        onClick = {
-                            customerScreen =
-                                CustomerScreen.CATALOG
-                        }
-                    )
+                            Modifier.padding(
+                                24.dp
+                            )
+                    ) {
 
-                    CustomerTile(
-                        title =
-                            "PEDIDOS",
-                        subtitle =
-                            "Seguir sus compras",
-                        modifier =
-                            Modifier.weight(1f),
-                        onClick = {
-                            ordersViewModel.load()
+                        Text(
+                            text =
+                                "NUEVA COLECCIÓN",
+                            color =
+                                VeloraColors.Champagne,
+                            fontWeight =
+                                FontWeight.Bold,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelMedium
+                        )
 
-                            customerScreen =
-                                CustomerScreen.ORDERS
+                        Spacer(
+                            Modifier.height(10.dp)
+                        )
+
+                        Text(
+                            text =
+                                "Encuentre la pieza que define su estilo.",
+                            color =
+                                VeloraColors.Ivory,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .headlineMedium
+                        )
+
+                        Spacer(
+                            Modifier.height(10.dp)
+                        )
+
+                        Text(
+                            text =
+                                "Prendas, calzado y accesorios seleccionados para acompañarla.",
+                            color =
+                                VeloraColors.MutedLight,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodyMedium
+                        )
+
+                        Spacer(
+                            Modifier.height(20.dp)
+                        )
+
+                        Button(
+                            modifier =
+                                Modifier.fillMaxWidth(),
+                            onClick = {
+                                customerScreen =
+                                    CustomerScreen.CATALOG
+                            },
+                            colors =
+                                ButtonDefaults
+                                    .buttonColors(
+                                        containerColor =
+                                            VeloraColors.Ivory,
+                                        contentColor =
+                                            VeloraColors.Ink
+                                    )
+                        ) {
+                            Text(
+                                "EXPLORAR COLECCIÓN"
+                            )
                         }
-                    )
+                    }
                 }
+
+                Spacer(
+                    Modifier.height(28.dp)
+                )
+
+                Text(
+                    text =
+                        "CONTINÚE SU EXPERIENCIA",
+                    color =
+                        VeloraColors.Terracotta,
+                    fontWeight =
+                        FontWeight.Bold,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelMedium
+                )
 
                 Spacer(
                     Modifier.height(12.dp)
@@ -441,10 +519,10 @@ private fun CustomerHome(
                             cartState.cart.totalItems ==
                                 0
                         ) {
-                            "Lista para su próxima elección"
+                            "Su próxima elección comienza aquí"
                         }
                         else {
-                            "${cartState.cart.totalItems} producto(s) esperando"
+                            "${cartState.cart.totalItems} producto(s) esperando por usted"
                         },
                     modifier =
                         Modifier.fillMaxWidth(),
@@ -455,6 +533,128 @@ private fun CustomerHome(
                             CustomerScreen.CART
                     }
                 )
+
+                Spacer(
+                    Modifier.height(12.dp)
+                )
+
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            12.dp
+                        )
+                ) {
+
+                    CustomerTile(
+                        title =
+                            "PEDIDOS",
+                        subtitle =
+                            "Estado e historial",
+                        modifier =
+                            Modifier.weight(1f),
+                        onClick = {
+                            ordersViewModel.load()
+
+                            customerScreen =
+                                CustomerScreen.ORDERS
+                        }
+                    )
+
+                    CustomerTile(
+                        title =
+                            "FAVORITOS",
+                        subtitle =
+                            "Sus piezas guardadas",
+                        modifier =
+                            Modifier.weight(1f),
+                        onClick = {
+                            customerScreen =
+                                CustomerScreen.FAVORITES
+                        }
+                    )
+                }
+
+                Spacer(
+                    Modifier.height(12.dp)
+                )
+
+                CustomerTile(
+                    title =
+                        "MI CUENTA",
+                    subtitle =
+                        "Perfil, pedidos y preferencias",
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    onClick = {
+                        customerScreen =
+                            CustomerScreen.ACCOUNT
+                    }
+                )
+
+                Spacer(
+                    Modifier.height(28.dp)
+                )
+
+                Surface(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    shape =
+                        MaterialTheme
+                            .shapes
+                            .medium,
+                    color =
+                        VeloraColors.SurfaceSoft
+                ) {
+
+                    Column(
+                        modifier =
+                            Modifier.padding(
+                                20.dp
+                            )
+                    ) {
+
+                        Text(
+                            text =
+                                "PRÓXIMAMENTE",
+                            color =
+                                VeloraColors.RoseGold,
+                            fontWeight =
+                                FontWeight.Bold,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall
+                        )
+
+                        Spacer(
+                            Modifier.height(6.dp)
+                        )
+
+                        Text(
+                            text =
+                                "Probador virtual VÉLORA",
+                            color =
+                                VeloraColors.Ink,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleMedium
+                        )
+
+                        Text(
+                            text =
+                                "Experiencia de cámara, realidad aumentada y visualización digital.",
+                            color =
+                                VeloraColors.Muted,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodyMedium
+                        )
+                    }
+                }
             }
 
             CustomerScreen.FAVORITES -> {
