@@ -2,11 +2,10 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
 import {
-  CreateOnlinePaymentIntentPayload,
   CreatePaymentPayload,
-  OnlinePaymentIntent,
   Payment,
-  PaymentHistory
+  PaymentHistory,
+  StripeCheckoutSession
 } from './payment.models';
 
 @Injectable({ providedIn: 'root' })
@@ -23,41 +22,16 @@ export class PaymentService {
     );
   }
 
-  createOnlineIntent(
-    orderId: string,
-    payload:
-      CreateOnlinePaymentIntentPayload
+  createStripeCheckout(
+    orderId: string
   ) {
-    return this.http.post<
-      OnlinePaymentIntent
-    >(
-      `/api/customer/orders/${orderId}/payments/online-intent`,
-      payload
-    );
-  }
-
-  getOnlineIntent(
-    paymentId: string
-  ) {
-    return this.http.get<
-      OnlinePaymentIntent
-    >(
-      `/api/customer/payments/${paymentId}/online-intent`
-    );
-  }
-
-  confirmOnlineSandbox(
-    paymentId: string
-  ) {
-    return this.http.post<Payment>(
-      `/api/customer/payments/${paymentId}/sandbox-confirm`,
+    return this.http.post<StripeCheckoutSession>(
+      `/api/customer/orders/${orderId}/payments/stripe-checkout`,
       {}
     );
   }
 
-  listForOrder(
-    orderId: string
-  ) {
+  listForOrder(orderId: string) {
     return this.http.get<Payment[]>(
       `/api/customer/orders/${orderId}/payments`
     );

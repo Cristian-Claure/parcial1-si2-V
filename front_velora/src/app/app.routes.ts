@@ -49,6 +49,13 @@ export const routes: Routes = [
       import('./features/checkout/checkout').then((m) => m.Checkout)
   },
   {
+    path: 'pago/stripe/retorno',
+    canActivate: [authGuard, roleGuard(['CUSTOMER'])],
+    loadComponent: () =>
+      import('./features/checkout/stripe-payment-return')
+        .then((m) => m.StripePaymentReturn)
+  },
+  {
     path: 'mi-cuenta',
     canActivate: [authGuard, roleGuard(['CUSTOMER'])],
     loadComponent: () => import('./features/account/account').then((m) => m.Account)

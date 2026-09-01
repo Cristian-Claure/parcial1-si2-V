@@ -22,6 +22,10 @@ import {
 } from '../../../core/auth/auth.service';
 
 import {
+  ConfirmService
+} from '../../../core/feedback/confirm.service';
+
+import {
   OperationalOrder,
   OrderChannel
 } from '../../../core/commerce-operations/commerce-operations.models';
@@ -67,6 +71,9 @@ export class OrdersManagement {
 
   private readonly commerce =
     inject(CommerceOperationsService);
+
+  private readonly confirm =
+    inject(ConfirmService);
 
   private readonly router =
     inject(Router);
@@ -326,28 +333,26 @@ export class OrdersManagement {
     );
   }
 
-  confirmPayment(
+  async confirmPayment(
     payment: Payment
-  ): void {
+  ): Promise<void> {
     if (
       payment.status !== 'PENDING'
     ) {
       return;
     }
 
-    let message =
-      `¿Confirmar como pagado el pago de ${this.paymentMethodLabel(payment.method)} por Bs ${payment.amount}?`;
+    const confirmed =
+      await this.confirm.ask({
+        eyebrow: 'PAGO',
+        title: '¿Confirmar este pago?',
+        message:
+          `${this.paymentMethodLabel(payment.method)} · Bs ${payment.amount}. Esta acción registrará el pago como confirmado.`,
+        confirmLabel: 'Confirmar pago',
+        cancelLabel: 'Volver'
+      });
 
-    if (
-      payment.method === 'CARD' ||
-      payment.method === 'QR' ||
-      payment.method === 'WEB'
-    ) {
-      message +=
-        '\n\nEsta acción es una confirmación operativa/manual. No representa todavía una respuesta automática de una pasarela bancaria.';
-    }
-
-    if (!window.confirm(message)) {
+    if (!confirmed) {
       return;
     }
 
@@ -383,20 +388,27 @@ export class OrdersManagement {
     });
   }
 
-  failPayment(
+  async failPayment(
     payment: Payment
-  ): void {
+  ): Promise<void> {
     if (
       payment.status !== 'PENDING'
     ) {
       return;
     }
 
-    if (
-      !window.confirm(
-        '¿Marcar este intento de pago como fallido?'
-      )
-    ) {
+    const confirmed =
+      await this.confirm.ask({
+        eyebrow: 'PAGO',
+        title: '¿Marcar este pago como fallido?',
+        message:
+          'El intento quedará cerrado y no podrá confirmarse posteriormente desde este flujo.',
+        confirmLabel: 'Marcar fallido',
+        cancelLabel: 'Conservar pago',
+        destructive: true
+      });
+
+    if (!confirmed) {
       return;
     }
 
@@ -432,20 +444,29 @@ export class OrdersManagement {
     });
   }
 
-  refundPayment(
+  async refundPayment(
     payment: Payment
-  ): void {
+  ): Promise<void> {
     if (
       payment.status !== 'PAID'
     ) {
       return;
     }
 
-    if (
-      !window.confirm(
-        `¿Registrar el reembolso del pago por Bs ${payment.amount}?`
-      )
-    ) {
+    const confirmed =
+      await this.confirm.ask({
+        eyebrow: 'REEMBOLSO',
+        title: `¿Reembolsar Bs ${payment.amount}?`,
+        message:
+          payment.provider === 'STRIPE'
+            ? 'VÉLORA solicitará el reembolso real a Stripe. El estado local sólo cambiará cuando Stripe confirme la operación.'
+            : 'El pago será registrado como reembolsado en VÉLORA.',
+        confirmLabel: 'Reembolsar pago',
+        cancelLabel: 'Conservar pago',
+        destructive: true
+      });
+
+    if (!confirmed) {
       return;
     }
 
@@ -481,9 +502,9 @@ export class OrdersManagement {
     });
   }
 
-  fulfillOrder(
+  async fulfillOrder(
     order: OperationalOrder
-  ): void {
+  ): Promise<void> {
     if (!this.canFulfill(order)) {
       this.errorMessage.set(
         'El pedido debe estar reservado y tener un pago confirmado.'
@@ -492,11 +513,22 @@ export class OrdersManagement {
       return;
     }
 
-    if (
-      !window.confirm(
-        `¿Completar el pedido ${order.orderNumber}? Esto descontará físicamente el inventario reservado.`
-      )
-    ) {
+    const confirmed =
+      await this.confirm.ask({
+        eyebrow: 'ENTREGA',
+        title: `¿Completar ${order.orderNumber}?`,
+        message:
+          'La reserva se convertirá en salida física de inventario y el pedido quedará completado.',
+        confirmLabel:
+          order.fulfillmentType === 'DELIVERY'
+            ? 'Confirmar entrega'
+            : order.fulfillmentType === 'PICKUP'
+              ? 'Confirmar recojo'
+              : 'Completar venta',
+        cancelLabel: 'Volver'
+      });
+
+    if (!confirmed) {
       return;
     }
 

@@ -283,31 +283,42 @@
                         'PENDING'
                     ) {
 
-                      <button
-                        type="button"
-                        class="approve"
-                        [disabled]="
-                          busyId() === latest.id
-                        "
-                        (click)="
-                          confirmPayment(latest)
-                        "
-                      >
-                        Confirmar pago
-                      </button>
+                      @if (
+                        latest.provider ===
+                          'STRIPE'
+                      ) {
+                        <small>
+                          Confirmación automática
+                          administrada por Stripe.
+                        </small>
+                      }
+                      @else {
+                        <button
+                          type="button"
+                          class="approve"
+                          [disabled]="
+                            busyId() === latest.id
+                          "
+                          (click)="
+                            confirmPayment(latest)
+                          "
+                        >
+                          Confirmar pago
+                        </button>
 
-                      <button
-                        type="button"
-                        class="secondary"
-                        [disabled]="
-                          busyId() === latest.id
-                        "
-                        (click)="
-                          failPayment(latest)
-                        "
-                      >
-                        Marcar fallido
-                      </button>
+                        <button
+                          type="button"
+                          class="secondary"
+                          [disabled]="
+                            busyId() === latest.id
+                          "
+                          (click)="
+                            failPayment(latest)
+                          "
+                        >
+                          Marcar fallido
+                        </button>
+                      }
 
                     }
 
@@ -326,7 +337,7 @@
                           refundPayment(latest)
                         "
                       >
-                        Registrar reembolso
+                        Reembolsar pago
                       </button>
 
                     }
@@ -435,10 +446,9 @@
                   )
                 ) {
                   <small class="manual-warning">
-                    La confirmación actual es
-                    operativa/manual mientras
-                    no exista una pasarela
-                    bancaria integrada.
+                    Los pagos Stripe se actualizan
+                    automáticamente mediante
+                    webhook firmado.
                   </small>
                 }
               }
