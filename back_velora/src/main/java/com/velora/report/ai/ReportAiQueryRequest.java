@@ -1,0 +1,14 @@
+package com.velora.report.ai;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record ReportAiQueryRequest(
+        @NotBlank(message = "La consulta del reporte es obligatoria.")
+        @Size(
+                min = 2,
+                max = 800,
+                message = "La consulta debe tener entre 2 y 800 caracteres."
+        )
+        String question
+) {}

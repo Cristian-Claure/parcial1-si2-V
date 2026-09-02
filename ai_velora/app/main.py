@@ -13,9 +13,17 @@ from .catalog import (
     fetch_public_catalog,
 )
 from .guardrails import sanitize_decision
+from .report_ai import (
+    interpret_report_request,
+    narrate_report,
+)
 from .schemas import (
     ProductAssistantRequest,
     ProductAssistantResponse,
+    ReportIntentResponse,
+    ReportInterpretRequest,
+    ReportNarrativeRequest,
+    ReportNarrativeResponse,
 )
 from .settings import settings
 
@@ -132,5 +140,86 @@ def recommend(
     return ProductAssistantResponse(
         reply=safe.reply,
         recommendations=safe.recommendations,
+        model=settings.velora_ai_model,
+    )
+
+
+@app.post(
+    "/reports/interpret",
+    response_model=ReportIntentResponse,
+)
+def interpret_report(
+    request: ReportInterpretRequest,
+    x_velora_ai_token: str | None = Header(
+        default=None,
+        alias="X-Velora-AI-Token",
+    ),
+) -> ReportIntentResponse:
+    _authorize(x_velora_ai_token)
+
+    try:
+        intent = interpret_report_request(
+            question=request.question,
+            current_date=request.currentDate,
+            stores=[
+                item.model_dump()
+                for item in request.availableStores
+            ],
+        )
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "VÉLORA AI no pudo interpretar "
+                "la solicitud de reporte."
+            ),
+        ) from exc
+
+    return ReportIntentResponse(
+        intent=intent,
+        model=settings.velora_ai_model,
+    )
+
+
+@app.post(
+    "/reports/narrate",
+    response_model=ReportNarrativeResponse,
+)
+def narrate_operational_report(
+    request: ReportNarrativeRequest,
+    x_velora_ai_token: str | None = Header(
+        default=None,
+        alias="X-Velora-AI-Token",
+    ),
+) -> ReportNarrativeResponse:
+    _authorize(x_velora_ai_token)
+
+    try:
+        narrative = narrate_report(
+            question=request.question,
+            report=request.report,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "VÉLORA AI no pudo redactar "
+                "el análisis del reporte."
+            ),
+        ) from exc
+
+    return ReportNarrativeResponse(
+        summary=narrative.summary,
+        insights=narrative.insights,
         model=settings.velora_ai_model,
     )
