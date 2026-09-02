@@ -1,0 +1,262 @@
+<app-role-shell>
+  <main class="reports-page">
+    <section class="reports-hero">
+      <div class="eyebrow">
+        INTELIGENCIA OPERATIVA
+      </div>
+
+      <div class="hero-layout">
+        <div>
+          <h1>Reportes IA</h1>
+
+          <p class="hero-copy">
+            Pregunta en lenguaje natural. VÉLORA AI interpreta
+            la intención y el backend calcula los KPI, series y
+            datos reales del negocio.
+          </p>
+        </div>
+
+        <button
+          class="secondary-button"
+          type="button"
+          [disabled]="loading() || aiLoading()"
+          (click)="loadOverview()"
+        >
+          Actualizar datos
+        </button>
+      </div>
+
+      <form
+        class="ai-query"
+        (ngSubmit)="generateWithAi()"
+      >
+        <label for="report-question">
+          ¿Qué quieres analizar?
+        </label>
+
+        <div class="query-row">
+          <input
+            id="report-question"
+            type="text"
+            [formControl]="question"
+            placeholder="Ej. Muéstrame las ventas de este mes"
+            autocomplete="off"
+          />
+
+          <button
+            class="primary-button"
+            type="submit"
+            [disabled]="question.invalid || aiLoading()"
+          >
+            @if (aiLoading()) {
+              Interpretando…
+            } @else {
+              Generar con IA
+            }
+          </button>
+        </div>
+
+        <p class="query-note">
+          Una generación usa IA para interpretar tu consulta.
+          Las cifras son calculadas por VÉLORA, no por el modelo.
+        </p>
+      </form>
+    </section>
+
+    @if (errorMessage(); as error) {
+      <section class="status-card status-card--error">
+        <strong>No se pudo completar la operación.</strong>
+        <span>{{ error }}</span>
+      </section>
+    }
+
+    @if (loading()) {
+      <section class="loading-panel">
+        <span class="loading-dot"></span>
+        Preparando indicadores operativos…
+      </section>
+    }
+
+    @if (report(); as data) {
+      <section class="report-context">
+        <div>
+          <span class="context-label">ALCANCE</span>
+          <strong>{{ data.scopeLabel }}</strong>
+        </div>
+
+        <div>
+          <span class="context-label">PERÍODO</span>
+          <strong>{{ data.from }} — {{ data.to }}</strong>
+        </div>
+
+        <div>
+          <span class="context-label">ENFOQUE</span>
+          <strong>{{ focusLabel() }}</strong>
+        </div>
+
+        <div>
+          <span class="context-label">ACTUALIZADO</span>
+          <strong>{{ formatGeneratedAt(data.generatedAt) }}</strong>
+        </div>
+      </section>
+
+      <section class="kpi-section">
+        <div class="section-heading">
+          <div>
+            <span>01 · INDICADORES</span>
+            <h2>Lectura ejecutiva</h2>
+          </div>
+
+          <p>
+            Ocho indicadores calculados directamente sobre
+            operaciones VÉLORA.
+          </p>
+        </div>
+
+        <div class="kpi-grid">
+          @for (kpi of data.kpis; track kpi.key) {
+            <article class="kpi-card">
+              <span class="kpi-label">
+                {{ kpi.label }}
+              </span>
+
+              <strong>
+                {{ formatKpi(kpi) }}
+              </strong>
+
+              <p>
+                {{ kpi.helper }}
+              </p>
+            </article>
+          }
+        </div>
+      </section>
+
+      <section class="visual-section">
+        <div class="section-heading">
+          <div>
+            <span>02 · VISUALIZACIONES</span>
+            <h2>Lectura visual del negocio</h2>
+          </div>
+
+          <p>
+            Series LINE, BAR y DONUT renderizadas directamente
+            desde los datos calculados por el backend.
+          </p>
+        </div>
+
+        <div class="charts-grid">
+          @for (chart of data.charts; track chart.id) {
+            <app-report-chart-card
+              [chart]="chart"
+            />
+          }
+        </div>
+      </section>
+
+      <section class="analysis-grid">
+        <article class="insights-panel">
+          <div class="section-heading section-heading--compact">
+            <div>
+              <span>03 · HALLAZGOS</span>
+              <h2>Lo importante</h2>
+            </div>
+          </div>
+
+          @if (narrative(); as deep) {
+            <div class="ai-summary">
+              <span>ANÁLISIS VÉLORA AI</span>
+              <p>{{ deep.summary }}</p>
+            </div>
+          }
+
+          <div class="insight-list">
+            @for (
+              insight of activeInsights();
+              track $index
+            ) {
+              <div class="insight-item">
+                <span>{{ $index + 1 }}</span>
+                <p>{{ insight }}</p>
+              </div>
+            } @empty {
+              <p class="empty-copy">
+                Todavía no hay hallazgos suficientes
+                para este período.
+              </p>
+            }
+          </div>
+
+          <button
+            class="secondary-button full-button"
+            type="button"
+            [disabled]="narrativeLoading() || aiLoading()"
+            (click)="deepenWithAi()"
+          >
+            @if (narrativeLoading()) {
+              Analizando…
+            } @else {
+              Profundizar con VÉLORA AI
+            }
+          </button>
+
+          <p class="deep-note">
+            Esta acción es opcional y realiza una llamada
+            adicional de IA sobre cifras ya calculadas.
+          </p>
+        </article>
+
+        @if (topTable(); as table) {
+          <article class="table-panel">
+            <div class="section-heading section-heading--compact">
+              <div>
+                <span>04 · DETALLE</span>
+                <h2>{{ table.title }}</h2>
+              </div>
+            </div>
+
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    @for (
+                      column of table.columns;
+                      track column
+                    ) {
+                      <th>{{ column }}</th>
+                    }
+                  </tr>
+                </thead>
+
+                <tbody>
+                  @for (
+                    row of table.rows;
+                    track $index
+                  ) {
+                    <tr>
+                      @for (
+                        cell of row;
+                        track $index
+                      ) {
+                        <td>{{ cell }}</td>
+                      }
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td
+                        class="empty-cell"
+                        [attr.colspan]="table.columns.length"
+                      >
+                        No hay detalle disponible en este período.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </article>
+        }
+      </section>
+    }
+  </main>
+</app-role-shell>

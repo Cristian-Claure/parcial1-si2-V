@@ -145,7 +145,7 @@ export class PosManagement {
           },
           {
             label: 'Reportes IA',
-            disabled: true
+            route: '/admin/reportes'
           },
           {
             label: 'Auditoría',
@@ -180,8 +180,8 @@ export class PosManagement {
           route: '/sucursal/pos'
         },
         {
-          label: 'Reportes',
-          disabled: true
+          label: 'Reportes IA',
+          route: '/sucursal/reportes'
         }
       ];
     });

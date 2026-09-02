@@ -29,7 +29,7 @@ export class Manager {
     { label: 'Inventario', route: '/sucursal/inventario' },
     { label: 'Pedidos y ventas', route: '/sucursal/pedidos' },
     { label: 'POS y caja', route: '/sucursal/pos' },
-    { label: 'Reportes', disabled: true }
+    { label: 'Reportes IA', route: '/sucursal/reportes' }
   ];
 
   constructor() {
