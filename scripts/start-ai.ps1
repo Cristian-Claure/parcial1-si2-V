@@ -1,5 +1,9 @@
 $ErrorActionPreference = "Stop"
 
+[Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false)
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+$OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+
 $repoRoot =
     Split-Path -Parent $PSScriptRoot
 

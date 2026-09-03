@@ -1,5 +1,8 @@
 package com.velora.report.ai;
 
+import java.time.LocalDate;
+import java.util.UUID;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -10,5 +13,8 @@ public record ReportAiQueryRequest(
                 max = 800,
                 message = "La consulta debe tener entre 2 y 800 caracteres."
         )
-        String question
+        String question,
+        LocalDate fromDate,
+        LocalDate toDate,
+        UUID storeId
 ) {}

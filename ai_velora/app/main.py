@@ -221,5 +221,7 @@ def narrate_operational_report(
     return ReportNarrativeResponse(
         summary=narrative.summary,
         insights=narrative.insights,
+        assessment=narrative.assessment,
+        recommendations=narrative.recommendations,
         model=settings.velora_ai_model,
     )

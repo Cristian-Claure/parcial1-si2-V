@@ -26,6 +26,18 @@ public class OperationalReportController {
         this.reports = reports;
     }
 
+    @GetMapping("/period-bounds")
+    public ReportPeriodBoundsResponse periodBounds(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(required = false)
+            UUID storeId
+    ) {
+        return reports.periodBounds(
+                UUID.fromString(jwt.getSubject()),
+                storeId
+        );
+    }
+
     @GetMapping("/overview")
     public ReportOverviewResponse overview(
             @AuthenticationPrincipal Jwt jwt,

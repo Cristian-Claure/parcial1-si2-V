@@ -5,5 +5,7 @@ import java.util.List;
 public record ReportAiNarrativeResponse(
         String summary,
         List<String> insights,
+        String assessment,
+        List<String> recommendations,
         String model
 ) {}

@@ -1,5 +1,6 @@
 import {
-  HttpClient
+  HttpClient,
+  HttpParams
 } from '@angular/common/http';
 
 import {
@@ -12,10 +13,9 @@ import {
 } from '../auth/auth.service';
 
 import {
-  ReportAiNarrativeRequest,
-  ReportAiNarrativeResponse,
   ReportAiQueryResponse,
-  ReportOverview
+  ReportOverview,
+  ReportPeriodBounds
 } from './report.models';
 
 @Injectable({
@@ -28,29 +28,58 @@ export class ReportService {
   private readonly auth =
     inject(AuthService);
 
-  overview() {
-    return this.http.get<ReportOverview>(
-      `${this.baseUrl()}/reports/overview`
-    );
-  }
-
-  query(
-    question: string
+  overview(
+    fromDate?: string | null,
+    toDate?: string | null
   ) {
-    return this.http.post<ReportAiQueryResponse>(
-      `${this.baseUrl()}/reports/ai-query`,
+    let params =
+      new HttpParams();
+
+    if (fromDate) {
+      params =
+        params.set(
+          'from',
+          fromDate
+        );
+    }
+
+    if (toDate) {
+      params =
+        params.set(
+          'to',
+          toDate
+        );
+    }
+
+    return this.http.get<ReportOverview>(
+      `${this.baseUrl()}/reports/overview`,
       {
-        question
+        params
       }
     );
   }
 
-  narrative(
-    payload: ReportAiNarrativeRequest
+  periodBounds() {
+    return this.http.get<ReportPeriodBounds>(
+      `${this.baseUrl()}/reports/period-bounds`
+    );
+  }
+
+  query(
+    question: string,
+    fromDate?: string | null,
+    toDate?: string | null
   ) {
-    return this.http.post<ReportAiNarrativeResponse>(
-      `${this.baseUrl()}/reports/ai-narrative`,
-      payload
+    return this.http.post<ReportAiQueryResponse>(
+      `${this.baseUrl()}/reports/ai-query`,
+      {
+        question,
+        fromDate:
+          fromDate || null,
+        toDate:
+          toDate || null,
+        storeId: null
+      }
     );
   }
 

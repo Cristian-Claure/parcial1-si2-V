@@ -327,7 +327,7 @@ public class OperationalReportService {
 
         List<ReportChart> charts =
                 List.of(
-                        salesByDay(
+                        salesTrend(
                                 paidEvents,
                                 refundEvents,
                                 period
@@ -374,6 +374,52 @@ public class OperationalReportService {
                 charts,
                 List.of(ranking.table()),
                 insights
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public ReportPeriodBoundsResponse periodBounds(
+            UUID actorId,
+            UUID requestedStoreId
+    ) {
+        Scope scope =
+                resolveScope(
+                        actorId,
+                        requestedStoreId
+                );
+
+        LocalDate today =
+                LocalDate.now(
+                        REPORT_ZONE
+                );
+
+        LocalDate minDate =
+                orders.findAll()
+                        .stream()
+                        .filter(
+                                order ->
+                                        matchesScope(
+                                                scope,
+                                                order
+                                                        .getWarehouse()
+                                                        .getStore()
+                                                        .getId()
+                                        )
+                        )
+                        .map(OrderEntity::getCreatedAt)
+                        .filter(
+                                value ->
+                                        value != null
+                        )
+                        .map(this::localDate)
+                        .min(LocalDate::compareTo)
+                        .orElse(
+                                today.minusDays(29)
+                        );
+
+        return new ReportPeriodBoundsResponse(
+                minDate,
+                today
         );
     }
 
@@ -481,19 +527,6 @@ public class OperationalReportService {
             );
         }
 
-        long days =
-                ChronoUnit.DAYS.between(
-                        from,
-                        to
-                ) + 1;
-
-        if (days > 366) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "El reporte no puede superar 366 días."
-            );
-        }
-
         Instant start =
                 from.atStartOfDay(
                         REPORT_ZONE
@@ -511,6 +544,287 @@ public class OperationalReportService {
                 to,
                 start,
                 endExclusive
+        );
+    }
+
+    private ReportChart salesTrend(
+            List<PaymentEntity> paidEvents,
+            List<PaymentEntity> refundEvents,
+            Period period
+    ) {
+        long days =
+                ChronoUnit.DAYS.between(
+                        period.from(),
+                        period.to()
+                ) + 1;
+
+        if (days <= 45) {
+            return salesByDay(
+                    paidEvents,
+                    refundEvents,
+                    period
+            );
+        }
+
+        if (days <= 180) {
+            return salesByWeek(
+                    paidEvents,
+                    refundEvents,
+                    period
+            );
+        }
+
+        return salesByMonth(
+                paidEvents,
+                refundEvents,
+                period
+        );
+    }
+
+    private ReportChart salesByWeek(
+            List<PaymentEntity> paidEvents,
+            List<PaymentEntity> refundEvents,
+            Period period
+    ) {
+        Map<LocalDate, BigDecimal> gross =
+                new LinkedHashMap<>();
+
+        Map<LocalDate, BigDecimal> refunded =
+                new LinkedHashMap<>();
+
+        LocalDate cursor =
+                period.from();
+
+        while (!cursor.isAfter(period.to())) {
+            gross.put(
+                    cursor,
+                    BigDecimal.ZERO
+            );
+
+            refunded.put(
+                    cursor,
+                    BigDecimal.ZERO
+            );
+
+            cursor =
+                    cursor.plusDays(7);
+        }
+
+        for (PaymentEntity payment : paidEvents) {
+            LocalDate day =
+                    localDate(
+                            payment.getPaidAt()
+                    );
+
+            long offset =
+                    ChronoUnit.DAYS.between(
+                            period.from(),
+                            day
+                    );
+
+            LocalDate bucket =
+                    period.from()
+                            .plusDays(
+                                    (offset / 7) * 7
+                            );
+
+            gross.computeIfPresent(
+                    bucket,
+                    (key, value) ->
+                            value.add(
+                                    payment.getAmount()
+                            )
+            );
+        }
+
+        for (PaymentEntity payment : refundEvents) {
+            LocalDate day =
+                    localDate(
+                            payment.getRefundedAt()
+                    );
+
+            long offset =
+                    ChronoUnit.DAYS.between(
+                            period.from(),
+                            day
+                    );
+
+            LocalDate bucket =
+                    period.from()
+                            .plusDays(
+                                    (offset / 7) * 7
+                            );
+
+            refunded.computeIfPresent(
+                    bucket,
+                    (key, value) ->
+                            value.add(
+                                    payment.getAmount()
+                            )
+            );
+        }
+
+        List<String> categories =
+                gross.keySet()
+                        .stream()
+                        .map(
+                                start -> {
+                                    LocalDate end =
+                                            start.plusDays(6);
+
+                                    if (end.isAfter(period.to())) {
+                                        end = period.to();
+                                    }
+
+                                    return DAY_LABEL.format(start)
+                                            + "–"
+                                            + DAY_LABEL.format(end);
+                                }
+                        )
+                        .toList();
+
+        return salesTrendChart(
+                "Ventas por semana",
+                categories,
+                gross,
+                refunded
+        );
+    }
+
+    private ReportChart salesByMonth(
+            List<PaymentEntity> paidEvents,
+            List<PaymentEntity> refundEvents,
+            Period period
+    ) {
+        Map<LocalDate, BigDecimal> gross =
+                new LinkedHashMap<>();
+
+        Map<LocalDate, BigDecimal> refunded =
+                new LinkedHashMap<>();
+
+        LocalDate cursor =
+                period.from()
+                        .withDayOfMonth(1);
+
+        LocalDate last =
+                period.to()
+                        .withDayOfMonth(1);
+
+        while (!cursor.isAfter(last)) {
+            gross.put(
+                    cursor,
+                    BigDecimal.ZERO
+            );
+
+            refunded.put(
+                    cursor,
+                    BigDecimal.ZERO
+            );
+
+            cursor =
+                    cursor.plusMonths(1);
+        }
+
+        for (PaymentEntity payment : paidEvents) {
+            LocalDate bucket =
+                    localDate(
+                            payment.getPaidAt()
+                    ).withDayOfMonth(1);
+
+            gross.computeIfPresent(
+                    bucket,
+                    (key, value) ->
+                            value.add(
+                                    payment.getAmount()
+                            )
+            );
+        }
+
+        for (PaymentEntity payment : refundEvents) {
+            LocalDate bucket =
+                    localDate(
+                            payment.getRefundedAt()
+                    ).withDayOfMonth(1);
+
+            refunded.computeIfPresent(
+                    bucket,
+                    (key, value) ->
+                            value.add(
+                                    payment.getAmount()
+                            )
+            );
+        }
+
+        DateTimeFormatter monthLabel =
+                DateTimeFormatter.ofPattern(
+                        "MM/yyyy"
+                );
+
+        List<String> categories =
+                gross.keySet()
+                        .stream()
+                        .map(monthLabel::format)
+                        .toList();
+
+        return salesTrendChart(
+                "Ventas por mes",
+                categories,
+                gross,
+                refunded
+        );
+    }
+
+    private ReportChart salesTrendChart(
+            String title,
+            List<String> categories,
+            Map<LocalDate, BigDecimal> gross,
+            Map<LocalDate, BigDecimal> refunded
+    ) {
+        List<BigDecimal> grossData =
+                gross.values()
+                        .stream()
+                        .map(this::money)
+                        .toList();
+
+        List<BigDecimal> refundData =
+                refunded.values()
+                        .stream()
+                        .map(this::money)
+                        .toList();
+
+        List<BigDecimal> netData =
+                new ArrayList<>();
+
+        for (LocalDate key : gross.keySet()) {
+            netData.add(
+                    money(
+                            gross.get(key)
+                                    .subtract(
+                                            refunded.get(key)
+                                    )
+                    )
+            );
+        }
+
+        return new ReportChart(
+                "sales-daily",
+                title,
+                "LINE",
+                categories,
+                List.of(
+                        new ReportChart.Series(
+                                "Venta bruta",
+                                grossData
+                        ),
+                        new ReportChart.Series(
+                                "Reembolsos",
+                                refundData
+                        ),
+                        new ReportChart.Series(
+                                "Venta neta",
+                                netData
+                        )
+                )
         );
     }
 

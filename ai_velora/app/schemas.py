@@ -94,9 +94,19 @@ class ReportNarrativeDecision(BaseModel):
         default_factory=list,
         max_length=6,
     )
+    assessment: str = Field(
+        default="",
+        max_length=1400,
+    )
+    recommendations: list[str] = Field(
+        default_factory=list,
+        max_length=4,
+    )
 
 
 class ReportNarrativeResponse(BaseModel):
     summary: str
     insights: list[str]
+    assessment: str
+    recommendations: list[str]
     model: str

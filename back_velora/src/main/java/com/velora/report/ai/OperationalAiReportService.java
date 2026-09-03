@@ -1,16 +1,22 @@
 package com.velora.report.ai;
 
 import java.net.http.HttpClient;
+import java.text.Normalizer;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.velora.report.OperationalReportService;
 import com.velora.report.ReportOverviewResponse;
+import com.velora.report.ReportPeriodBoundsResponse;
 import com.velora.store.StoreEntity;
 import com.velora.store.StoreRepository;
 import com.velora.user.UserEntity;
@@ -34,6 +40,32 @@ public class OperationalAiReportService {
 
     private static final ZoneId REPORT_ZONE =
             ZoneId.of("America/La_Paz");
+
+    private static final Pattern LAST_DAYS_PATTERN =
+            Pattern.compile(
+                    "\\bultim(?:o|os|a|as)\\s+(\\d{1,3})\\s+dias\\b"
+            );
+
+    private static final Pattern MONTH_YEAR_PATTERN =
+            Pattern.compile(
+                    "\\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\\s+(?:de\\s+)?(20\\d{2})\\b"
+            );
+
+    private static final Map<String, Integer> SPANISH_MONTHS =
+            Map.ofEntries(
+                    Map.entry("enero", 1),
+                    Map.entry("febrero", 2),
+                    Map.entry("marzo", 3),
+                    Map.entry("abril", 4),
+                    Map.entry("mayo", 5),
+                    Map.entry("junio", 6),
+                    Map.entry("julio", 7),
+                    Map.entry("agosto", 8),
+                    Map.entry("septiembre", 9),
+                    Map.entry("octubre", 10),
+                    Map.entry("noviembre", 11),
+                    Map.entry("diciembre", 12)
+            );
 
     private static final Set<String> ALLOWED_FOCUS =
             Set.of(
@@ -121,30 +153,79 @@ public class OperationalAiReportService {
                         availableStores
                 );
 
+        safeIntent =
+                applyDeterministicPeriod(
+                        question,
+                        safeIntent
+                );
+
         UUID effectiveStoreId =
                 effectiveStoreId(
                         scope,
                         safeIntent.storeId()
                 );
 
+        ReportPeriodBoundsResponse bounds =
+                reports.periodBounds(
+                        actorId,
+                        effectiveStoreId
+                );
+
+        LocalDate effectiveFrom =
+                safeIntent.fromDate();
+
+        LocalDate effectiveTo =
+                safeIntent.toDate();
+
+        if (usesSelectedRange(question)) {
+            if (effectiveFrom == null) {
+                effectiveFrom =
+                        request.fromDate();
+            }
+
+            if (effectiveTo == null) {
+                effectiveTo =
+                        request.toDate();
+            }
+        }
+
+        if (effectiveFrom == null) {
+            effectiveFrom =
+                    bounds.minDate();
+        }
+
+        if (effectiveTo == null) {
+            effectiveTo =
+                    bounds.maxDate();
+        }
+
         ReportOverviewResponse report =
                 reports.overview(
                         actorId,
-                        safeIntent.fromDate(),
-                        safeIntent.toDate(),
+                        effectiveFrom,
+                        effectiveTo,
                         effectiveStoreId
+                );
+
+        ReportAiNarrativeResponse narrative =
+                toNarrativeResponse(
+                        callNarrative(
+                                question,
+                                report
+                        )
                 );
 
         return new ReportAiQueryResponse(
                 question,
                 new ReportAiQueryResponse.Intent(
                         safeIntent.focus(),
-                        safeIntent.fromDate(),
-                        safeIntent.toDate(),
+                        report.from(),
+                        report.to(),
                         effectiveStoreId,
                         safeIntent.requestedChart()
                 ),
                 report,
+                narrative,
                 interpreted.model()
         );
     }
@@ -172,12 +253,17 @@ public class OperationalAiReportService {
                         effectiveStoreId
                 );
 
-        NarrativeResponse narrative =
+        return toNarrativeResponse(
                 callNarrative(
                         request.question().trim(),
                         report
-                );
+                )
+        );
+    }
 
+    private ReportAiNarrativeResponse toNarrativeResponse(
+            NarrativeResponse narrative
+    ) {
         List<String> insights =
                 narrative.insights() == null
                         ? List.of()
@@ -192,13 +278,300 @@ public class OperationalAiReportService {
                                 .limit(6)
                                 .toList();
 
+        List<String> recommendations =
+                narrative.recommendations() == null
+                        ? List.of()
+                        : narrative.recommendations()
+                                .stream()
+                                .filter(
+                                        value ->
+                                                value != null
+                                                        && !value.isBlank()
+                                )
+                                .map(String::trim)
+                                .limit(4)
+                                .toList();
+
         return new ReportAiNarrativeResponse(
                 narrative.summary() == null
                         ? ""
                         : narrative.summary().trim(),
                 insights,
+                narrative.assessment() == null
+                        ? ""
+                        : narrative.assessment().trim(),
+                recommendations,
                 narrative.model()
         );
+    }
+
+    private SafeIntent applyDeterministicPeriod(
+            String question,
+            SafeIntent intent
+    ) {
+        LocalDate currentDate =
+                LocalDate.now(
+                        REPORT_ZONE
+                );
+
+        PeriodHint relativeHint =
+                resolveQuestionPeriod(
+                        question,
+                        currentDate
+                );
+
+        if (relativeHint != null) {
+            return new SafeIntent(
+                    intent.focus(),
+                    relativeHint.fromDate(),
+                    relativeHint.toDate(),
+                    intent.storeId(),
+                    intent.requestedChart()
+            );
+        }
+
+        if (
+                intent.fromDate() != null
+                        || intent.toDate() != null
+        ) {
+            return intent;
+        }
+
+        PeriodHint calendarHint =
+                resolveSingleMonthYear(
+                        question
+                );
+
+        if (calendarHint == null) {
+            return intent;
+        }
+
+        return new SafeIntent(
+                intent.focus(),
+                calendarHint.fromDate(),
+                calendarHint.toDate(),
+                intent.storeId(),
+                intent.requestedChart()
+        );
+    }
+
+    private boolean usesSelectedRange(
+            String question
+    ) {
+        String normalized =
+                normalizeQuestion(
+                        question
+                );
+
+        return normalized.contains(
+                "periodo seleccionado"
+        )
+                || normalized.contains(
+                        "rango seleccionado"
+                )
+                || normalized.contains(
+                        "fechas seleccionadas"
+                )
+                || normalized.contains(
+                        "estas fechas"
+                );
+    }
+
+    private PeriodHint resolveQuestionPeriod(
+            String question,
+            LocalDate currentDate
+    ) {
+        String normalized =
+                normalizeQuestion(question);
+
+        if (normalized.contains("semana pasada")) {
+            LocalDate currentMonday =
+                    currentDate.minusDays(
+                            currentDate
+                                    .getDayOfWeek()
+                                    .getValue() - 1L
+                    );
+
+            LocalDate from =
+                    currentMonday.minusWeeks(1);
+
+            return new PeriodHint(
+                    from,
+                    from.plusDays(6)
+            );
+        }
+
+        if (
+                normalized.contains("ultima semana")
+                        || normalized.contains("ultimos siete dias")
+        ) {
+            return new PeriodHint(
+                    currentDate.minusDays(6),
+                    currentDate
+            );
+        }
+
+        if (normalized.contains("esta semana")) {
+            LocalDate from =
+                    currentDate.minusDays(
+                            currentDate
+                                    .getDayOfWeek()
+                                    .getValue() - 1L
+                    );
+
+            return new PeriodHint(
+                    from,
+                    currentDate
+            );
+        }
+
+        Matcher lastDays =
+                LAST_DAYS_PATTERN.matcher(
+                        normalized
+                );
+
+        if (lastDays.find()) {
+            int days =
+                    Integer.parseInt(
+                            lastDays.group(1)
+                    );
+
+            if (days >= 1 && days <= 730) {
+                return new PeriodHint(
+                        currentDate.minusDays(
+                                days - 1L
+                        ),
+                        currentDate
+                );
+            }
+        }
+
+        if (normalized.contains("ayer")) {
+            LocalDate yesterday =
+                    currentDate.minusDays(1);
+
+            return new PeriodHint(
+                    yesterday,
+                    yesterday
+            );
+        }
+
+        if (
+                normalized.equals("hoy")
+                        || normalized.contains(" hoy ")
+                        || normalized.startsWith("hoy ")
+                        || normalized.endsWith(" hoy")
+        ) {
+            return new PeriodHint(
+                    currentDate,
+                    currentDate
+            );
+        }
+
+        if (
+                normalized.contains("mes pasado")
+                        || normalized.contains("mes anterior")
+        ) {
+            YearMonth previous =
+                    YearMonth.from(
+                            currentDate
+                    ).minusMonths(1);
+
+            return new PeriodHint(
+                    previous.atDay(1),
+                    previous.atEndOfMonth()
+            );
+        }
+
+        if (
+                normalized.contains("este mes")
+                        || normalized.contains("mes actual")
+        ) {
+            return new PeriodHint(
+                    currentDate.withDayOfMonth(1),
+                    currentDate
+            );
+        }
+
+        return null;
+    }
+
+    private PeriodHint resolveSingleMonthYear(
+            String question
+    ) {
+        String normalized =
+                normalizeQuestion(
+                        question
+                );
+
+        Matcher monthYear =
+                MONTH_YEAR_PATTERN.matcher(
+                        normalized
+                );
+
+        if (!monthYear.find()) {
+            return null;
+        }
+
+        String monthName =
+                monthYear.group(1);
+
+        String yearValue =
+                monthYear.group(2);
+
+        if (monthYear.find()) {
+            return null;
+        }
+
+        Integer month =
+                SPANISH_MONTHS.get(
+                        monthName
+                );
+
+        if (month == null) {
+            return null;
+        }
+
+        YearMonth target =
+                YearMonth.of(
+                        Integer.parseInt(
+                                yearValue
+                        ),
+                        month
+                );
+
+        return new PeriodHint(
+                target.atDay(1),
+                target.atEndOfMonth()
+        );
+    }
+
+    private String normalizeQuestion(
+            String value
+    ) {
+        String normalized =
+                Normalizer.normalize(
+                        value == null ? "" : value,
+                        Normalizer.Form.NFD
+                )
+                .replaceAll(
+                        "\\p{M}+",
+                        ""
+                )
+                .toLowerCase(
+                        Locale.ROOT
+                )
+                .replaceAll(
+                        "[^a-z0-9\\s]",
+                        " "
+                )
+                .replaceAll(
+                        "\\s+",
+                        " "
+                )
+                .trim();
+
+        return normalized;
     }
 
     private InterpretResponse callInterpret(
@@ -638,9 +1011,16 @@ public class OperationalAiReportService {
             String requestedChart
     ) {}
 
+    private record PeriodHint(
+            LocalDate fromDate,
+            LocalDate toDate
+    ) {}
+
     private record NarrativeResponse(
             String summary,
             List<String> insights,
+            String assessment,
+            List<String> recommendations,
             String model
     ) {}
 }

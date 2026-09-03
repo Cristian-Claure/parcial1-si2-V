@@ -35,6 +35,11 @@ export interface ReportTable {
   rows: string[][];
 }
 
+export interface ReportPeriodBounds {
+  minDate: string;
+  maxDate: string;
+}
+
 export interface ReportOverview {
   title: string;
   scopeLabel: string;
@@ -74,6 +79,7 @@ export interface ReportAiQueryResponse {
   question: string;
   intent: ReportAiIntent;
   report: ReportOverview;
+  narrative: ReportAiNarrativeResponse;
   model: string;
 }
 
@@ -87,5 +93,7 @@ export interface ReportAiNarrativeRequest {
 export interface ReportAiNarrativeResponse {
   summary: string;
   insights: string[];
+  assessment: string;
+  recommendations: string[];
   model: string;
 }

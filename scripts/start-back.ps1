@@ -1,10 +1,45 @@
 $ErrorActionPreference = "Stop"
 
+[Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false)
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+$OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 
 . (Join-Path $PSScriptRoot "load-env.ps1")
 
-Write-Host "Iniciando PostgreSQL de VELORA..." -ForegroundColor Cyan
+$preferredJdk =
+    "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot"
+
+$preferredJava =
+    Join-Path $preferredJdk "bin\java.exe"
+
+if (
+    -not (
+        Test-Path `
+            -LiteralPath $preferredJava `
+            -PathType Leaf
+    )
+) {
+    throw (
+        "VÉLORA backend requiere Java 21. " +
+        "No se encontró el JDK esperado en: " +
+        $preferredJdk
+    )
+}
+
+$env:JAVA_HOME = $preferredJdk
+$env:Path =
+    (Join-Path $preferredJdk "bin") +
+    ";" +
+    $env:Path
+
+Write-Host (
+    "Java backend: " +
+    $env:JAVA_HOME
+) -ForegroundColor Green
+
+Write-Host "Iniciando PostgreSQL de VÉLORA..." -ForegroundColor Cyan
 
 docker compose `
     --env-file (Join-Path $repoRoot ".env") `
@@ -33,11 +68,11 @@ for ($i = 0; $i -lt 20; $i++) {
 }
 
 if (-not $healthy) {
-    throw "PostgreSQL no alcanzo estado healthy."
+    throw "PostgreSQL no alcanzó estado healthy."
 }
 
 Write-Host "PostgreSQL listo." -ForegroundColor Green
-Write-Host "Iniciando backend VELORA..." -ForegroundColor Cyan
+Write-Host "Iniciando backend VÉLORA..." -ForegroundColor Cyan
 
 Push-Location (Join-Path $repoRoot "back_velora")
 

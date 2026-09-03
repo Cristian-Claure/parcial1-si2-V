@@ -9,6 +9,7 @@ public record ReportAiQueryResponse(
         String question,
         Intent intent,
         ReportOverviewResponse report,
+        ReportAiNarrativeResponse narrative,
         String model
 ) {
     public record Intent(

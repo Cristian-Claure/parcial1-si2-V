@@ -10,9 +10,8 @@
           <h1>Reportes IA</h1>
 
           <p class="hero-copy">
-            Pregunta en lenguaje natural. VÉLORA AI interpreta
-            la intención y el backend calcula los KPI, series y
-            datos reales del negocio.
+            Explora períodos reales del negocio y pregunta en lenguaje natural.
+            Spring calcula las cifras; VÉLORA AI interpreta y explica el resultado.
           </p>
         </div>
 
@@ -20,15 +19,70 @@
           class="secondary-button"
           type="button"
           [disabled]="loading() || aiLoading()"
-          (click)="loadOverview()"
+          (click)="refreshSelectedRange()"
         >
           Actualizar datos
         </button>
       </div>
 
-      <form
+      <section class="period-tools">
+        <div class="period-tools__heading">
+          <div>
+            <span>PERÍODO DEL REPORTE</span>
+            <strong>Exploración histórica sin gastar IA</strong>
+          </div>
+
+          @if (periodBounds(); as bounds) {
+            <small>
+              Datos disponibles:
+              {{ bounds.minDate }} — {{ bounds.maxDate }}
+            </small>
+          }
+        </div>
+
+        <div class="period-presets">
+          <button type="button" [class.period-preset--active]="activePreset() === '7D'" (click)="applyPreset('7D')">7 días</button>
+          <button type="button" [class.period-preset--active]="activePreset() === '30D'" (click)="applyPreset('30D')">30 días</button>
+          <button type="button" [class.period-preset--active]="activePreset() === '90D'" (click)="applyPreset('90D')">90 días</button>
+          <button type="button" [class.period-preset--active]="activePreset() === '180D'" (click)="applyPreset('180D')">6 meses</button>
+          <button type="button" [class.period-preset--active]="activePreset() === '365D'" (click)="applyPreset('365D')">12 meses</button>
+          <button type="button" [class.period-preset--active]="activePreset() === 'HISTORICAL'" (click)="applyPreset('HISTORICAL')">Histórico</button>
+        </div>
+
+        <div class="custom-period">
+          <label>
+            <span>Desde</span>
+            <input
+              type="date"
+              [formControl]="fromDate"
+              [attr.min]="periodBounds()?.minDate ?? null"
+              [attr.max]="periodBounds()?.maxDate ?? null"
+            />
+          </label>
+
+          <label>
+            <span>Hasta</span>
+            <input
+              type="date"
+              [formControl]="toDate"
+              [attr.min]="periodBounds()?.minDate ?? null"
+              [attr.max]="periodBounds()?.maxDate ?? null"
+            />
+          </label>
+
+          <button
+            class="secondary-button"
+            type="button"
+            [disabled]="loading() || aiLoading()"
+            (click)="applyCustomRange()"
+          >
+            Aplicar período
+          </button>
+        </div>
+      </section>
+
+      <div
         class="ai-query"
-        (ngSubmit)="generateWithAi()"
       >
         <label for="report-question">
           ¿Qué quieres analizar?
@@ -39,17 +93,19 @@
             id="report-question"
             type="text"
             [formControl]="question"
-            placeholder="Ej. Muéstrame las ventas de este mes"
+            placeholder="Ej. Compara las tres sucursales en la última semana"
             autocomplete="off"
+            (keydown.enter)="$event.preventDefault(); generateWithAi()"
           />
 
           <button
             class="primary-button"
-            type="submit"
+            type="button"
             [disabled]="question.invalid || aiLoading()"
+            (click)="generateWithAi()"
           >
             @if (aiLoading()) {
-              Interpretando…
+              Analizando, calculando y redactando…
             } @else {
               Generar con IA
             }
@@ -57,10 +113,12 @@
         </div>
 
         <p class="query-note">
-          Una generación usa IA para interpretar tu consulta.
-          Las cifras son calculadas por VÉLORA, no por el modelo.
+          VÉLORA AI decide el período y alcance según tu consulta.
+          Si no mencionas fechas, analiza todo el histórico disponible.
+          Los filtros superiores son opcionales y sólo se usan si pides
+          explícitamente “el período seleccionado”.
         </p>
-      </form>
+      </div>
     </section>
 
     @if (errorMessage(); as error) {
@@ -100,6 +158,69 @@
         </div>
       </section>
 
+      @if (narrative(); as aiAnswer) {
+        <section class="ai-answer-panel">
+          <div class="ai-answer-heading">
+            <span>VÉLORA AI · RESPUESTA EJECUTIVA</span>
+            <h2>Respuesta a tu consulta</h2>
+          </div>
+
+          <blockquote class="ai-answer-question">
+            {{ lastQuestion() ?? question.value }}
+          </blockquote>
+
+          <p class="ai-answer-summary">
+            {{ aiAnswer.summary }}
+          </p>
+
+          @if (aiAnswer.insights.length > 0) {
+            <div class="ai-answer-section">
+              <strong>Hallazgos</strong>
+
+              <div class="ai-answer-insights">
+                @for (
+                  insight of aiAnswer.insights;
+                  track $index
+                ) {
+                  <div>
+                    <span>{{ $index + 1 }}</span>
+                    <p>{{ insight }}</p>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (aiAnswer.assessment) {
+            <div class="ai-answer-section ai-assessment">
+              <strong>Criterio de VÉLORA AI</strong>
+              <p>{{ aiAnswer.assessment }}</p>
+            </div>
+          }
+
+          @if (aiAnswer.recommendations.length > 0) {
+            <div class="ai-answer-section">
+              <strong>Acciones sugeridas</strong>
+
+              <ul class="ai-recommendations">
+                @for (
+                  recommendation of aiAnswer.recommendations;
+                  track $index
+                ) {
+                  <li>{{ recommendation }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          <small class="ai-answer-note">
+            Las cifras provienen del backend. El criterio y las acciones sugeridas
+            son interpretaciones de VÉLORA AI basadas en esos datos y no modifican
+            operaciones, inventario ni ventas.
+          </small>
+        </section>
+      }
+
       <section class="kpi-section">
         <div class="section-heading">
           <div>
@@ -109,7 +230,7 @@
 
           <p>
             Ocho indicadores calculados directamente sobre
-            operaciones VÉLORA.
+            operaciones VÉLORA para el período mostrado.
           </p>
         </div>
 
@@ -140,8 +261,8 @@
           </div>
 
           <p>
-            Series LINE, BAR y DONUT renderizadas directamente
-            desde los datos calculados por el backend.
+            La evolución se agrupa por día, semana o mes
+            según la amplitud del período seleccionado.
           </p>
         </div>
 
@@ -158,21 +279,14 @@
         <article class="insights-panel">
           <div class="section-heading section-heading--compact">
             <div>
-              <span>03 · HALLAZGOS</span>
-              <h2>Lo importante</h2>
+              <span>03 · HALLAZGOS CALCULADOS</span>
+              <h2>Lo importante en los datos</h2>
             </div>
           </div>
 
-          @if (narrative(); as deep) {
-            <div class="ai-summary">
-              <span>ANÁLISIS VÉLORA AI</span>
-              <p>{{ deep.summary }}</p>
-            </div>
-          }
-
           <div class="insight-list">
             @for (
-              insight of activeInsights();
+              insight of data.deterministicInsights;
               track $index
             ) {
               <div class="insight-item">
@@ -187,23 +301,6 @@
             }
           </div>
 
-          <button
-            class="secondary-button full-button"
-            type="button"
-            [disabled]="narrativeLoading() || aiLoading()"
-            (click)="deepenWithAi()"
-          >
-            @if (narrativeLoading()) {
-              Analizando…
-            } @else {
-              Profundizar con VÉLORA AI
-            }
-          </button>
-
-          <p class="deep-note">
-            Esta acción es opcional y realiza una llamada
-            adicional de IA sobre cifras ya calculadas.
-          </p>
         </article>
 
         @if (topTable(); as table) {
