@@ -93,10 +93,17 @@ h1 {
   gap: 12px;
 }
 
+.voice-query-field {
+  position: relative;
+  min-width: 0;
+}
+
 .query-row input {
+  width: 100%;
+  box-sizing: border-box;
   min-width: 0;
   min-height: 50px;
-  padding: 0 16px;
+  padding: 0 132px 0 16px;
   border: 1px solid #d8cdc7;
   border-radius: 15px;
   background: #ffffff;
@@ -111,6 +118,114 @@ h1 {
 .query-row input:focus {
   border-color: #9d7866;
   box-shadow: 0 0 0 3px rgba(157, 120, 102, 0.12);
+}
+
+.voice-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  min-width: 108px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid rgba(111, 77, 63, 0.18);
+  border-radius: 11px;
+  background: #f7f0eb;
+  color: #5d4940;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.voice-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #efe2da;
+}
+
+.voice-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.voice-button--recording {
+  border-color: rgba(150, 58, 58, 0.3);
+  background: #fff2f0;
+  color: #923e3e;
+}
+
+.voice-mic-icon {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+}
+
+.voice-stop-icon {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.voice-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(93, 73, 64, 0.25);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: voice-spin 700ms linear infinite;
+}
+
+.voice-status {
+  padding: 10px 12px;
+  border: 1px solid rgba(111, 77, 63, 0.12);
+  border-radius: 12px;
+  background: rgba(247, 240, 235, 0.72);
+  color: #6b5c55;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.voice-status--recording {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border-color: rgba(150, 58, 58, 0.16);
+  background: #fff7f5;
+  color: #843f3f;
+}
+
+.voice-status--recording > span {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #b64c4c;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.voice-status--error {
+  border-color: rgba(155, 68, 68, 0.22);
+  background: #fff8f7;
+  color: #8a3737;
+}
+
+@keyframes voice-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .primary-button,
@@ -635,6 +750,10 @@ tbody tr:hover {
   .analysis-grid,
   .custom-period {
     grid-template-columns: 1fr;
+  }
+
+  .voice-query-field input {
+    padding-right: 118px;
   }
 
   .period-tools__heading {

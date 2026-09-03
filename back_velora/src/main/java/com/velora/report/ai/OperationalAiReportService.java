@@ -86,6 +86,23 @@ public class OperationalAiReportService {
                     "TABLE"
             );
 
+    private static final int MAX_VOICE_BYTES =
+            8 * 1024 * 1024;
+
+    private static final Set<String> ALLOWED_VOICE_TYPES =
+            Set.of(
+                    "audio/webm",
+                    "video/webm",
+                    "audio/mp4",
+                    "audio/x-m4a",
+                    "audio/mpeg",
+                    "audio/wav",
+                    "audio/x-wav",
+                    "audio/ogg",
+                    "audio/aac",
+                    "audio/flac"
+            );
+
     private final RestClient aiClient;
     private final String internalToken;
     private final OperationalReportService reports;
@@ -124,6 +141,96 @@ public class OperationalAiReportService {
         this.reports = reports;
         this.stores = stores;
         this.users = users;
+    }
+
+    public ReportVoiceTranscriptionResponse transcribeVoice(
+            UUID actorId,
+            byte[] audio,
+            String contentType
+    ) {
+        resolveActorScope(actorId);
+        ensureAiConfigured();
+
+        if (audio == null || audio.length == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "No se recibió audio para transcribir."
+            );
+        }
+
+        if (audio.length > MAX_VOICE_BYTES) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El audio supera el límite de 8 MB."
+            );
+        }
+
+        String normalizedContentType =
+                normalizeVoiceContentType(
+                        contentType
+                );
+
+        try {
+            FastApiTranscriptionResponse response =
+                    aiClient
+                            .post()
+                            .uri("/reports/transcribe")
+                            .header(
+                                    "X-Velora-AI-Token",
+                                    internalToken
+                            )
+                            .header(
+                                    HttpHeaders.ACCEPT,
+                                    MediaType.APPLICATION_JSON_VALUE
+                            )
+                            .contentType(
+                                    MediaType.parseMediaType(
+                                            normalizedContentType
+                                    )
+                            )
+                            .body(audio)
+                            .retrieve()
+                            .body(
+                                    FastApiTranscriptionResponse.class
+                            );
+
+            if (
+                    response == null
+                            || response.text() == null
+                            || response.text().isBlank()
+            ) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_GATEWAY,
+                        "VÉLORA AI devolvió una transcripción vacía."
+                );
+            }
+
+            return new ReportVoiceTranscriptionResponse(
+                    response.text().trim(),
+                    response.model()
+            );
+        }
+        catch (RestClientResponseException ex) {
+            if (ex.getStatusCode().value() == 400) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "El audio no pudo ser procesado por VÉLORA AI.",
+                        ex
+                );
+            }
+
+            throw mapAiResponseError(
+                    ex,
+                    "VÉLORA AI no pudo transcribir la consulta por voz."
+            );
+        }
+        catch (ResourceAccessException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "El servicio VÉLORA AI no está iniciado.",
+                    ex
+            );
+        }
     }
 
     public ReportAiQueryResponse query(
@@ -944,6 +1051,36 @@ public class OperationalAiReportService {
         }
     }
 
+    private String normalizeVoiceContentType(
+            String value
+    ) {
+        if (value == null || value.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El formato del audio no fue informado."
+            );
+        }
+
+        String normalized =
+                value.split(
+                        ";",
+                        2
+                )[0]
+                .trim()
+                .toLowerCase(
+                        Locale.ROOT
+                );
+
+        if (!ALLOWED_VOICE_TYPES.contains(normalized)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El formato del audio no está soportado."
+            );
+        }
+
+        return normalized;
+    }
+
     private UUID parseStoreId(
             String value
     ) {
@@ -988,6 +1125,11 @@ public class OperationalAiReportService {
     private record StoreOption(
             String id,
             String name
+    ) {}
+
+    private record FastApiTranscriptionResponse(
+            String text,
+            String model
     ) {}
 
     private record InterpretResponse(

@@ -15,7 +15,8 @@ import {
 import {
   ReportAiQueryResponse,
   ReportOverview,
-  ReportPeriodBounds
+  ReportPeriodBounds,
+  ReportVoiceTranscriptionResponse
 } from './report.models';
 
 @Injectable({
@@ -62,6 +63,22 @@ export class ReportService {
   periodBounds() {
     return this.http.get<ReportPeriodBounds>(
       `${this.baseUrl()}/reports/period-bounds`
+    );
+  }
+
+  transcribeVoice(
+    audio: Blob
+  ) {
+    return this.http.post<ReportVoiceTranscriptionResponse>(
+      `${this.baseUrl()}/reports/voice-transcribe`,
+      audio,
+      {
+        headers: {
+          'Content-Type':
+            audio.type ||
+            'audio/webm'
+        }
+      }
     );
   }
 

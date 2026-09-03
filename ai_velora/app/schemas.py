@@ -110,3 +110,8 @@ class ReportNarrativeResponse(BaseModel):
     assessment: str
     recommendations: list[str]
     model: str
+
+
+class ReportVoiceTranscriptionResponse(BaseModel):
+    text: str = Field(min_length=1, max_length=800)
+    model: str

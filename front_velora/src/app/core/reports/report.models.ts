@@ -40,6 +40,11 @@ export interface ReportPeriodBounds {
   maxDate: string;
 }
 
+export interface ReportVoiceTranscriptionResponse {
+  text: string;
+  model: string;
+}
+
 export interface ReportOverview {
   title: string;
   scopeLabel: string;

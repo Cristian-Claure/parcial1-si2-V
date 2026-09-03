@@ -4,6 +4,7 @@ import {
 
 import {
   Component,
+  OnDestroy,
   computed,
   inject,
   signal
@@ -39,6 +40,60 @@ import {
   ReportChartCard
 } from './report-chart-card';
 
+interface VoiceRecognitionAlternative {
+  transcript: string;
+}
+
+interface VoiceRecognitionResult {
+  readonly isFinal: boolean;
+  readonly length: number;
+  readonly [index: number]: VoiceRecognitionAlternative;
+}
+
+interface VoiceRecognitionResultList {
+  readonly length: number;
+  readonly [index: number]: VoiceRecognitionResult;
+}
+
+interface VoiceRecognitionEvent extends Event {
+  readonly results: VoiceRecognitionResultList;
+}
+
+interface VoiceRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult:
+    | ((event: VoiceRecognitionEvent) => void)
+    | null;
+  onerror:
+    | (() => void)
+    | null;
+  onend:
+    | (() => void)
+    | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+interface VoiceRecognitionConstructor {
+  new(): VoiceRecognition;
+}
+
+interface VoiceRecognitionWindow extends Window {
+  SpeechRecognition?:
+    VoiceRecognitionConstructor;
+  webkitSpeechRecognition?:
+    VoiceRecognitionConstructor;
+}
+
+type VoiceInputState =
+  | 'IDLE'
+  | 'RECORDING'
+  | 'TRANSCRIBING'
+  | 'ERROR';
+
 type ReportPeriodPreset =
   | '7D'
   | '30D'
@@ -60,7 +115,7 @@ type ReportPeriodPreset =
   templateUrl: './reports-dashboard.html',
   styleUrl: './reports-dashboard.scss'
 })
-export class ReportsDashboard {
+export class ReportsDashboard implements OnDestroy {
   private readonly reports =
     inject(ReportService);
 
@@ -129,6 +184,43 @@ export class ReportsDashboard {
   readonly errorMessage =
     signal<string | null>(null);
 
+  readonly voiceState =
+    signal<VoiceInputState>('IDLE');
+
+  readonly voiceError =
+    signal<string | null>(null);
+
+  readonly voiceSeconds =
+    signal(0);
+
+  readonly voiceLivePreview =
+    signal(false);
+
+  readonly voiceBusy =
+    computed(() => {
+      const state =
+        this.voiceState();
+
+      return (
+        state === 'RECORDING' ||
+        state === 'TRANSCRIBING'
+      );
+    });
+
+  private voiceRecorder:
+    MediaRecorder | null = null;
+
+  private voiceRecognition:
+    VoiceRecognition | null = null;
+
+  private voiceStream:
+    MediaStream | null = null;
+
+  private voiceChunks: Blob[] = [];
+
+  private voiceTimer:
+    ReturnType<typeof setInterval> | null = null;
+
   readonly topTable =
     computed(() => {
       const tables =
@@ -142,6 +234,396 @@ export class ReportsDashboard {
   constructor() {
     this.loadPeriodBounds();
     this.loadOverview();
+  }
+
+  ngOnDestroy(): void {
+    this.cleanupVoiceCapture();
+  }
+
+  async toggleVoiceRecording(): Promise<void> {
+    if (this.voiceState() === 'RECORDING') {
+      this.stopVoiceRecording();
+      return;
+    }
+
+    if (this.voiceState() === 'TRANSCRIBING') {
+      return;
+    }
+
+    await this.startVoiceRecording();
+  }
+
+  private async startVoiceRecording(): Promise<void> {
+    this.voiceError.set(null);
+
+    if (
+      !navigator.mediaDevices?.getUserMedia ||
+      typeof MediaRecorder === 'undefined'
+    ) {
+      this.voiceState.set('ERROR');
+      this.voiceError.set(
+        'Este navegador no permite grabar audio para el dictado.'
+      );
+      return;
+    }
+
+    try {
+      const stream =
+        await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+
+      const mimeType =
+        this.preferredVoiceMimeType();
+
+      const recorder =
+        mimeType
+          ? new MediaRecorder(
+              stream,
+              {
+                mimeType
+              }
+            )
+          : new MediaRecorder(stream);
+
+      this.voiceStream = stream;
+      this.voiceRecorder = recorder;
+      this.voiceChunks = [];
+      this.voiceSeconds.set(0);
+
+      recorder.ondataavailable =
+        (event: BlobEvent) => {
+          if (event.data.size > 0) {
+            this.voiceChunks.push(
+              event.data
+            );
+          }
+        };
+
+      recorder.onerror =
+        () => {
+          this.voiceState.set('ERROR');
+          this.voiceError.set(
+            'La grabación se interrumpió. Puedes conservar y editar tu consulta escrita.'
+          );
+          this.cleanupVoiceCapture();
+        };
+
+      recorder.onstop =
+        () => {
+          this.finishVoiceRecording();
+        };
+
+      recorder.start();
+      this.voiceState.set('RECORDING');
+      this.startLiveVoicePreview();
+
+      this.voiceTimer =
+        setInterval(
+          () => {
+            const seconds =
+              this.voiceSeconds() + 1;
+
+            this.voiceSeconds.set(
+              seconds
+            );
+
+            if (seconds >= 60) {
+              this.stopVoiceRecording();
+            }
+          },
+          1000
+        );
+    }
+    catch (error) {
+      this.cleanupVoiceCapture();
+      this.voiceState.set('ERROR');
+
+      if (
+        error instanceof DOMException &&
+        (
+          error.name === 'NotAllowedError' ||
+          error.name === 'SecurityError'
+        )
+      ) {
+        this.voiceError.set(
+          'Permiso de micrófono denegado. Habilítalo en el navegador y vuelve a intentar.'
+        );
+        return;
+      }
+
+      if (
+        error instanceof DOMException &&
+        error.name === 'NotFoundError'
+      ) {
+        this.voiceError.set(
+          'No se encontró un micrófono disponible.'
+        );
+        return;
+      }
+
+      this.voiceError.set(
+        'No fue posible iniciar el micrófono.'
+      );
+    }
+  }
+
+  private stopVoiceRecording(): void {
+    const recorder =
+      this.voiceRecorder;
+
+    if (
+      !recorder ||
+      recorder.state === 'inactive'
+    ) {
+      return;
+    }
+
+    this.stopLiveVoicePreview();
+    recorder.stop();
+  }
+
+  private startLiveVoicePreview(): void {
+    const browserWindow =
+      window as unknown as
+        VoiceRecognitionWindow;
+
+    const Recognition =
+      browserWindow.SpeechRecognition ??
+      browserWindow.webkitSpeechRecognition;
+
+    if (!Recognition) {
+      this.voiceLivePreview.set(false);
+      return;
+    }
+
+    try {
+      const recognition =
+        new Recognition();
+
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'es-BO';
+
+      recognition.onresult =
+        (event) => {
+          const parts: string[] = [];
+
+          for (
+            let index = 0;
+            index < event.results.length;
+            index += 1
+          ) {
+            const result =
+              event.results[index];
+
+            if (
+              !result ||
+              result.length === 0
+            ) {
+              continue;
+            }
+
+            const transcript =
+              result[0]?.transcript
+                ?.trim();
+
+            if (transcript) {
+              parts.push(transcript);
+            }
+          }
+
+          const preview =
+            parts
+              .join(' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+
+          if (preview) {
+            this.question.setValue(
+              preview
+            );
+          }
+        };
+
+      recognition.onerror =
+        () => {
+          this.voiceLivePreview.set(false);
+        };
+
+      recognition.onend =
+        () => {
+          if (
+            this.voiceState() !== 'RECORDING' ||
+            this.voiceRecognition !== recognition
+          ) {
+            this.voiceLivePreview.set(false);
+            return;
+          }
+
+          try {
+            recognition.start();
+            this.voiceLivePreview.set(true);
+          }
+          catch {
+            this.voiceLivePreview.set(false);
+          }
+        };
+
+      recognition.start();
+
+      this.voiceRecognition =
+        recognition;
+
+      this.voiceLivePreview.set(true);
+    }
+    catch {
+      this.voiceRecognition = null;
+      this.voiceLivePreview.set(false);
+    }
+  }
+
+  private stopLiveVoicePreview(): void {
+    const recognition =
+      this.voiceRecognition;
+
+    this.voiceRecognition = null;
+    this.voiceLivePreview.set(false);
+
+    if (!recognition) {
+      return;
+    }
+
+    recognition.onresult = null;
+    recognition.onerror = null;
+    recognition.onend = null;
+
+    try {
+      recognition.stop();
+    }
+    catch {
+      try {
+        recognition.abort();
+      }
+      catch {
+        // El dictado final de OpenAI sigue disponible.
+      }
+    }
+  }
+
+  private finishVoiceRecording(): void {
+    const recorder =
+      this.voiceRecorder;
+
+    const mimeType =
+      recorder?.mimeType ||
+      this.voiceChunks[0]?.type ||
+      'audio/webm';
+
+    const chunks =
+      [...this.voiceChunks];
+
+    this.cleanupVoiceCapture();
+
+    if (chunks.length === 0) {
+      this.voiceState.set('ERROR');
+      this.voiceError.set(
+        'No se detectó audio. Intenta hablar un poco más cerca del micrófono.'
+      );
+      return;
+    }
+
+    const audio =
+      new Blob(
+        chunks,
+        {
+          type: mimeType
+        }
+      );
+
+    if (audio.size === 0) {
+      this.voiceState.set('ERROR');
+      this.voiceError.set(
+        'La grabación quedó vacía. Intenta nuevamente.'
+      );
+      return;
+    }
+
+    this.voiceState.set('TRANSCRIBING');
+    this.voiceError.set(null);
+
+    this.reports
+      .transcribeVoice(audio)
+      .subscribe({
+        next: (response) => {
+          this.question.setValue(
+            response.text
+          );
+          this.question.markAsDirty();
+          this.question.markAsTouched();
+          this.voiceState.set('IDLE');
+
+          this.feedback.success(
+            'Dictado listo',
+            'Revisa o edita la transcripción y luego genera el reporte.'
+          );
+        },
+        error: (error: HttpErrorResponse) => {
+          this.voiceState.set('ERROR');
+          this.voiceError.set(
+            this.readError(
+              error,
+              'No fue posible transcribir la consulta por voz.'
+            )
+          );
+        }
+      });
+  }
+
+  private preferredVoiceMimeType(): string {
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4'
+    ];
+
+    return (
+      candidates.find(
+        (candidate) =>
+          MediaRecorder.isTypeSupported(
+            candidate
+          )
+      ) ??
+      ''
+    );
+  }
+
+  private cleanupVoiceCapture(): void {
+    this.stopLiveVoicePreview();
+
+    if (this.voiceTimer !== null) {
+      clearInterval(
+        this.voiceTimer
+      );
+      this.voiceTimer = null;
+    }
+
+    if (this.voiceStream) {
+      for (
+        const track of
+        this.voiceStream.getTracks()
+      ) {
+        track.stop();
+      }
+    }
+
+    this.voiceStream = null;
+    this.voiceRecorder = null;
+    this.voiceChunks = [];
   }
 
   loadOverview(
@@ -310,7 +792,8 @@ export class ReportsDashboard {
   generateWithAi(): void {
     if (
       this.question.invalid ||
-      this.aiLoading()
+      this.aiLoading() ||
+      this.voiceBusy()
     ) {
       this.question.markAsTouched();
       return;

@@ -4,6 +4,7 @@ from fastapi import (
     FastAPI,
     Header,
     HTTPException,
+    Request,
     status,
 )
 
@@ -17,6 +18,7 @@ from .report_ai import (
     interpret_report_request,
     narrate_report,
 )
+from .report_voice import transcribe_report_audio
 from .schemas import (
     ProductAssistantRequest,
     ProductAssistantResponse,
@@ -24,6 +26,7 @@ from .schemas import (
     ReportInterpretRequest,
     ReportNarrativeRequest,
     ReportNarrativeResponse,
+    ReportVoiceTranscriptionResponse,
 )
 from .settings import settings
 
@@ -141,6 +144,58 @@ def recommend(
         reply=safe.reply,
         recommendations=safe.recommendations,
         model=settings.velora_ai_model,
+    )
+
+
+@app.post(
+    "/reports/transcribe",
+    response_model=ReportVoiceTranscriptionResponse,
+)
+async def transcribe_report_voice(
+    request: Request,
+    x_velora_ai_token: str | None = Header(
+        default=None,
+        alias="X-Velora-AI-Token",
+    ),
+) -> ReportVoiceTranscriptionResponse:
+    _authorize(x_velora_ai_token)
+
+    content_type = (
+        request.headers.get(
+            "content-type",
+            "",
+        )
+    )
+
+    audio = await request.body()
+
+    try:
+        text = transcribe_report_audio(
+            audio=audio,
+            content_type=content_type,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "VÉLORA AI no pudo transcribir "
+                "la consulta por voz."
+            ),
+        ) from exc
+
+    return ReportVoiceTranscriptionResponse(
+        text=text,
+        model=settings.velora_ai_transcribe_model,
     )
 
 

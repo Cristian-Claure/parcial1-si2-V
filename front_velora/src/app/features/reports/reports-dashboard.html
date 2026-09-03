@@ -89,19 +89,50 @@
         </label>
 
         <div class="query-row">
-          <input
-            id="report-question"
-            type="text"
-            [formControl]="question"
-            placeholder="Ej. Compara las tres sucursales en la última semana"
-            autocomplete="off"
-            (keydown.enter)="$event.preventDefault(); generateWithAi()"
-          />
+          <div class="voice-query-field">
+            <input
+              id="report-question"
+              type="text"
+              [formControl]="question"
+              placeholder="Ej. Compara las tres sucursales en la última semana"
+              autocomplete="off"
+              (keydown.enter)="$event.preventDefault(); generateWithAi()"
+            />
+
+            <button
+              class="voice-button"
+              type="button"
+              [class.voice-button--recording]="voiceState() === 'RECORDING'"
+              [disabled]="aiLoading() || voiceState() === 'TRANSCRIBING'"
+              (click)="toggleVoiceRecording()"
+              [attr.aria-label]="voiceState() === 'RECORDING' ? 'Detener grabación' : 'Dictar consulta'"
+            >
+              @if (voiceState() === 'RECORDING') {
+                <span class="voice-stop-icon" aria-hidden="true"></span>
+                Detener · {{ voiceSeconds() }}s
+              } @else if (voiceState() === 'TRANSCRIBING') {
+                <span class="voice-spinner" aria-hidden="true"></span>
+                Transcribiendo…
+              } @else {
+                <svg
+                  class="voice-mic-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"></path>
+                  <path d="M18 11v1a6 6 0 0 1-12 0v-1"></path>
+                  <path d="M12 18v3"></path>
+                  <path d="M9 21h6"></path>
+                </svg>
+                Dictar
+              }
+            </button>
+          </div>
 
           <button
             class="primary-button"
             type="button"
-            [disabled]="question.invalid || aiLoading()"
+            [disabled]="question.invalid || aiLoading() || voiceBusy()"
             (click)="generateWithAi()"
           >
             @if (aiLoading()) {
@@ -112,7 +143,35 @@
           </button>
         </div>
 
+        @if (voiceState() === 'RECORDING') {
+          <div class="voice-status voice-status--recording">
+            <span></span>
+
+            @if (voiceLivePreview()) {
+              Escuchando y escribiendo en vivo…
+              habla una sola vez y pulsa Detener cuando termines.
+            } @else {
+              Escuchando…
+              la transcripción aparecerá al detener.
+            }
+
+            La grabación se detendrá automáticamente a los 60 segundos.
+          </div>
+        } @else if (voiceState() === 'TRANSCRIBING') {
+          <div class="voice-status">
+            Convirtiendo tu voz a texto…
+          </div>
+        } @else if (voiceError(); as error) {
+          <div class="voice-status voice-status--error">
+            {{ error }}
+          </div>
+        }
+
         <p class="query-note">
+          Puedes escribir o dictar la consulta. Mientras hablas, el navegador
+          muestra una vista previa en vivo cuando está disponible. Al detener,
+          VÉLORA AI reemplaza esa vista previa por la transcripción final:
+          revísala o edítala antes de generar el reporte.
           VÉLORA AI decide el período y alcance según tu consulta.
           Si no mencionas fechas, analiza todo el histórico disponible.
           Los filtros superiores son opcionales y sólo se usan si pides
