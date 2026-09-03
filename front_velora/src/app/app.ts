@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import {
   NavigationEnd,
   Router,
@@ -27,6 +27,7 @@ import {
   Product
 } from './core/catalog/catalog.models';
 import { CatalogService } from './core/catalog/catalog.service';
+import { WebPushService } from './core/push/web-push.service';
 
 @Component({
   selector: 'app-root',
@@ -51,6 +52,9 @@ export class App {
   readonly auth = inject(AuthService);
   readonly cart = inject(CartService);
 
+  private readonly webPush =
+    inject(WebPushService);
+
   readonly products = signal<Product[]>([]);
   readonly categories = signal<Category[]>([]);
   readonly catalogLoading = signal(true);
@@ -72,6 +76,19 @@ export class App {
   );
 
   constructor() {
+    effect(() => {
+      const user =
+        this.auth.currentUser();
+
+      if (
+        user?.role ===
+          'CUSTOMER'
+      ) {
+        void this.webPush
+          .syncIfPermissionGranted();
+      }
+    });
+
     this.router.events
       .pipe(
         filter(
@@ -99,9 +116,17 @@ export class App {
       : null;
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
+    if (
+      this.auth.currentUser()?.role ===
+        'CUSTOMER'
+    ) {
+      await this.webPush
+        .revokeForLogout();
+    }
+
     this.auth.logout();
-    void this.router.navigate(['/']);
+    await this.router.navigate(['/']);
   }
   private isHomeUrl(url: string): boolean {
     const path = url
