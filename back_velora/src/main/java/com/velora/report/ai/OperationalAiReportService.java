@@ -1010,10 +1010,23 @@ public class OperationalAiReportService {
                 );
             }
 
+            UUID storeId =
+                    actor.getStore().getId();
+
+            StoreEntity store =
+                    stores.findById(storeId)
+                            .orElseThrow(
+                                    () ->
+                                            new ResponseStatusException(
+                                                    HttpStatus.FORBIDDEN,
+                                                    "La sucursal asignada al encargado no existe."
+                                            )
+                            );
+
             return new ActorScope(
                     UserRole.STORE_MANAGER,
-                    actor.getStore().getId(),
-                    actor.getStore().getName()
+                    store.getId(),
+                    store.getName()
             );
         }
 

@@ -147,15 +147,8 @@
           <div class="voice-status voice-status--recording">
             <span></span>
 
-            @if (voiceLivePreview()) {
-              Escuchando y escribiendo en vivo…
-              habla una sola vez y pulsa Detener cuando termines.
-            } @else {
-              Escuchando…
-              la transcripción aparecerá al detener.
-            }
-
-            La grabación se detendrá automáticamente a los 60 segundos.
+            Micrófono activo. Haz tu petición y pulsa Detener al terminar.
+            VÉLORA transcribirá tu consulta. Máximo 60 segundos.
           </div>
         } @else if (voiceState() === 'TRANSCRIBING') {
           <div class="voice-status">
@@ -168,10 +161,9 @@
         }
 
         <p class="query-note">
-          Puedes escribir o dictar la consulta. Mientras hablas, el navegador
-          muestra una vista previa en vivo cuando está disponible. Al detener,
-          VÉLORA AI reemplaza esa vista previa por la transcripción final:
-          revísala o edítala antes de generar el reporte.
+          Puedes escribir o dictar la consulta. Si usas el micrófono, habla con
+          normalidad y pulsa Detener al terminar. VÉLORA transcribirá tu petición
+          para que puedas revisarla o editarla antes de generar el reporte.
           VÉLORA AI decide el período y alcance según tu consulta.
           Si no mencionas fechas, analiza todo el histórico disponible.
           Los filtros superiores son opcionales y sólo se usan si pides
