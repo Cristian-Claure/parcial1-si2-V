@@ -3,10 +3,10 @@ package com.velora.push;
 import java.util.List;
 import java.util.UUID;
 
+import com.google.firebase.messaging.AndroidConfig;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
-import com.google.firebase.messaging.Notification;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,15 +103,20 @@ public class PushNotificationService {
         Message.Builder builder =
                 Message.builder()
                         .setFid(fid)
-                        .setNotification(
-                                Notification.builder()
-                                        .setTitle(
-                                                push.title()
-                                        )
-                                        .setBody(
-                                                push.body()
+                        .setAndroidConfig(
+                                AndroidConfig.builder()
+                                        .setPriority(
+                                                AndroidConfig.Priority.HIGH
                                         )
                                         .build()
+                        )
+                        .putData(
+                                "title",
+                                push.title()
+                        )
+                        .putData(
+                                "body",
+                                push.body()
                         )
                         .putData(
                                 "type",

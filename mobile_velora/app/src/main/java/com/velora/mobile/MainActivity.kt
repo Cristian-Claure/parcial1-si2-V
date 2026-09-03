@@ -1,13 +1,16 @@
 package com.velora.mobile
 
 import android.Manifest
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.velora.mobile.notifications.PushNavigationStore
 import com.velora.mobile.notifications.VeloraMessagingService
 import com.velora.mobile.ui.VeloraMobileApp
 import com.velora.mobile.ui.theme.VeloraTheme
@@ -18,12 +21,20 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         configureNotifications()
+        PushNavigationStore.publish(intent)
 
         setContent {
             VeloraTheme {
                 VeloraMobileApp()
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        setIntent(intent)
+        PushNavigationStore.publish(intent)
     }
 
     private fun configureNotifications() {
@@ -34,11 +45,14 @@ class MainActivity : ComponentActivity() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             VeloraMessagingService.CHANNEL_ID,
-            "VÉLORA",
-            NotificationManager.IMPORTANCE_DEFAULT
+            "Actualizaciones de VÉLORA",
+            NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description =
-                "Actualizaciones de pedidos, novedades y experiencia VÉLORA."
+                "Pedidos, pagos y novedades importantes de tu cuenta VÉLORA."
+            lockscreenVisibility =
+                Notification.VISIBILITY_PRIVATE
+            enableVibration(true)
         }
 
         val manager =

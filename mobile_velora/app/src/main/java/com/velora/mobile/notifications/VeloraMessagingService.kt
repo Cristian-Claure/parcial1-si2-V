@@ -3,11 +3,12 @@ package com.velora.mobile.notifications
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.velora.mobile.MainActivity
+import com.velora.mobile.R
 import com.velora.mobile.data.PushInstallationManager
 import com.velora.mobile.data.SessionStore
 
@@ -25,24 +26,10 @@ class VeloraMessagingService : FirebaseMessagingService() {
                 this
             )
 
-        /*
-         * Guardamos primero el FID.
-         *
-         * Si todavía no existe una sesión CUSTOMER,
-         * AuthViewModel lo sincronizará después del
-         * próximo login/registro.
-         */
         manager.storeInstallation(
             installationId
         )
 
-        /*
-         * FirebaseMessagingService ejecuta callbacks
-         * fuera de la UI. La sincronización es
-         * best-effort: un fallo de red no invalida
-         * el FID local y se reintentará al iniciar
-         * una sesión CUSTOMER.
-         */
         runCatching {
             manager
                 .syncCurrentInstallation()
@@ -52,10 +39,6 @@ class VeloraMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
 
-        /*
-         * No mostramos contenido CUSTOMER si ya no
-         * existe una sesión autenticada local.
-         */
         if (
             !SessionStore(this)
                 .hasCustomerSession()
@@ -64,25 +47,102 @@ class VeloraMessagingService : FirebaseMessagingService() {
         }
 
         val title =
-            message.notification?.title
-                ?: message.data["title"]
+            message.data["title"]
+                ?: message.notification?.title
                 ?: "VÉLORA"
 
         val body =
-            message.notification?.body
-                ?: message.data["body"]
-                ?: "Tiene una nueva actualización."
+            message.data["body"]
+                ?: message.notification?.body
+                ?: "Tienes una nueva actualización."
+
+        val type =
+            message.data["type"]
+                ?.trim()
+                ?.takeIf {
+                    it.isNotEmpty()
+                }
+
+        val entityId =
+            message.data["entityId"]
+                ?.trim()
+                ?.takeIf {
+                    it.isNotEmpty()
+                }
+
+        val route =
+            message.data["route"]
+                ?.trim()
+                ?.takeIf {
+                    it.isNotEmpty()
+                }
 
         showNotification(
-            title = title,
-            body = body
+            title = premiumTitle(
+                type = type,
+                fallback = title,
+            ),
+            body = body,
+            type = type,
+            entityId = entityId,
+            route = route
         )
+    }
+
+    private fun premiumTitle(
+        type: String?,
+        fallback: String,
+    ): String {
+        return when (
+            type
+                ?.trim()
+                ?.uppercase()
+        ) {
+            "ORDER_CONFIRMED" ->
+                "Pedido confirmado"
+
+            "PAYMENT_CONFIRMED" ->
+                "Pago confirmado"
+
+            "ORDER_READY_PICKUP" ->
+                "Pedido listo para recoger"
+
+            "ORDER_SHIPPED" ->
+                "Tu pedido va en camino"
+
+            "ORDER_CANCELLED" ->
+                "Pedido cancelado"
+
+            else ->
+                fallback
+                    .trim()
+                    .takeUnless {
+                        it.equals(
+                            "VÉLORA",
+                            ignoreCase = true,
+                        )
+                    }
+                    ?: "Actualización de tu pedido"
+        }
     }
 
     private fun showNotification(
         title: String,
-        body: String
+        body: String,
+        type: String?,
+        entityId: String?,
+        route: String?
     ) {
+        val notificationId =
+            listOf(
+                type.orEmpty(),
+                entityId.orEmpty(),
+                route.orEmpty(),
+                body
+            )
+                .joinToString("|")
+                .hashCode()
+
         val intent = Intent(
             this,
             MainActivity::class.java
@@ -90,37 +150,87 @@ class VeloraMessagingService : FirebaseMessagingService() {
             flags =
                 Intent.FLAG_ACTIVITY_CLEAR_TOP or
                 Intent.FLAG_ACTIVITY_SINGLE_TOP
+
+            putExtra(
+                PushNavigationStore.EXTRA_PUSH_TYPE,
+                type
+            )
+            putExtra(
+                PushNavigationStore.EXTRA_PUSH_ENTITY_ID,
+                entityId
+            )
+            putExtra(
+                PushNavigationStore.EXTRA_PUSH_ROUTE,
+                route
+            )
         }
 
         val pendingIntent = PendingIntent.getActivity(
             this,
-            0,
+            notificationId,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or
                 PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = Notification.Builder(
-            this,
-            CHANNEL_ID
-        )
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .build()
+        val notification =
+            Notification.Builder(
+                this,
+                CHANNEL_ID
+            )
+                .setSmallIcon(
+                      R.drawable.ic_velora_notification
+                  )
+                  .setColor(
+                      0xFFB77A63.toInt()
+                  )
+                  .setExtras(
+                      Bundle().apply {
+                          putBoolean(
+                              "android.app.preferSmallIcon",
+                              true,
+                          )
+                      }
+                  )
+                  .setShowWhen(
+                      false
+                  )
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(
+                    Notification.BigTextStyle()
+                        .bigText(body)
+                )
+                .setCategory(
+                    Notification.CATEGORY_STATUS
+                )
+                .setVisibility(
+                    Notification.VISIBILITY_PRIVATE
+                )
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(true)
+                .setShowWhen(true)
+                .setWhen(
+                    System.currentTimeMillis()
+                )
+                .setContentIntent(
+                    pendingIntent
+                )
+                .build()
 
         val manager =
-            getSystemService(NotificationManager::class.java)
+            getSystemService(
+                NotificationManager::class.java
+            )
 
         manager.notify(
-            System.currentTimeMillis().toInt(),
+            notificationId,
             notification
         )
     }
 
     companion object {
-        const val CHANNEL_ID = "velora_customer"
+        const val CHANNEL_ID =
+            "velora_customer_updates_v2"
     }
 }

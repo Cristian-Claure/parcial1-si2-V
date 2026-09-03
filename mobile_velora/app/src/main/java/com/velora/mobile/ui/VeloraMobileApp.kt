@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.velora.mobile.data.MobileOrder
 import com.velora.mobile.data.MobileProduct
+import com.velora.mobile.notifications.PushNavigationStore
 import com.velora.mobile.ui.theme.VeloraColors
 
 private enum class AuthScreen {
@@ -259,6 +260,84 @@ private fun CustomerHome(
     var selectedOrder by remember {
         mutableStateOf<MobileOrder?>(
             null
+        )
+    }
+
+    val pushNavigationRequest by
+        PushNavigationStore
+            .request
+            .collectAsState()
+
+    LaunchedEffect(
+        pushNavigationRequest
+    ) {
+        val request =
+            pushNavigationRequest
+                ?: return@LaunchedEffect
+
+        val route =
+            request.route
+                .orEmpty()
+                .trim()
+                .lowercase()
+
+        val type =
+            request.type
+                .orEmpty()
+                .trim()
+                .uppercase()
+
+        val destination =
+            when {
+                route.contains("favorites") ->
+                    CustomerScreen.FAVORITES
+
+                route.contains("cart") ->
+                    CustomerScreen.CART
+
+                route.contains("checkout") ->
+                    CustomerScreen.CHECKOUT
+
+                route.contains("catalog") ->
+                    CustomerScreen.CATALOG
+
+                route.contains("account") ->
+                    CustomerScreen.ACCOUNT
+
+                route.contains("order") ||
+                    route.contains("payment") ||
+                    type.startsWith("ORDER_") ||
+                    type.startsWith("PAYMENT_") ->
+                    CustomerScreen.ORDERS
+
+                else ->
+                    CustomerScreen.HOME
+            }
+
+        when (destination) {
+            CustomerScreen.FAVORITES ->
+                favoritesViewModel.load()
+
+            CustomerScreen.CART ->
+                cartViewModel.load()
+
+            CustomerScreen.CHECKOUT ->
+                checkoutViewModel.load()
+
+            CustomerScreen.ORDERS ->
+                ordersViewModel.load()
+
+            else ->
+                Unit
+        }
+
+        selectedOrder = null
+        selectedProduct = null
+        customerScreen =
+            destination
+
+        PushNavigationStore.consume(
+            request.id
         )
     }
 
