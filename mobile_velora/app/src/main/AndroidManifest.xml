@@ -12,6 +12,15 @@
         android:theme="@style/Theme.Velora"
         android:usesCleartextTraffic="true">
 
+        <!--
+            FCM 2026:
+            VÉLORA usa Firebase Installation ID (FID)
+            para targeting individual de instalaciones.
+        -->
+        <meta-data
+            android:name="firebase_messaging_installation_id_enabled"
+            android:value="true" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">

@@ -8,20 +8,60 @@ import android.content.Intent
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.velora.mobile.MainActivity
+import com.velora.mobile.data.PushInstallationManager
+import com.velora.mobile.data.SessionStore
 
 class VeloraMessagingService : FirebaseMessagingService() {
 
-    override fun onNewToken(token: String) {
-        super.onNewToken(token)
+    override fun onRegistered(
+        installationId: String
+    ) {
+        super.onRegistered(
+            installationId
+        )
 
-        getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_FCM_TOKEN, token)
-            .apply()
+        val manager =
+            PushInstallationManager(
+                this
+            )
+
+        /*
+         * Guardamos primero el FID.
+         *
+         * Si todavía no existe una sesión CUSTOMER,
+         * AuthViewModel lo sincronizará después del
+         * próximo login/registro.
+         */
+        manager.storeInstallation(
+            installationId
+        )
+
+        /*
+         * FirebaseMessagingService ejecuta callbacks
+         * fuera de la UI. La sincronización es
+         * best-effort: un fallo de red no invalida
+         * el FID local y se reintentará al iniciar
+         * una sesión CUSTOMER.
+         */
+        runCatching {
+            manager
+                .syncCurrentInstallation()
+        }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
+
+        /*
+         * No mostramos contenido CUSTOMER si ya no
+         * existe una sesión autenticada local.
+         */
+        if (
+            !SessionStore(this)
+                .hasCustomerSession()
+        ) {
+            return
+        }
 
         val title =
             message.notification?.title
@@ -82,7 +122,5 @@ class VeloraMessagingService : FirebaseMessagingService() {
 
     companion object {
         const val CHANNEL_ID = "velora_customer"
-        const val PREFERENCES_NAME = "velora_push"
-        const val KEY_FCM_TOKEN = "fcm_token"
     }
 }
