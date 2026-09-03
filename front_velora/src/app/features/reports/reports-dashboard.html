@@ -1,0 +1,410 @@
+<app-role-shell>
+  <main class="reports-page">
+    <section class="reports-hero">
+      <div class="eyebrow">
+        INTELIGENCIA OPERATIVA
+      </div>
+
+      <div class="hero-layout">
+        <div>
+          <h1>Reportes IA</h1>
+
+          <p class="hero-copy">
+            Explora períodos reales del negocio y pregunta en lenguaje natural.
+            Spring calcula las cifras; VÉLORA AI interpreta y explica el resultado.
+          </p>
+        </div>
+
+        <button
+          class="secondary-button"
+          type="button"
+          [disabled]="loading() || aiLoading()"
+          (click)="refreshSelectedRange()"
+        >
+          Actualizar datos
+        </button>
+      </div>
+
+      <section class="period-tools">
+        <div class="period-tools__heading">
+          <div>
+            <span>PERÍODO DEL REPORTE</span>
+            <strong>Exploración histórica sin gastar IA</strong>
+          </div>
+
+          @if (periodBounds(); as bounds) {
+            <small>
+              Datos disponibles:
+              {{ bounds.minDate }} — {{ bounds.maxDate }}
+            </small>
+          }
+        </div>
+
+        <div class="period-presets">
+          <button type="button" [class.period-preset--active]="activePreset() === '7D'" (click)="applyPreset('7D')">7 días</button>
+          <button type="button" [class.period-preset--active]="activePreset() === '30D'" (click)="applyPreset('30D')">30 días</button>
+          <button type="button" [class.period-preset--active]="activePreset() === '90D'" (click)="applyPreset('90D')">90 días</button>
+          <button type="button" [class.period-preset--active]="activePreset() === '180D'" (click)="applyPreset('180D')">6 meses</button>
+          <button type="button" [class.period-preset--active]="activePreset() === '365D'" (click)="applyPreset('365D')">12 meses</button>
+          <button type="button" [class.period-preset--active]="activePreset() === 'HISTORICAL'" (click)="applyPreset('HISTORICAL')">Histórico</button>
+        </div>
+
+        <div class="custom-period">
+          <label>
+            <span>Desde</span>
+            <input
+              type="date"
+              [formControl]="fromDate"
+              [attr.min]="periodBounds()?.minDate ?? null"
+              [attr.max]="periodBounds()?.maxDate ?? null"
+            />
+          </label>
+
+          <label>
+            <span>Hasta</span>
+            <input
+              type="date"
+              [formControl]="toDate"
+              [attr.min]="periodBounds()?.minDate ?? null"
+              [attr.max]="periodBounds()?.maxDate ?? null"
+            />
+          </label>
+
+          <button
+            class="secondary-button"
+            type="button"
+            [disabled]="loading() || aiLoading()"
+            (click)="applyCustomRange()"
+          >
+            Aplicar período
+          </button>
+        </div>
+      </section>
+
+      <div
+        class="ai-query"
+      >
+        <label for="report-question">
+          ¿Qué quieres analizar?
+        </label>
+
+        <div class="query-row">
+          <div class="voice-query-field">
+            <input
+              id="report-question"
+              type="text"
+              [formControl]="question"
+              placeholder="Ej. Compara las tres sucursales en la última semana"
+              autocomplete="off"
+              (keydown.enter)="$event.preventDefault(); generateWithAi()"
+            />
+
+            <button
+              class="voice-button"
+              type="button"
+              [class.voice-button--recording]="voiceState() === 'RECORDING'"
+              [disabled]="aiLoading() || voiceState() === 'TRANSCRIBING'"
+              (click)="toggleVoiceRecording()"
+              [attr.aria-label]="voiceState() === 'RECORDING' ? 'Detener grabación' : 'Dictar consulta'"
+            >
+              @if (voiceState() === 'RECORDING') {
+                <span class="voice-stop-icon" aria-hidden="true"></span>
+                Detener · {{ voiceSeconds() }}s
+              } @else if (voiceState() === 'TRANSCRIBING') {
+                <span class="voice-spinner" aria-hidden="true"></span>
+                Transcribiendo…
+              } @else {
+                <svg
+                  class="voice-mic-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"></path>
+                  <path d="M18 11v1a6 6 0 0 1-12 0v-1"></path>
+                  <path d="M12 18v3"></path>
+                  <path d="M9 21h6"></path>
+                </svg>
+                Dictar
+              }
+            </button>
+          </div>
+
+          <button
+            class="primary-button"
+            type="button"
+            [disabled]="question.invalid || aiLoading() || voiceBusy()"
+            (click)="generateWithAi()"
+          >
+            @if (aiLoading()) {
+              Analizando, calculando y redactando…
+            } @else {
+              Generar con IA
+            }
+          </button>
+        </div>
+
+        @if (voiceState() === 'RECORDING') {
+          <div class="voice-status voice-status--recording">
+            <span></span>
+
+            Micrófono activo. Haz tu petición y pulsa Detener al terminar.
+            VÉLORA transcribirá tu consulta. Máximo 60 segundos.
+          </div>
+        } @else if (voiceState() === 'TRANSCRIBING') {
+          <div class="voice-status">
+            Convirtiendo tu voz a texto…
+          </div>
+        } @else if (voiceError(); as error) {
+          <div class="voice-status voice-status--error">
+            {{ error }}
+          </div>
+        }
+
+        <p class="query-note">
+          Puedes escribir o dictar la consulta. Si usas el micrófono, habla con
+          normalidad y pulsa Detener al terminar. VÉLORA transcribirá tu petición
+          para que puedas revisarla o editarla antes de generar el reporte.
+          VÉLORA AI decide el período y alcance según tu consulta.
+          Si no mencionas fechas, analiza todo el histórico disponible.
+          Los filtros superiores son opcionales y sólo se usan si pides
+          explícitamente “el período seleccionado”.
+        </p>
+      </div>
+    </section>
+
+    @if (errorMessage(); as error) {
+      <section class="status-card status-card--error">
+        <strong>No se pudo completar la operación.</strong>
+        <span>{{ error }}</span>
+      </section>
+    }
+
+    @if (loading()) {
+      <section class="loading-panel">
+        <span class="loading-dot"></span>
+        Preparando indicadores operativos…
+      </section>
+    }
+
+    @if (report(); as data) {
+      <section class="report-context">
+        <div>
+          <span class="context-label">ALCANCE</span>
+          <strong>{{ data.scopeLabel }}</strong>
+        </div>
+
+        <div>
+          <span class="context-label">PERÍODO</span>
+          <strong>{{ data.from }} — {{ data.to }}</strong>
+        </div>
+
+        <div>
+          <span class="context-label">ENFOQUE</span>
+          <strong>{{ focusLabel() }}</strong>
+        </div>
+
+        <div>
+          <span class="context-label">ACTUALIZADO</span>
+          <strong>{{ formatGeneratedAt(data.generatedAt) }}</strong>
+        </div>
+      </section>
+
+      @if (narrative(); as aiAnswer) {
+        <section class="ai-answer-panel">
+          <div class="ai-answer-heading">
+            <span>VÉLORA AI · RESPUESTA EJECUTIVA</span>
+            <h2>Respuesta a tu consulta</h2>
+          </div>
+
+          <blockquote class="ai-answer-question">
+            {{ lastQuestion() ?? question.value }}
+          </blockquote>
+
+          <p class="ai-answer-summary">
+            {{ aiAnswer.summary }}
+          </p>
+
+          @if (aiAnswer.insights.length > 0) {
+            <div class="ai-answer-section">
+              <strong>Hallazgos</strong>
+
+              <div class="ai-answer-insights">
+                @for (
+                  insight of aiAnswer.insights;
+                  track $index
+                ) {
+                  <div>
+                    <span>{{ $index + 1 }}</span>
+                    <p>{{ insight }}</p>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (aiAnswer.assessment) {
+            <div class="ai-answer-section ai-assessment">
+              <strong>Criterio de VÉLORA AI</strong>
+              <p>{{ aiAnswer.assessment }}</p>
+            </div>
+          }
+
+          @if (aiAnswer.recommendations.length > 0) {
+            <div class="ai-answer-section">
+              <strong>Acciones sugeridas</strong>
+
+              <ul class="ai-recommendations">
+                @for (
+                  recommendation of aiAnswer.recommendations;
+                  track $index
+                ) {
+                  <li>{{ recommendation }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          <small class="ai-answer-note">
+            Las cifras provienen del backend. El criterio y las acciones sugeridas
+            son interpretaciones de VÉLORA AI basadas en esos datos y no modifican
+            operaciones, inventario ni ventas.
+          </small>
+        </section>
+      }
+
+      <section class="kpi-section">
+        <div class="section-heading">
+          <div>
+            <span>01 · INDICADORES</span>
+            <h2>Lectura ejecutiva</h2>
+          </div>
+
+          <p>
+            Ocho indicadores calculados directamente sobre
+            operaciones VÉLORA para el período mostrado.
+          </p>
+        </div>
+
+        <div class="kpi-grid">
+          @for (kpi of data.kpis; track kpi.key) {
+            <article class="kpi-card">
+              <span class="kpi-label">
+                {{ kpi.label }}
+              </span>
+
+              <strong>
+                {{ formatKpi(kpi) }}
+              </strong>
+
+              <p>
+                {{ kpi.helper }}
+              </p>
+            </article>
+          }
+        </div>
+      </section>
+
+      <section class="visual-section">
+        <div class="section-heading">
+          <div>
+            <span>02 · VISUALIZACIONES</span>
+            <h2>Lectura visual del negocio</h2>
+          </div>
+
+          <p>
+            La evolución se agrupa por día, semana o mes
+            según la amplitud del período seleccionado.
+          </p>
+        </div>
+
+        <div class="charts-grid">
+          @for (chart of data.charts; track chart.id) {
+            <app-report-chart-card
+              [chart]="chart"
+            />
+          }
+        </div>
+      </section>
+
+      <section class="analysis-grid">
+        <article class="insights-panel">
+          <div class="section-heading section-heading--compact">
+            <div>
+              <span>03 · HALLAZGOS CALCULADOS</span>
+              <h2>Lo importante en los datos</h2>
+            </div>
+          </div>
+
+          <div class="insight-list">
+            @for (
+              insight of data.deterministicInsights;
+              track $index
+            ) {
+              <div class="insight-item">
+                <span>{{ $index + 1 }}</span>
+                <p>{{ insight }}</p>
+              </div>
+            } @empty {
+              <p class="empty-copy">
+                Todavía no hay hallazgos suficientes
+                para este período.
+              </p>
+            }
+          </div>
+
+        </article>
+
+        @if (topTable(); as table) {
+          <article class="table-panel">
+            <div class="section-heading section-heading--compact">
+              <div>
+                <span>04 · DETALLE</span>
+                <h2>{{ table.title }}</h2>
+              </div>
+            </div>
+
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    @for (
+                      column of table.columns;
+                      track column
+                    ) {
+                      <th>{{ column }}</th>
+                    }
+                  </tr>
+                </thead>
+
+                <tbody>
+                  @for (
+                    row of table.rows;
+                    track $index
+                  ) {
+                    <tr>
+                      @for (
+                        cell of row;
+                        track $index
+                      ) {
+                        <td>{{ cell }}</td>
+                      }
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td
+                        class="empty-cell"
+                        [attr.colspan]="table.columns.length"
+                      >
+                        No hay detalle disponible en este período.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </article>
+        }
+      </section>
+    }
+  </main>
+</app-role-shell>

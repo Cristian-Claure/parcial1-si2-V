@@ -1,0 +1,255 @@
+<article class="chart-card">
+  <header class="chart-header">
+    <div>
+      <span class="chart-type">
+        {{ chart().type }}
+      </span>
+
+      <h3>{{ chart().title }}</h3>
+    </div>
+
+    <span class="chart-meta">
+      {{ chart().categories.length }}
+      puntos
+    </span>
+  </header>
+
+  <div class="chart-stage">
+    @switch (chart().type) {
+      @case ('LINE') {
+        <svg
+          class="cartesian-chart"
+          viewBox="0 0 640 260"
+          role="img"
+          [attr.aria-label]="chart().title"
+        >
+          <line
+            x1="46"
+            x2="606"
+            y1="208"
+            y2="208"
+            class="axis-line"
+          />
+
+          <line
+            x1="46"
+            x2="606"
+            [attr.y1]="zeroY()"
+            [attr.y2]="zeroY()"
+            class="zero-line"
+          />
+
+          @for (
+            series of lineSeries();
+            track series.name
+          ) {
+            <polyline
+              fill="none"
+              [attr.points]="series.points"
+              [attr.stroke]="series.color"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
+            @for (
+              point of series.dots;
+              track $index
+            ) {
+              <circle
+                [attr.cx]="point.x"
+                [attr.cy]="point.y"
+                r="4"
+                [attr.fill]="series.color"
+                class="data-point"
+              >
+                <title>
+                  {{ series.name }} ·
+                  {{ point.label }} ·
+                  {{ formatValue(point.value) }}
+                </title>
+              </circle>
+            }
+          }
+
+          @for (
+            label of xLabels();
+            track $index
+          ) {
+            <text
+              [attr.x]="label.x"
+              y="238"
+              text-anchor="middle"
+              class="axis-label"
+            >
+              {{ label.text }}
+            </text>
+          }
+        </svg>
+      }
+
+      @case ('BAR') {
+        <svg
+          class="cartesian-chart"
+          viewBox="0 0 640 260"
+          role="img"
+          [attr.aria-label]="chart().title"
+        >
+          <line
+            x1="46"
+            x2="606"
+            [attr.y1]="zeroY()"
+            [attr.y2]="zeroY()"
+            class="zero-line"
+          />
+
+          @for (
+            bar of bars();
+            track $index
+          ) {
+            <rect
+              [attr.x]="bar.x"
+              [attr.y]="bar.y"
+              [attr.width]="bar.width"
+              [attr.height]="bar.height"
+              rx="4"
+              [attr.fill]="bar.color"
+              class="bar"
+            >
+              <title>
+                {{ bar.seriesName }} ·
+                {{ bar.label }} ·
+                {{ formatValue(bar.value) }}
+              </title>
+            </rect>
+          }
+
+          @for (
+            label of xLabels();
+            track $index
+          ) {
+            <text
+              [attr.x]="label.x"
+              y="238"
+              text-anchor="middle"
+              class="axis-label"
+            >
+              {{ label.text }}
+            </text>
+          }
+        </svg>
+      }
+
+      @case ('DONUT') {
+        <div class="donut-layout">
+          <svg
+            class="donut-chart"
+            viewBox="0 0 220 220"
+            role="img"
+            [attr.aria-label]="chart().title"
+          >
+            <circle
+              cx="110"
+              cy="110"
+              r="76"
+              pathLength="100"
+              class="donut-track"
+            />
+
+            @for (
+              segment of donutSegments();
+              track $index
+            ) {
+              <circle
+                cx="110"
+                cy="110"
+                r="76"
+                pathLength="100"
+                fill="none"
+                stroke-width="28"
+                stroke-linecap="butt"
+                [attr.stroke]="segment.color"
+                [attr.stroke-dasharray]="segment.dashArray"
+                [attr.stroke-dashoffset]="segment.dashOffset"
+                class="donut-segment"
+              >
+                <title>
+                  {{ segment.label }} ·
+                  {{ formatValue(segment.value) }} ·
+                  {{ formatPercent(segment.percent) }}
+                </title>
+              </circle>
+            }
+
+            <text
+              x="110"
+              y="104"
+              text-anchor="middle"
+              class="donut-caption"
+            >
+              TOTAL
+            </text>
+
+            <text
+              x="110"
+              y="127"
+              text-anchor="middle"
+              class="donut-total"
+            >
+              {{ formatValue(donutTotal()) }}
+            </text>
+          </svg>
+
+          <div class="donut-breakdown">
+            @for (
+              segment of donutSegments();
+              track $index
+            ) {
+              <div class="donut-row">
+                <span
+                  class="legend-dot"
+                  [style.background]="segment.color"
+                ></span>
+
+                <div>
+                  <strong>
+                    {{ segment.label }}
+                  </strong>
+
+                  <small>
+                    {{ formatValue(segment.value) }}
+                    ·
+                    {{ formatPercent(segment.percent) }}
+                  </small>
+                </div>
+              </div>
+            } @empty {
+              <p class="empty-chart">
+                No hay valores positivos para representar.
+              </p>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  @if (
+    chart().type !== 'DONUT'
+  ) {
+    <footer class="chart-legend">
+      @for (
+        item of legend();
+        track $index
+      ) {
+        <span>
+          <i
+            [style.background]="item.color"
+          ></i>
+
+          {{ item.label }}
+        </span>
+      }
+    </footer>
+  }
+</article>

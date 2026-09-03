@@ -42,3 +42,7 @@ velora:
   ai:
     base-url: ${VELORA_AI_BASE_URL:http://127.0.0.1:8001}
     internal-token: ${VELORA_AI_INTERNAL_TOKEN:}
+  push:
+    firebase:
+      enabled: ${VELORA_FIREBASE_ENABLED:false}
+      project-id: ${VELORA_FIREBASE_PROJECT_ID:}

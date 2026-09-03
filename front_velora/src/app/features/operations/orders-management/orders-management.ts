@@ -139,7 +139,7 @@ export class OrdersManagement {
           },
           {
             label: 'Reportes IA',
-            disabled: true
+            route: '/admin/reportes'
           },
           {
             label: 'Auditoría',
@@ -174,8 +174,8 @@ export class OrdersManagement {
           route: '/sucursal/pos'
         },
         {
-          label: 'Reportes',
-          disabled: true
+          label: 'Reportes IA',
+          route: '/sucursal/reportes'
         }
       ];
     });

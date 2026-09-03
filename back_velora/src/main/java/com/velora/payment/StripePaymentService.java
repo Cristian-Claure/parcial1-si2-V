@@ -1,5 +1,6 @@
 package com.velora.payment;
 
+import com.velora.push.CustomerPushEventPublisher;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -30,6 +31,7 @@ public class StripePaymentService {
     private final PaymentService paymentService;
     private final PaymentRepository payments;
     private final PaymentStatusHistoryRepository history;
+    private final CustomerPushEventPublisher customerPush;
     private final String secretKey;
     private final String webhookSecret;
     private final String successUrl;
@@ -39,6 +41,7 @@ public class StripePaymentService {
             PaymentService paymentService,
             PaymentRepository payments,
             PaymentStatusHistoryRepository history,
+            CustomerPushEventPublisher customerPush,
             @Value("${velora.stripe.secret-key:}") String secretKey,
             @Value("${velora.stripe.webhook-secret:}") String webhookSecret,
             @Value("${velora.stripe.success-url}") String successUrl,
@@ -47,6 +50,7 @@ public class StripePaymentService {
         this.paymentService = paymentService;
         this.payments = payments;
         this.history = history;
+        this.customerPush = customerPush;
         this.secretKey = secretKey == null ? "" : secretKey.trim();
         this.webhookSecret = webhookSecret == null ? "" : webhookSecret.trim();
         this.successUrl = successUrl;
@@ -290,7 +294,19 @@ public class StripePaymentService {
                 PaymentStatus.PAID,
                 "Pago confirmado por webhook firmado de Stripe."
         );
-    }
+
+        if (
+                payment.getOrder().getOrderChannel()
+                        == com.velora.order.OrderChannel.ECOMMERCE
+                && payment.getOrder().getCustomer() != null
+        ) {
+            customerPush.paymentConfirmed(
+                    payment.getOrder().getCustomer().getId(),
+                    payment.getOrder().getId(),
+                    payment.getOrder().getOrderNumber()
+            );
+        }
+}
 
     private void markFailed(Session session) {
         PaymentEntity payment =
@@ -316,7 +332,19 @@ public class StripePaymentService {
                 PaymentStatus.FAILED,
                 "Stripe informó que la sesión expiró o el pago asíncrono falló."
         );
-    }
+
+        if (
+                payment.getOrder().getOrderChannel()
+                        == com.velora.order.OrderChannel.ECOMMERCE
+                && payment.getOrder().getCustomer() != null
+        ) {
+            customerPush.paymentFailed(
+                    payment.getOrder().getCustomer().getId(),
+                    payment.getOrder().getId(),
+                    payment.getOrder().getOrderNumber()
+            );
+        }
+}
 
     private PaymentEntity findPayment(
             String sessionId

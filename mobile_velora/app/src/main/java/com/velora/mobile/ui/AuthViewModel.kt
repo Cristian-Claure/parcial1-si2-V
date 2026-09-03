@@ -21,6 +21,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val api = AuthApi()
     private val session = SessionStore(application)
 
+    private val pushInstallations =
+        PushInstallationManager(
+            application
+        )
+
     private val _state = MutableStateFlow(
         AuthUiState(
             authenticated = session.hasCustomerSession(),
@@ -30,6 +35,19 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     val state: StateFlow<AuthUiState> = _state.asStateFlow()
+
+    init {
+        /*
+         * Si la aplicación abre con una sesión
+         * CUSTOMER persistida y ya conocemos el FID,
+         * refrescamos last_seen_at en el backend.
+         */
+        if (
+            session.hasCustomerSession()
+        ) {
+            syncPushInstallation()
+        }
+    }
 
     fun login(email: String, password: String) {
         execute { api.login(email.trim(), password) }
@@ -42,8 +60,25 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun logout() {
-        session.clear()
-        _state.value = AuthUiState()
+        viewModelScope.launch {
+            /*
+             * Revocamos mientras el JWT todavía
+             * está disponible. Aunque la red falle,
+             * la sesión local siempre se cerrará.
+             */
+            withContext(
+                Dispatchers.IO
+            ) {
+                runCatching {
+                    pushInstallations
+                        .revokeCurrentInstallation()
+                }
+            }
+
+            session.clear()
+            _state.value =
+                AuthUiState()
+        }
     }
 
     fun clearError() {
@@ -69,11 +104,31 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                     firstName = response.user.firstName,
                     email = response.user.email
                 )
+
+                /*
+                 * El login/registro no depende de FCM.
+                 * Sincronizamos el FID en segundo plano
+                 * y conservamos la sesión aunque el
+                 * backend push no esté disponible.
+                 */
+                syncPushInstallation()
+
             } catch (exception: Exception) {
                 _state.value = _state.value.copy(
                     loading = false,
                     error = exception.message ?: "No se pudo completar la solicitud."
                 )
+            }
+        }
+    }
+
+    private fun syncPushInstallation() {
+        viewModelScope.launch(
+            Dispatchers.IO
+        ) {
+            runCatching {
+                pushInstallations
+                    .syncCurrentInstallation()
             }
         }
     }

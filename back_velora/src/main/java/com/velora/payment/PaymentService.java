@@ -1,5 +1,7 @@
 package com.velora.payment;
 
+import com.velora.order.OrderChannel;
+import com.velora.push.CustomerPushEventPublisher;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -29,19 +31,22 @@ public class PaymentService {
     private final OrderRepository orders;
     private final UserRepository users;
     private final StripePaymentOperationsService stripeOperations;
+    private final CustomerPushEventPublisher customerPush;
 
     public PaymentService(
             PaymentRepository payments,
             PaymentStatusHistoryRepository history,
             OrderRepository orders,
             UserRepository users,
-            StripePaymentOperationsService stripeOperations
+            StripePaymentOperationsService stripeOperations,
+            CustomerPushEventPublisher customerPush
     ) {
         this.payments = payments;
         this.history = history;
         this.orders = orders;
         this.users = users;
         this.stripeOperations = stripeOperations;
+        this.customerPush = customerPush;
     }
 
     @Transactional
@@ -322,6 +327,18 @@ public class PaymentService {
 
         history.flush();
 
+        if (
+                lockedOrder.getOrderChannel()
+                        == OrderChannel.ECOMMERCE
+                && lockedOrder.getCustomer() != null
+        ) {
+            customerPush.paymentConfirmed(
+                    lockedOrder.getCustomer().getId(),
+                    lockedOrder.getId(),
+                    lockedOrder.getOrderNumber()
+            );
+        }
+
         return PaymentResponse.from(payment);
     }
 
@@ -424,6 +441,18 @@ public class PaymentService {
         );
 
         history.flush();
+
+        if (
+                lockedOrder.getOrderChannel()
+                        == OrderChannel.ECOMMERCE
+                && lockedOrder.getCustomer() != null
+        ) {
+            customerPush.paymentCancelled(
+                    lockedOrder.getCustomer().getId(),
+                    lockedOrder.getId(),
+                    lockedOrder.getOrderNumber()
+            );
+        }
 
         return PaymentResponse.from(payment);
     }
@@ -528,6 +557,18 @@ public class PaymentService {
         );
 
         history.flush();
+
+        if (
+                lockedOrder.getOrderChannel()
+                        == OrderChannel.ECOMMERCE
+                && lockedOrder.getCustomer() != null
+        ) {
+            customerPush.paymentFailed(
+                    lockedOrder.getCustomer().getId(),
+                    lockedOrder.getId(),
+                    lockedOrder.getOrderNumber()
+            );
+        }
 
         return PaymentResponse.from(payment);
     }
@@ -641,6 +682,18 @@ public class PaymentService {
         );
 
         history.flush();
+
+        if (
+                lockedOrder.getOrderChannel()
+                        == OrderChannel.ECOMMERCE
+                && lockedOrder.getCustomer() != null
+        ) {
+            customerPush.paymentRefunded(
+                    lockedOrder.getCustomer().getId(),
+                    lockedOrder.getId(),
+                    lockedOrder.getOrderNumber()
+            );
+        }
 
         return PaymentResponse.from(payment);
     }

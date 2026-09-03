@@ -456,6 +456,92 @@
 
   </section>
 
+
+  <section class="push-preferences">
+    <article class="push-card">
+      <div class="push-copy">
+        <span>PREFERENCIAS · NOTIFICACIONES</span>
+
+        <h2>Actualizaciones de tus pedidos</h2>
+
+        <p>
+          Recibe avisos de confirmación, pago,
+          envío y retiro aunque VÉLORA no esté
+          abierta en esta pestaña.
+        </p>
+      </div>
+
+      <div
+        class="push-status"
+        [attr.data-state]="webPush.permissionState()"
+      >
+        @switch (webPush.permissionState()) {
+          @case ('granted') {
+            @if (
+              webPush.installationRegistered()
+            ) {
+              <strong>Notificaciones activadas</strong>
+              <small>
+                Este navegador está registrado
+                para recibir actualizaciones de VÉLORA.
+              </small>
+            }
+            @else {
+              <strong>Reconexión necesaria</strong>
+              <small>
+                El permiso está concedido, pero este
+                navegador debe volver a registrarse.
+              </small>
+            }
+          }
+          @case ('denied') {
+            <strong>Permiso bloqueado</strong>
+            <small>
+              Habilita las notificaciones desde
+              la configuración del navegador.
+            </small>
+          }
+          @case ('unsupported') {
+            <strong>No disponible</strong>
+            <small>
+              Este navegador no admite el flujo
+              de notificaciones de VÉLORA.
+            </small>
+          }
+          @default {
+            <strong>Notificaciones desactivadas</strong>
+            <small>
+              Actívalas cuando quieras. Solo
+              pediremos permiso al pulsar el botón.
+            </small>
+          }
+        }
+
+        <button
+          type="button"
+          class="push-button"
+          (click)="enablePushNotifications()"
+          [disabled]="
+            webPush.permissionBusy() ||
+            (
+              webPush.permissionState() === 'granted' &&
+              webPush.installationRegistered()
+            ) ||
+            webPush.permissionState() === 'denied' ||
+            webPush.permissionState() === 'unsupported'
+          "
+        >
+          @if (webPush.permissionBusy()) {
+            Activando...
+          }
+          @else {
+            {{ pushButtonLabel() }}
+          }
+        </button>
+      </div>
+    </article>
+  </section>
+
   <section class="account-shortcuts">
 
     <a routerLink="/mis-pedidos">

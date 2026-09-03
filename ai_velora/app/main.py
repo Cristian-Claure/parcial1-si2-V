@@ -4,6 +4,7 @@ from fastapi import (
     FastAPI,
     Header,
     HTTPException,
+    Request,
     status,
 )
 
@@ -13,9 +14,19 @@ from .catalog import (
     fetch_public_catalog,
 )
 from .guardrails import sanitize_decision
+from .report_ai import (
+    interpret_report_request,
+    narrate_report,
+)
+from .report_voice import transcribe_report_audio
 from .schemas import (
     ProductAssistantRequest,
     ProductAssistantResponse,
+    ReportIntentResponse,
+    ReportInterpretRequest,
+    ReportNarrativeRequest,
+    ReportNarrativeResponse,
+    ReportVoiceTranscriptionResponse,
 )
 from .settings import settings
 
@@ -132,5 +143,140 @@ def recommend(
     return ProductAssistantResponse(
         reply=safe.reply,
         recommendations=safe.recommendations,
+        model=settings.velora_ai_model,
+    )
+
+
+@app.post(
+    "/reports/transcribe",
+    response_model=ReportVoiceTranscriptionResponse,
+)
+async def transcribe_report_voice(
+    request: Request,
+    x_velora_ai_token: str | None = Header(
+        default=None,
+        alias="X-Velora-AI-Token",
+    ),
+) -> ReportVoiceTranscriptionResponse:
+    _authorize(x_velora_ai_token)
+
+    content_type = (
+        request.headers.get(
+            "content-type",
+            "",
+        )
+    )
+
+    audio = await request.body()
+
+    try:
+        text = transcribe_report_audio(
+            audio=audio,
+            content_type=content_type,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "VÉLORA AI no pudo transcribir "
+                "la consulta por voz."
+            ),
+        ) from exc
+
+    return ReportVoiceTranscriptionResponse(
+        text=text,
+        model=settings.velora_ai_transcribe_model,
+    )
+
+
+@app.post(
+    "/reports/interpret",
+    response_model=ReportIntentResponse,
+)
+def interpret_report(
+    request: ReportInterpretRequest,
+    x_velora_ai_token: str | None = Header(
+        default=None,
+        alias="X-Velora-AI-Token",
+    ),
+) -> ReportIntentResponse:
+    _authorize(x_velora_ai_token)
+
+    try:
+        intent = interpret_report_request(
+            question=request.question,
+            current_date=request.currentDate,
+            stores=[
+                item.model_dump()
+                for item in request.availableStores
+            ],
+        )
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "VÉLORA AI no pudo interpretar "
+                "la solicitud de reporte."
+            ),
+        ) from exc
+
+    return ReportIntentResponse(
+        intent=intent,
+        model=settings.velora_ai_model,
+    )
+
+
+@app.post(
+    "/reports/narrate",
+    response_model=ReportNarrativeResponse,
+)
+def narrate_operational_report(
+    request: ReportNarrativeRequest,
+    x_velora_ai_token: str | None = Header(
+        default=None,
+        alias="X-Velora-AI-Token",
+    ),
+) -> ReportNarrativeResponse:
+    _authorize(x_velora_ai_token)
+
+    try:
+        narrative = narrate_report(
+            question=request.question,
+            report=request.report,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "VÉLORA AI no pudo redactar "
+                "el análisis del reporte."
+            ),
+        ) from exc
+
+    return ReportNarrativeResponse(
+        summary=narrative.summary,
+        insights=narrative.insights,
+        assessment=narrative.assessment,
+        recommendations=narrative.recommendations,
         model=settings.velora_ai_model,
     )

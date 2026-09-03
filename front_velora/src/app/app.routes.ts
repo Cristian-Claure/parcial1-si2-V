@@ -117,6 +117,20 @@ export const routes: Routes = [
         .then((m) => m.InventoryManagement)
   },
   {
+    path: 'admin/reportes',
+    canActivate: [authGuard, roleGuard(['ADMIN'])],
+    loadComponent: () =>
+      import('./features/reports/reports-dashboard')
+        .then((m) => m.ReportsDashboard)
+  },
+  {
+    path: 'sucursal/reportes',
+    canActivate: [authGuard, roleGuard(['STORE_MANAGER'])],
+    loadComponent: () =>
+      import('./features/reports/reports-dashboard')
+        .then((m) => m.ReportsDashboard)
+  },
+  {
     path: 'admin',
     canActivate: [authGuard, roleGuard(['ADMIN'])],
     loadComponent: () => import('./features/admin/admin').then((m) => m.Admin)

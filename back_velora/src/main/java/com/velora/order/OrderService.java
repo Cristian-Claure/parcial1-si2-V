@@ -1,5 +1,6 @@
 package com.velora.order;
 
+import com.velora.push.CustomerPushEventPublisher;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -63,6 +64,7 @@ public class OrderService {
     private final OrderItemRepository orderItems;
 
     private final PaymentRepository payments;
+    private final CustomerPushEventPublisher customerPush;
 
     public OrderService(
             UserRepository users,
@@ -75,7 +77,8 @@ public class OrderService {
             ShoppingCartItemRepository cartItems,
             OrderRepository orders,
             OrderItemRepository orderItems,
-            PaymentRepository payments
+            PaymentRepository payments,
+            CustomerPushEventPublisher customerPush
     ) {
         this.users = users;
         this.addresses = addresses;
@@ -88,6 +91,7 @@ public class OrderService {
         this.orders = orders;
         this.orderItems = orderItems;
         this.payments = payments;
+        this.customerPush = customerPush;
     }
 
     @Transactional
@@ -282,6 +286,12 @@ public class OrderService {
 
         cart.setStatus(CartStatus.CONVERTED);
         carts.saveAndFlush(cart);
+
+        customerPush.orderConfirmed(
+                customer.getId(),
+                order.getId(),
+                order.getOrderNumber()
+        );
 
         return response(order);
     }
@@ -524,6 +534,12 @@ public class OrderService {
                 quantities
         );
 
+        customerPush.orderConfirmed(
+                customer.getId(),
+                order.getId(),
+                order.getOrderNumber()
+        );
+
         return response(order);
     }
 
@@ -668,6 +684,12 @@ public class OrderService {
 
         orders.saveAndFlush(order);
 
+        customerPush.orderCancelled(
+                customer.getId(),
+                order.getId(),
+                order.getOrderNumber()
+        );
+
         return response(order);
     }
 
@@ -793,6 +815,18 @@ public class OrderService {
         orders.saveAndFlush(
                 lockedOrder
         );
+
+        if (
+                lockedOrder.getOrderChannel()
+                        == OrderChannel.ECOMMERCE
+                && lockedOrder.getCustomer() != null
+        ) {
+            customerPush.orderFulfilled(
+                    lockedOrder.getCustomer().getId(),
+                    lockedOrder.getId(),
+                    lockedOrder.getOrderNumber()
+            );
+        }
 
         return response(
                 lockedOrder
