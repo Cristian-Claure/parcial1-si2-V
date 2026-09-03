@@ -116,17 +116,9 @@ export class App {
       : null;
   }
 
-  async logout(): Promise<void> {
-    if (
-      this.auth.currentUser()?.role ===
-        'CUSTOMER'
-    ) {
-      await this.webPush
-        .revokeForLogout();
-    }
-
+  logout(): void {
     this.auth.logout();
-    await this.router.navigate(['/']);
+    void this.router.navigate(['/']);
   }
   private isHomeUrl(url: string): boolean {
     const path = url

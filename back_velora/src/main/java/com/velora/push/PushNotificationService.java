@@ -1,5 +1,6 @@
 package com.velora.push;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -7,11 +8,13 @@ import com.google.firebase.messaging.AndroidConfig;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.MessagingErrorCode;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -33,7 +36,7 @@ public class PushNotificationService {
         this.messagingProvider = messagingProvider;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public PushDeliverySummary sendToUser(
             UUID userId,
             PushMessage push
@@ -79,6 +82,24 @@ public class PushNotificationService {
                     FirebaseMessagingException exception
             ) {
                 failed++;
+
+                if (
+                        exception.getMessagingErrorCode()
+                                == MessagingErrorCode.UNREGISTERED
+                ) {
+                    Instant now = Instant.now();
+
+                    installation.setActive(false);
+                    installation.setRevokedAt(now);
+                    installation.setLastSeenAt(now);
+
+                    log.info(
+                            "Push installation auto-revoked; "
+                                    + "installation={} platform={} reason=UNREGISTERED",
+                            installation.getId(),
+                            installation.getPlatform()
+                    );
+                }
 
                 log.warn(
                         "FCM no pudo entregar push; installation={} error={}",

@@ -10,6 +10,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { ConfirmService } from '../../core/feedback/confirm.service';
 import { FeedbackService } from '../../core/feedback/feedback.service';
+import { WebPushService } from '../../core/push/web-push.service';
 import { Product } from '../../core/catalog/catalog.models';
 import { CatalogService } from '../../core/catalog/catalog.service';
 import {
@@ -48,6 +49,9 @@ export class Account {
   private readonly fb = inject(FormBuilder);
   private readonly confirm = inject(ConfirmService);
   private readonly feedback = inject(FeedbackService);
+
+  readonly webPush =
+    inject(WebPushService);
 
   readonly products = signal<Product[]>([]);
   readonly addresses = signal<CustomerAddress[]>([]);
@@ -165,6 +169,60 @@ export class Account {
   logout(): void {
     this.auth.logout();
     void this.router.navigate(['/']);
+  }
+
+  async enablePushNotifications():
+    Promise<void> {
+    const result =
+      await this.webPush
+        .enableNotifications();
+
+    switch (result) {
+      case 'enabled':
+        this.feedback.success(
+          'Notificaciones activadas',
+          'Recibirás actualizaciones de tus pedidos en este navegador.'
+        );
+        break;
+
+      case 'denied':
+        this.feedback.warning(
+          'Permiso bloqueado',
+          'Puedes habilitar las notificaciones desde la configuración del navegador.'
+        );
+        break;
+
+      case 'unsupported':
+        this.feedback.info(
+          'Notificaciones no disponibles',
+          'Este navegador no admite el flujo de notificaciones de VÉLORA.'
+        );
+        break;
+
+      default:
+        this.feedback.error(
+          'No pudimos activar las notificaciones',
+          'Inténtalo nuevamente o revisa los permisos del navegador.'
+        );
+    }
+  }
+
+  pushButtonLabel(): string {
+    switch (
+      this.webPush.permissionState()
+    ) {
+      case 'granted':
+        return this.webPush
+          .installationRegistered()
+          ? 'Notificaciones activadas'
+          : 'Reconectar notificaciones';
+      case 'denied':
+        return 'Permiso bloqueado';
+      case 'unsupported':
+        return 'No disponible';
+      default:
+        return 'Activar notificaciones';
+    }
   }
 
   userLabel(): string {

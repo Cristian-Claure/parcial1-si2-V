@@ -1,3 +1,4 @@
+import { WebPushService } from '../push/web-push.service';
 import {
   HttpClient,
   HttpErrorResponse
@@ -35,6 +36,8 @@ function readStoredUser(): UserProfile | null {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly webPush =
+    inject(WebPushService);
   private readonly http = inject(HttpClient);
 
   private readonly tokenState = signal<string | null>(
@@ -108,6 +111,9 @@ export class AuthService {
   }
 
   logout(): void {
+    void this.webPush
+      .revokeForLogout();
+
     this.clearSession();
   }
 
