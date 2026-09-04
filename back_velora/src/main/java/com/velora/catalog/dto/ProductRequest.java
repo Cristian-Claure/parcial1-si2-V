@@ -3,6 +3,7 @@ package com.velora.catalog.dto;
 import java.util.UUID;
 
 import com.velora.catalog.product.ProductStatus;
+import com.velora.catalog.product.TryOnCategory;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -34,5 +35,9 @@ public record ProductRequest(
         @Size(max = 500)
         String fitNotes,
 
-        ProductStatus status
+        ProductStatus status,
+
+        Boolean tryOnEnabled,
+
+        TryOnCategory tryOnCategory
 ) {}

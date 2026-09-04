@@ -45,6 +45,13 @@ public class ProductEntity {
     @Column(nullable = false, length = 20)
     private ProductStatus status = ProductStatus.ACTIVE;
 
+    @Column(name = "try_on_enabled", nullable = false)
+    private boolean tryOnEnabled = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "try_on_category", length = 30)
+    private TryOnCategory tryOnCategory;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private UserEntity createdBy;
@@ -107,6 +114,12 @@ public class ProductEntity {
 
     public ProductStatus getStatus() { return status; }
     public void setStatus(ProductStatus status) { this.status = status; }
+
+    public boolean isTryOnEnabled() { return tryOnEnabled; }
+    public void setTryOnEnabled(boolean tryOnEnabled) { this.tryOnEnabled = tryOnEnabled; }
+
+    public TryOnCategory getTryOnCategory() { return tryOnCategory; }
+    public void setTryOnCategory(TryOnCategory tryOnCategory) { this.tryOnCategory = tryOnCategory; }
 
     public UserEntity getCreatedBy() { return createdBy; }
     public void setCreatedBy(UserEntity createdBy) { this.createdBy = createdBy; }

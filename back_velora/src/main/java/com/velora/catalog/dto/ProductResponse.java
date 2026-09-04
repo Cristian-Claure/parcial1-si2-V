@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.velora.catalog.product.ProductStatus;
+import com.velora.catalog.product.TryOnCategory;
 
 public record ProductResponse(
         UUID id,
@@ -17,6 +18,9 @@ public record ProductResponse(
         String careInstructions,
         String fitNotes,
         ProductStatus status,
+        boolean tryOnEnabled,
+        TryOnCategory tryOnCategory,
+        boolean tryOnReady,
         List<VariantResponse> variants,
         List<ImageResponse> images
 ) {}

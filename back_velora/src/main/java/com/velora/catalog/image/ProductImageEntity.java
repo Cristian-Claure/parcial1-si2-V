@@ -30,6 +30,10 @@ public class ProductImageEntity {
     @Column(name = "alt_text", length = 250)
     private String altText;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private ProductImagePurpose purpose = ProductImagePurpose.GALLERY;
+
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
@@ -57,6 +61,9 @@ public class ProductImageEntity {
 
     public String getAltText() { return altText; }
     public void setAltText(String altText) { this.altText = altText; }
+
+    public ProductImagePurpose getPurpose() { return purpose; }
+    public void setPurpose(ProductImagePurpose purpose) { this.purpose = purpose; }
 
     public int getSortOrder() { return sortOrder; }
     public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }

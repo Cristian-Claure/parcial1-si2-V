@@ -19,10 +19,12 @@ import com.velora.catalog.dto.ProductResponse;
 import com.velora.catalog.dto.VariantRequest;
 import com.velora.catalog.dto.VariantResponse;
 import com.velora.catalog.image.ProductImageEntity;
+import com.velora.catalog.image.ProductImagePurpose;
 import com.velora.catalog.image.ProductImageRepository;
 import com.velora.catalog.product.ProductEntity;
 import com.velora.catalog.product.ProductRepository;
 import com.velora.catalog.product.ProductStatus;
+import com.velora.catalog.product.TryOnCategory;
 import com.velora.catalog.variant.ProductVariantEntity;
 import com.velora.catalog.variant.ProductVariantRepository;
 import com.velora.user.UserEntity;
@@ -208,6 +210,22 @@ public class CatalogService {
                         ? ProductStatus.ACTIVE
                         : request.status()
         );
+
+        boolean tryOnEnabled =
+                Boolean.TRUE.equals(request.tryOnEnabled());
+
+        validateTryOn(
+                tryOnEnabled,
+                request.tryOnCategory()
+        );
+
+        entity.setTryOnEnabled(tryOnEnabled);
+        entity.setTryOnCategory(
+                tryOnEnabled
+                        ? request.tryOnCategory()
+                        : null
+        );
+
         entity.setCreatedBy(actor);
         entity.setUpdatedBy(actor);
 
@@ -245,6 +263,29 @@ public class CatalogService {
                         ? entity.getStatus()
                         : request.status()
         );
+
+        boolean tryOnEnabled =
+                request.tryOnEnabled() == null
+                        ? entity.isTryOnEnabled()
+                        : request.tryOnEnabled();
+
+        TryOnCategory tryOnCategory =
+                request.tryOnCategory() == null
+                        ? entity.getTryOnCategory()
+                        : request.tryOnCategory();
+
+        if (!tryOnEnabled) {
+            tryOnCategory = null;
+        }
+
+        validateTryOn(
+                tryOnEnabled,
+                tryOnCategory
+        );
+
+        entity.setTryOnEnabled(tryOnEnabled);
+        entity.setTryOnCategory(tryOnCategory);
+
         entity.setUpdatedBy(requireActor(actorId));
 
         return toProductResponse(productRepository.save(entity));
@@ -331,6 +372,11 @@ public class CatalogService {
         entity.setVariant(variant);
         entity.setImageUrl(request.imageUrl().trim());
         entity.setAltText(trimToNull(request.altText()));
+        entity.setPurpose(
+                request.purpose() == null
+                        ? ProductImagePurpose.GALLERY
+                        : request.purpose()
+        );
         entity.setSortOrder(
                 request.sortOrder() == null
                         ? 0
@@ -357,6 +403,18 @@ public class CatalogService {
                         ? "BOB"
                         : request.currency()
         );
+    }
+
+    private void validateTryOn(
+            boolean enabled,
+            TryOnCategory category
+    ) {
+        if (enabled && category == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Seleccione una categoría de probador virtual antes de habilitar el producto."
+            );
+        }
     }
 
     private void validateVariant(VariantRequest request) {
@@ -460,6 +518,22 @@ public class CatalogService {
     }
 
     private ProductResponse toProductResponse(ProductEntity entity) {
+        List<ImageResponse> images =
+                imageRepository
+                        .findAllByProductIdOrderBySortOrderAsc(entity.getId())
+                        .stream()
+                        .map(this::toImageResponse)
+                        .toList();
+
+        boolean tryOnReady =
+                entity.isTryOnEnabled()
+                        && entity.getTryOnCategory() != null
+                        && images.stream().anyMatch(
+                                image ->
+                                        image.purpose()
+                                                == ProductImagePurpose.TRY_ON_GARMENT
+                        );
+
         return new ProductResponse(
                 entity.getId(),
                 entity.getCategory().getId(),
@@ -472,16 +546,15 @@ public class CatalogService {
                 entity.getCareInstructions(),
                 entity.getFitNotes(),
                 entity.getStatus(),
+                entity.isTryOnEnabled(),
+                entity.getTryOnCategory(),
+                tryOnReady,
                 variantRepository
                         .findAllByProductIdOrderByColorAscSizeAsc(entity.getId())
                         .stream()
                         .map(this::toVariantResponse)
                         .toList(),
-                imageRepository
-                        .findAllByProductIdOrderBySortOrderAsc(entity.getId())
-                        .stream()
-                        .map(this::toImageResponse)
-                        .toList()
+                images
         );
     }
 
@@ -508,6 +581,7 @@ public class CatalogService {
                         : entity.getVariant().getId(),
                 entity.getImageUrl(),
                 entity.getAltText(),
+                entity.getPurpose(),
                 entity.getSortOrder(),
                 entity.isPrimary()
         );

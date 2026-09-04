@@ -29,6 +29,7 @@ from .schemas import (
     ReportVoiceTranscriptionResponse,
 )
 from .settings import settings
+from .tryon.service import tryon_capabilities
 
 
 app = FastAPI(
@@ -79,6 +80,18 @@ def _authorize(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Acceso interno VÉLORA AI no autorizado.",
         )
+
+
+@app.get("/try-on/capabilities")
+def virtual_try_on_capabilities(
+    x_velora_ai_token: str | None = Header(
+        default=None,
+        alias="X-Velora-AI-Token",
+    ),
+) -> dict[str, object]:
+    # Internal P11 capability endpoint. Never returns provider secrets.
+    _authorize(x_velora_ai_token)
+    return tryon_capabilities()
 
 
 @app.post(
