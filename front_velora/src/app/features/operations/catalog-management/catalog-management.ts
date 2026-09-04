@@ -25,6 +25,13 @@ const TRY_ON_CATEGORY_LABELS: Record<TryOnCategory, string> = {
   ACCESSORY: 'Accesorio'
 };
 
+const MAX_CATALOG_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_CATALOG_IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp'
+]);
+
 @Component({
   selector: 'app-catalog-management',
   standalone: true,
@@ -40,6 +47,8 @@ export class CatalogManagement {
   readonly products = signal<Product[]>([]);
   readonly message = signal('');
   readonly error = signal('');
+  readonly selectedImageFile = signal<File | null>(null);
+  readonly uploadingImage = signal(false);
 
   readonly tryOnCategories = Object.entries(
     TRY_ON_CATEGORY_LABELS
@@ -79,7 +88,7 @@ export class CatalogManagement {
   readonly imageForm = this.fb.nonNullable.group({
     productId: ['', Validators.required],
     variantId: [''],
-    imageUrl: ['', Validators.required],
+    imageUrl: [''],
     altText: [''],
     purpose: [
       'GALLERY' as ProductImagePurpose,
@@ -226,12 +235,20 @@ export class CatalogManagement {
     }
 
     const value = this.imageForm.getRawValue();
+    const imageUrl = value.imageUrl.trim();
+
+    if (!imageUrl) {
+      this.error.set(
+        'Ingrese una URL de imagen o use la opción de subir archivo.'
+      );
+      return;
+    }
 
     this.clearFeedback();
 
     this.catalog.createImage(value.productId, {
       variantId: value.variantId || null,
-      imageUrl: value.imageUrl.trim(),
+      imageUrl,
       altText: this.nullIfBlank(value.altText),
       purpose: value.purpose,
       sortOrder: Number(value.sortOrder),
@@ -243,19 +260,97 @@ export class CatalogManagement {
             ? 'Imagen de prenda para probador registrada correctamente.'
             : 'Imagen de catálogo registrada correctamente.'
         );
-        this.imageForm.reset({
-          productId: '',
-          variantId: '',
-          imageUrl: '',
-          altText: '',
-          purpose: 'GALLERY',
-          sortOrder: 0,
-          primary: false
-        });
+        this.resetImageForm();
         this.reload();
       },
       error: (error: HttpErrorResponse) => this.handleError(error)
     });
+  }
+
+  onImageFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+
+    this.clearFeedback();
+
+    if (!file) {
+      this.selectedImageFile.set(null);
+      return;
+    }
+
+    if (!ALLOWED_CATALOG_IMAGE_TYPES.has(file.type)) {
+      this.selectedImageFile.set(null);
+      input.value = '';
+      this.error.set(
+        'Solo se permiten imágenes JPG/JPEG, PNG o WEBP.'
+      );
+      return;
+    }
+
+    if (file.size > MAX_CATALOG_IMAGE_BYTES) {
+      this.selectedImageFile.set(null);
+      input.value = '';
+      this.error.set(
+        'La imagen no puede superar 5 MB.'
+      );
+      return;
+    }
+
+    this.selectedImageFile.set(file);
+  }
+
+  clearImageFile(): void {
+    this.selectedImageFile.set(null);
+  }
+
+  uploadImage(): void {
+    if (this.imageForm.invalid) {
+      this.imageForm.markAllAsTouched();
+      return;
+    }
+
+    const file = this.selectedImageFile();
+
+    if (!file) {
+      this.error.set(
+        'Seleccione una imagen JPG/JPEG, PNG o WEBP.'
+      );
+      return;
+    }
+
+    const value = this.imageForm.getRawValue();
+
+    this.clearFeedback();
+    this.uploadingImage.set(true);
+
+    this.catalog.uploadImage(value.productId, {
+      variantId: value.variantId || null,
+      altText: this.nullIfBlank(value.altText),
+      purpose: value.purpose,
+      sortOrder: Number(value.sortOrder),
+      primary: value.primary,
+      file
+    }).subscribe({
+      next: () => {
+        this.message.set(
+          value.purpose === 'TRY_ON_GARMENT'
+            ? 'Prenda Try-On subida y registrada correctamente.'
+            : 'Imagen de catálogo subida y registrada correctamente.'
+        );
+        this.resetImageForm();
+        this.reload();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.uploadingImage.set(false);
+        this.handleError(error);
+      },
+      complete: () => this.uploadingImage.set(false)
+    });
+  }
+
+  selectedImageSizeLabel(file: File): string {
+    const megabytes = file.size / (1024 * 1024);
+    return `${megabytes.toFixed(2)} MB`;
   }
 
   imageVariants(): ProductVariant[] {
@@ -272,6 +367,19 @@ export class CatalogManagement {
     return category
       ? TRY_ON_CATEGORY_LABELS[category]
       : 'Sin categoría';
+  }
+
+  private resetImageForm(): void {
+    this.imageForm.reset({
+      productId: '',
+      variantId: '',
+      imageUrl: '',
+      altText: '',
+      purpose: 'GALLERY',
+      sortOrder: 0,
+      primary: false
+    });
+    this.selectedImageFile.set(null);
   }
 
   private reload(): void {

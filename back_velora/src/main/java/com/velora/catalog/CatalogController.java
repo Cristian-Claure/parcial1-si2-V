@@ -4,11 +4,15 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.velora.catalog.asset.CatalogAssetService;
 import com.velora.catalog.dto.CategoryRequest;
 import com.velora.catalog.dto.CategoryResponse;
 import com.velora.catalog.dto.ImageRequest;
@@ -17,6 +21,7 @@ import com.velora.catalog.dto.ProductRequest;
 import com.velora.catalog.dto.ProductResponse;
 import com.velora.catalog.dto.VariantRequest;
 import com.velora.catalog.dto.VariantResponse;
+import com.velora.catalog.image.ProductImagePurpose;
 
 import jakarta.validation.Valid;
 
@@ -25,9 +30,14 @@ import jakarta.validation.Valid;
 public class CatalogController {
 
     private final CatalogService catalogService;
+    private final CatalogAssetService catalogAssetService;
 
-    public CatalogController(CatalogService catalogService) {
+    public CatalogController(
+            CatalogService catalogService,
+            CatalogAssetService catalogAssetService
+    ) {
         this.catalogService = catalogService;
+        this.catalogAssetService = catalogAssetService;
     }
 
     @GetMapping("/categories")
@@ -145,6 +155,48 @@ public class CatalogController {
         return ResponseEntity.ok(
                 catalogService.createImage(productId, request)
         );
+    }
+
+    @PostMapping(
+            value = "/manage/products/{productId}/images/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ImageResponse> uploadImage(
+            @PathVariable UUID productId,
+            @RequestParam(required = false) UUID variantId,
+            @RequestParam(required = false) String altText,
+            @RequestParam(defaultValue = "GALLERY")
+            ProductImagePurpose purpose,
+            @RequestParam(defaultValue = "0") Integer sortOrder,
+            @RequestParam(defaultValue = "false") Boolean primary,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return ResponseEntity.ok(
+                catalogAssetService.uploadProductImage(
+                        productId,
+                        variantId,
+                        altText,
+                        purpose,
+                        sortOrder,
+                        primary,
+                        file
+                )
+        );
+    }
+
+    @GetMapping("/assets/{storageKey:.+}")
+    public ResponseEntity<Resource> catalogAsset(
+            @PathVariable String storageKey
+    ) {
+        var loaded = catalogAssetService.load(storageKey);
+
+        return ResponseEntity.ok()
+                .contentType(
+                        MediaType.parseMediaType(
+                                loaded.contentType()
+                        )
+                )
+                .body(loaded.resource());
     }
 
     private UUID actorId(Jwt jwt) {

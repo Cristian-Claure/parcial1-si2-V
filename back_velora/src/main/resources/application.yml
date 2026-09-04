@@ -10,6 +10,11 @@ spring:
   flyway:
     enabled: true
 
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 7MB
+
 server:
   port: 8080
 
@@ -46,3 +51,9 @@ velora:
     firebase:
       enabled: ${VELORA_FIREBASE_ENABLED:false}
       project-id: ${VELORA_FIREBASE_PROJECT_ID:}
+  catalog:
+    assets:
+      provider: ${VELORA_CATALOG_ASSET_PROVIDER:local}
+      local-directory: ${VELORA_CATALOG_ASSET_LOCAL_DIR:./storage/catalog}
+      public-base-url: ${VELORA_CATALOG_ASSET_PUBLIC_BASE_URL:http://localhost:8080}
+      max-bytes: ${VELORA_CATALOG_ASSET_MAX_BYTES:5242880}

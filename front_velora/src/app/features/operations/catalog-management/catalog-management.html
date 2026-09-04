@@ -185,11 +185,13 @@
 
   <section class="panel">
     <span class="index">04 · IMÁGENES</span>
-    <h2>Registrar imagen</h2>
+    <h2>Agregar imagen</h2>
 
     <p class="panel-copy">
       Para el probador use una imagen nítida de la prenda,
       preferentemente aislada, frontal y sin una persona vistiéndola.
+      En desarrollo puede subir el archivo directamente; en producción
+      usaremos el mismo contrato con Google Cloud Storage.
     </p>
 
     <form
@@ -224,11 +226,6 @@
       </select>
 
       <input
-        formControlName="imageUrl"
-        placeholder="URL HTTPS de la imagen"
-      />
-
-      <input
         formControlName="altText"
         placeholder="Texto alternativo"
       />
@@ -250,8 +247,66 @@
         </label>
       </div>
 
+      <div class="upload-box">
+        <div class="upload-copy">
+          <strong>Subir archivo administrado</strong>
+          <small>
+            JPG/JPEG, PNG o WEBP · máximo 5 MB.
+          </small>
+        </div>
+
+        @if (selectedImageFile(); as selectedFile) {
+          <div class="selected-file">
+            <span>
+              {{ selectedFile.name }}
+              · {{ selectedImageSizeLabel(selectedFile) }}
+            </span>
+
+            <button
+              type="button"
+              class="secondary-action"
+              (click)="clearImageFile()"
+              [disabled]="uploadingImage()"
+            >
+              Quitar
+            </button>
+          </div>
+        }
+        @else {
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            (change)="onImageFileChange($event)"
+          />
+        }
+
+        <button
+          type="button"
+          (click)="uploadImage()"
+          [disabled]="
+            uploadingImage() ||
+            !selectedImageFile()
+          "
+        >
+          {{
+            uploadingImage()
+              ? 'Subiendo imagen…'
+              : 'Subir y registrar'
+          }}
+        </button>
+      </div>
+
+      <div class="or-divider">
+        <span>o registrar una URL existente</span>
+      </div>
+
+      <input
+        formControlName="imageUrl"
+        placeholder="URL HTTPS de la imagen"
+      />
+
       <button type="submit">
-        Registrar imagen
+        Registrar URL existente
       </button>
     </form>
   </section>

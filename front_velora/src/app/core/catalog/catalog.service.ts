@@ -86,4 +86,33 @@ export class CatalogService {
       payload
     );
   }
+
+  uploadImage(productId: string, payload: {
+    variantId: string | null;
+    altText: string | null;
+    purpose: ProductImagePurpose;
+    sortOrder: number;
+    primary: boolean;
+    file: File;
+  }) {
+    const body = new FormData();
+
+    body.append('file', payload.file, payload.file.name);
+    body.append('purpose', payload.purpose);
+    body.append('sortOrder', String(payload.sortOrder));
+    body.append('primary', String(payload.primary));
+
+    if (payload.variantId) {
+      body.append('variantId', payload.variantId);
+    }
+
+    if (payload.altText) {
+      body.append('altText', payload.altText);
+    }
+
+    return this.http.post<ProductImage>(
+      `/api/catalog/manage/products/${productId}/images/upload`,
+      body
+    );
+  }
 }
