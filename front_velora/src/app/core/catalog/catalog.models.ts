@@ -1,5 +1,17 @@
 export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE';
 
+export type TryOnCategory =
+  | 'TOP'
+  | 'BOTTOM'
+  | 'DRESS'
+  | 'OUTERWEAR'
+  | 'SHOES'
+  | 'ACCESSORY';
+
+export type ProductImagePurpose =
+  | 'GALLERY'
+  | 'TRY_ON_GARMENT';
+
 export interface Category {
   id: string;
   parentId: string | null;
@@ -28,6 +40,7 @@ export interface ProductImage {
   variantId: string | null;
   imageUrl: string;
   altText: string | null;
+  purpose: ProductImagePurpose;
   sortOrder: number;
   primary: boolean;
 }
@@ -44,6 +57,9 @@ export interface Product {
   careInstructions: string | null;
   fitNotes: string | null;
   status: ProductStatus;
+  tryOnEnabled: boolean;
+  tryOnCategory: TryOnCategory | null;
+  tryOnReady: boolean;
   variants: ProductVariant[];
   images: ProductImage[];
 }

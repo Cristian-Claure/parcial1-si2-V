@@ -1,11 +1,29 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
 
+import {
+  Category,
+  Product,
+  ProductImagePurpose,
+  ProductVariant,
+  TryOnCategory
+} from '../../../core/catalog/catalog.models';
+import { CatalogService } from '../../../core/catalog/catalog.service';
 import { RoleShell } from '../../../shared/role-shell/role-shell';
 
-import { Category, Product } from '../../../core/catalog/catalog.models';
-import { CatalogService } from '../../../core/catalog/catalog.service';
+const TRY_ON_CATEGORY_LABELS: Record<TryOnCategory, string> = {
+  TOP: 'Parte superior',
+  BOTTOM: 'Parte inferior',
+  DRESS: 'Vestido / enterizo',
+  OUTERWEAR: 'Abrigo / chaqueta',
+  SHOES: 'Calzado',
+  ACCESSORY: 'Accesorio'
+};
 
 @Component({
   selector: 'app-catalog-management',
@@ -23,6 +41,10 @@ export class CatalogManagement {
   readonly message = signal('');
   readonly error = signal('');
 
+  readonly tryOnCategories = Object.entries(
+    TRY_ON_CATEGORY_LABELS
+  ) as Array<[TryOnCategory, string]>;
+
   readonly categoryForm = this.fb.nonNullable.group({
     name: ['', Validators.required],
     slug: ['', Validators.required],
@@ -38,7 +60,9 @@ export class CatalogManagement {
     brand: ['VÉLORA', Validators.required],
     composition: [''],
     careInstructions: [''],
-    fitNotes: ['']
+    fitNotes: [''],
+    tryOnEnabled: [false],
+    tryOnCategory: ['']
   });
 
   readonly variantForm = this.fb.nonNullable.group({
@@ -50,6 +74,19 @@ export class CatalogManagement {
     colorHex: [''],
     price: [0, [Validators.required, Validators.min(0.01)]],
     compareAtPrice: [0]
+  });
+
+  readonly imageForm = this.fb.nonNullable.group({
+    productId: ['', Validators.required],
+    variantId: [''],
+    imageUrl: ['', Validators.required],
+    altText: [''],
+    purpose: [
+      'GALLERY' as ProductImagePurpose,
+      Validators.required
+    ],
+    sortOrder: [0, Validators.min(0)],
+    primary: [false]
   });
 
   constructor() {
@@ -95,6 +132,13 @@ export class CatalogManagement {
 
     const value = this.productForm.getRawValue();
 
+    if (value.tryOnEnabled && !value.tryOnCategory) {
+      this.error.set(
+        'Seleccione la categoría del probador virtual antes de habilitar el producto.'
+      );
+      return;
+    }
+
     this.clearFeedback();
 
     this.catalog.createProduct({
@@ -106,7 +150,12 @@ export class CatalogManagement {
       composition: this.nullIfBlank(value.composition),
       careInstructions: this.nullIfBlank(value.careInstructions),
       fitNotes: this.nullIfBlank(value.fitNotes),
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      tryOnEnabled: value.tryOnEnabled,
+      tryOnCategory:
+        value.tryOnEnabled
+          ? value.tryOnCategory as TryOnCategory
+          : null
     }).subscribe({
       next: () => {
         this.message.set('Producto creado correctamente.');
@@ -118,7 +167,9 @@ export class CatalogManagement {
           brand: 'VÉLORA',
           composition: '',
           careInstructions: '',
-          fitNotes: ''
+          fitNotes: '',
+          tryOnEnabled: false,
+          tryOnCategory: ''
         });
         this.reload();
       },
@@ -166,6 +217,61 @@ export class CatalogManagement {
       },
       error: (error: HttpErrorResponse) => this.handleError(error)
     });
+  }
+
+  createImage(): void {
+    if (this.imageForm.invalid) {
+      this.imageForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.imageForm.getRawValue();
+
+    this.clearFeedback();
+
+    this.catalog.createImage(value.productId, {
+      variantId: value.variantId || null,
+      imageUrl: value.imageUrl.trim(),
+      altText: this.nullIfBlank(value.altText),
+      purpose: value.purpose,
+      sortOrder: Number(value.sortOrder),
+      primary: value.primary
+    }).subscribe({
+      next: () => {
+        this.message.set(
+          value.purpose === 'TRY_ON_GARMENT'
+            ? 'Imagen de prenda para probador registrada correctamente.'
+            : 'Imagen de catálogo registrada correctamente.'
+        );
+        this.imageForm.reset({
+          productId: '',
+          variantId: '',
+          imageUrl: '',
+          altText: '',
+          purpose: 'GALLERY',
+          sortOrder: 0,
+          primary: false
+        });
+        this.reload();
+      },
+      error: (error: HttpErrorResponse) => this.handleError(error)
+    });
+  }
+
+  imageVariants(): ProductVariant[] {
+    const productId = this.imageForm.controls.productId.value;
+
+    return this.products().find(
+      product => product.id === productId
+    )?.variants ?? [];
+  }
+
+  tryOnCategoryLabel(
+    category: TryOnCategory | null
+  ): string {
+    return category
+      ? TRY_ON_CATEGORY_LABELS[category]
+      : 'Sin categoría';
   }
 
   private reload(): void {

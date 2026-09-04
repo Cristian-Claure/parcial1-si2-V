@@ -3,7 +3,9 @@
   <span>CATÁLOGO GLOBAL</span>
   <h1>Gestión de catálogo</h1>
   <p>
-    Productos y variantes pertenecen al catálogo global de VÉLORA.
+    Productos, variantes e imágenes pertenecen al catálogo global de VÉLORA.
+    Las piezas compatibles con el probador necesitan una imagen de prenda
+    preparada específicamente para Try-On.
   </p>
 </section>
 
@@ -98,6 +100,32 @@
         placeholder="Notas de calce"
       />
 
+      <div class="tryon-box">
+        <label class="checkbox-row">
+          <input
+            type="checkbox"
+            formControlName="tryOnEnabled"
+          />
+          <span>Habilitar para Probador VÉLORA</span>
+        </label>
+
+        <select formControlName="tryOnCategory">
+          <option value="">Categoría de Try-On</option>
+
+          @for (option of tryOnCategories; track option[0]) {
+            <option [value]="option[0]">
+              {{ option[1] }}
+            </option>
+          }
+        </select>
+
+        <small>
+          El producto quedará <strong>Try-On Ready</strong>
+          cuando además tenga una imagen marcada como
+          <strong>Prenda Try-On</strong>.
+        </small>
+      </div>
+
       <button type="submit">
         Crear producto
       </button>
@@ -154,6 +182,79 @@
       </button>
     </form>
   </section>
+
+  <section class="panel">
+    <span class="index">04 · IMÁGENES</span>
+    <h2>Registrar imagen</h2>
+
+    <p class="panel-copy">
+      Para el probador use una imagen nítida de la prenda,
+      preferentemente aislada, frontal y sin una persona vistiéndola.
+    </p>
+
+    <form
+      [formGroup]="imageForm"
+      (ngSubmit)="createImage()"
+    >
+      <select formControlName="productId">
+        <option value="">Seleccione producto</option>
+
+        @for (product of products(); track product.id) {
+          <option [value]="product.id">
+            {{ product.name }}
+          </option>
+        }
+      </select>
+
+      <select formControlName="variantId">
+        <option value="">Imagen general del producto</option>
+
+        @for (variant of imageVariants(); track variant.id) {
+          <option [value]="variant.id">
+            {{ variant.color }}
+            · {{ variant.size }}
+            · {{ variant.sku }}
+          </option>
+        }
+      </select>
+
+      <select formControlName="purpose">
+        <option value="GALLERY">Galería comercial</option>
+        <option value="TRY_ON_GARMENT">Prenda Try-On</option>
+      </select>
+
+      <input
+        formControlName="imageUrl"
+        placeholder="URL HTTPS de la imagen"
+      />
+
+      <input
+        formControlName="altText"
+        placeholder="Texto alternativo"
+      />
+
+      <div class="two">
+        <input
+          type="number"
+          min="0"
+          formControlName="sortOrder"
+          placeholder="Orden"
+        />
+
+        <label class="checkbox-row compact">
+          <input
+            type="checkbox"
+            formControlName="primary"
+          />
+          <span>Imagen principal</span>
+        </label>
+      </div>
+
+      <button type="submit">
+        Registrar imagen
+      </button>
+    </form>
+  </section>
 </div>
 
 <section class="products-panel">
@@ -169,16 +270,62 @@
           <span>{{ product.categoryName }}</span>
           <h3>{{ product.name }}</h3>
           <p>{{ product.description }}</p>
+
+          @if (product.tryOnEnabled) {
+            <div class="tryon-status">
+              <span class="tryon-badge">PROBADOR</span>
+              <span>
+                {{ tryOnCategoryLabel(product.tryOnCategory) }}
+              </span>
+
+              @if (product.tryOnReady) {
+                <strong class="ready">
+                  ✓ TRY-ON READY
+                </strong>
+              }
+              @else {
+                <strong class="pending">
+                  Falta imagen Prenda Try-On
+                </strong>
+              }
+            </div>
+          }
         </div>
 
-        <div class="variant-list">
-          @for (variant of product.variants; track variant.id) {
-            <span>
-              {{ variant.sku }}
-              · {{ variant.color }}
-              · {{ variant.size }}
-              · Bs {{ variant.price }}
-            </span>
+        <div class="catalog-details">
+          <div class="variant-list">
+            @for (variant of product.variants; track variant.id) {
+              <span>
+                {{ variant.sku }}
+                · {{ variant.color }}
+                · {{ variant.size }}
+                · Bs {{ variant.price }}
+              </span>
+            }
+          </div>
+
+          @if (product.images.length) {
+            <div class="image-list">
+              @for (image of product.images; track image.id) {
+                <span
+                  [class.tryon-image]="
+                    image.purpose === 'TRY_ON_GARMENT'
+                  "
+                >
+                  {{
+                    image.purpose === 'TRY_ON_GARMENT'
+                      ? 'TRY-ON'
+                      : 'GALERÍA'
+                  }}
+                  ·
+                  {{
+                    image.variantId
+                      ? 'variante'
+                      : 'producto'
+                  }}
+                </span>
+              }
+            </div>
           }
         </div>
       </article>

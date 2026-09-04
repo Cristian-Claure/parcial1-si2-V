@@ -1,7 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
-import { Category, Product, ProductVariant } from './catalog.models';
+import {
+  Category,
+  Product,
+  ProductImage,
+  ProductImagePurpose,
+  ProductVariant,
+  TryOnCategory
+} from './catalog.models';
 
 @Injectable({ providedIn: 'root' })
 export class CatalogService {
@@ -43,6 +50,8 @@ export class CatalogService {
     careInstructions: string | null;
     fitNotes: string | null;
     status: string;
+    tryOnEnabled: boolean;
+    tryOnCategory: TryOnCategory | null;
   }) {
     return this.http.post<Product>('/api/catalog/manage/products', payload);
   }
@@ -60,6 +69,20 @@ export class CatalogService {
   }) {
     return this.http.post<ProductVariant>(
       `/api/catalog/manage/products/${productId}/variants`,
+      payload
+    );
+  }
+
+  createImage(productId: string, payload: {
+    variantId: string | null;
+    imageUrl: string;
+    altText: string | null;
+    purpose: ProductImagePurpose;
+    sortOrder: number;
+    primary: boolean;
+  }) {
+    return this.http.post<ProductImage>(
+      `/api/catalog/manage/products/${productId}/images`,
       payload
     );
   }
