@@ -1,0 +1,300 @@
+<app-role-shell>
+  <main class="audit-page">
+    <section class="audit-hero">
+      <div>
+        <span class="eyebrow">
+          GOBIERNO Y TRAZABILIDAD
+        </span>
+
+        <h1>Auditoría del sistema</h1>
+
+        <p>
+          Consulta las mutaciones exitosas registradas por VÉLORA,
+          con actor, rol, módulo, ruta y estado HTTP.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="refresh-button"
+        [disabled]="loading()"
+        (click)="refresh()"
+      >
+        {{ loading() ? 'Actualizando…' : 'Actualizar' }}
+      </button>
+    </section>
+
+    <section class="audit-panel filters-panel">
+      <div class="section-heading">
+        <div>
+          <span class="section-kicker">FILTROS</span>
+          <h2>Buscar eventos</h2>
+        </div>
+
+        @if (data(); as pageData) {
+          <span class="result-count">
+            {{ pageData.totalElements }}
+            {{ pageData.totalElements === 1 ? 'evento' : 'eventos' }}
+          </span>
+        }
+      </div>
+
+      <form
+        class="filters-grid"
+        [formGroup]="filters"
+        (ngSubmit)="applyFilters()"
+      >
+        <label class="field search-field">
+          <span>Buscar</span>
+          <input
+            type="search"
+            formControlName="q"
+            placeholder="Actor, correo, ruta o recurso…"
+          />
+        </label>
+
+        <label class="field">
+          <span>Rol</span>
+          <select formControlName="role">
+            <option value="">Todos</option>
+            <option value="ADMIN">Administrador</option>
+            <option value="STORE_MANAGER">Encargado de sucursal</option>
+            <option value="CUSTOMER">Cliente</option>
+            <option value="ANONYMOUS">Anónimo / sistema</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Módulo</span>
+          <select formControlName="category">
+            <option value="">Todos</option>
+            <option value="ADMIN">Administración</option>
+            <option value="CATALOG">Catálogo</option>
+            <option value="INVENTORY">Inventario</option>
+            <option value="ORDERS">Pedidos</option>
+            <option value="PAYMENTS">Pagos</option>
+            <option value="POS">POS y caja</option>
+            <option value="TRY_ON">Probador virtual</option>
+            <option value="REPORTS_AI">Reportes e IA</option>
+            <option value="PUSH">Notificaciones</option>
+            <option value="CUSTOMER">Cliente</option>
+            <option value="OTHER">Otros</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Método</span>
+          <select formControlName="method">
+            <option value="">Todos</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="PATCH">PATCH</option>
+            <option value="DELETE">DELETE</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Resultado</span>
+          <select formControlName="success">
+            <option value="">Todos</option>
+            <option value="true">Exitoso</option>
+            <option value="false">Fallido</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Desde</span>
+          <input
+            type="datetime-local"
+            formControlName="from"
+          />
+        </label>
+
+        <label class="field">
+          <span>Hasta</span>
+          <input
+            type="datetime-local"
+            formControlName="to"
+          />
+        </label>
+
+        <label class="field compact-field">
+          <span>Filas</span>
+          <select formControlName="size">
+            <option [ngValue]="25">25</option>
+            <option [ngValue]="50">50</option>
+            <option [ngValue]="100">100</option>
+          </select>
+        </label>
+
+        <div class="filter-actions">
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="loading()"
+          >
+            Aplicar filtros
+          </button>
+
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="loading()"
+            (click)="clearFilters()"
+          >
+            Limpiar
+          </button>
+        </div>
+      </form>
+    </section>
+
+    @if (errorMessage(); as error) {
+      <section class="state-card error-state">
+        <strong>No pudimos cargar la auditoría</strong>
+        <span>{{ error }}</span>
+      </section>
+    }
+
+    <section class="audit-panel events-panel">
+      @if (loading() && !data()) {
+        <div class="state-card">
+          <strong>Cargando bitácora…</strong>
+          <span>Consultando los eventos registrados por el backend.</span>
+        </div>
+      }
+      @else if (data(); as pageData) {
+        @if (pageData.content.length === 0) {
+          <div class="state-card empty-state">
+            <strong>No hay eventos para estos filtros</strong>
+            <span>
+              Ajusta el período o elimina alguno de los criterios de búsqueda.
+            </span>
+          </div>
+        }
+        @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Actor</th>
+                  <th>Rol</th>
+                  <th>Módulo</th>
+                  <th>Acción</th>
+                  <th>Ruta</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                @for (event of pageData.content; track event.id) {
+                  <tr>
+                    <td class="date-cell">
+                      <strong>
+                        {{ event.occurredAt | date:'dd/MM/yyyy' }}
+                      </strong>
+                      <span>
+                        {{ event.occurredAt | date:'HH:mm:ss' }}
+                      </span>
+                    </td>
+
+                    <td class="actor-cell">
+                      <strong>{{ actorLabel(event) }}</strong>
+
+                      @if (event.actorEmail) {
+                        <span>{{ event.actorEmail }}</span>
+                      }
+
+                      @if (event.requestId) {
+                        <small>
+                          Request {{ event.requestId }}
+                        </small>
+                      }
+                    </td>
+
+                    <td>
+                      <span class="pill role-pill">
+                        {{ event.actorRole }}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span class="module-label">
+                        {{ categoryLabel(event.category) }}
+                      </span>
+                    </td>
+
+                    <td class="action-cell">
+                      <span
+                        class="method-badge"
+                        [attr.data-method]="event.httpMethod"
+                      >
+                        {{ event.httpMethod }}
+                      </span>
+                      <small>
+                        {{ methodLabel(event.httpMethod) }}
+                      </small>
+                    </td>
+
+                    <td class="route-cell">
+                      <code>{{ event.routePattern }}</code>
+
+                      @if (event.requestPath !== event.routePattern) {
+                        <small>{{ event.requestPath }}</small>
+                      }
+                    </td>
+
+                    <td>
+                      <span
+                        class="status-badge"
+                        [class.success]="event.success"
+                        [class.error]="!event.success"
+                      >
+                        {{ event.statusCode }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <footer class="pagination">
+            <div>
+              Página
+              <strong>{{ pageData.page + 1 }}</strong>
+              de
+              <strong>{{ pageData.totalPages || 1 }}</strong>
+            </div>
+
+            <div class="pagination-actions">
+              <button
+                type="button"
+                class="secondary-button"
+                [disabled]="
+                  loading() ||
+                  pageData.page <= 0
+                "
+                (click)="previousPage()"
+              >
+                Anterior
+              </button>
+
+              <button
+                type="button"
+                class="secondary-button"
+                [disabled]="
+                  loading() ||
+                  pageData.page + 1 >= pageData.totalPages
+                "
+                (click)="nextPage()"
+              >
+                Siguiente
+              </button>
+            </div>
+          </footer>
+        }
+      }
+    </section>
+  </main>
+</app-role-shell>

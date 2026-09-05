@@ -124,6 +124,13 @@ export const routes: Routes = [
         .then((m) => m.InventoryManagement)
   },
   {
+    path: 'admin/auditoria',
+    canActivate: [authGuard, roleGuard(['ADMIN'])],
+    loadComponent: () =>
+      import('./features/admin/audit/admin-audit')
+        .then((m) => m.AdminAuditPage)
+  },
+  {
     path: 'admin/reportes',
     canActivate: [authGuard, roleGuard(['ADMIN'])],
     loadComponent: () =>

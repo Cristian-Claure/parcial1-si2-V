@@ -48,7 +48,7 @@ export class Admin {
     { label: 'Pedidos y ventas', route: '/admin/pedidos' },
     { label: 'POS y cajas', route: '/admin/pos' },
     { label: 'Reportes IA', route: '/admin/reportes' },
-    { label: 'Auditoría', disabled: true },
+    { label: 'Auditoría', route: '/admin/auditoria' },
     { label: 'Configuración', disabled: true }
   ];
 
