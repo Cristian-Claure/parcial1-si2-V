@@ -25,6 +25,13 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/register/register').then((m) => m.Register)
   },
   {
+    path: 'probador',
+    canActivate: [authGuard, roleGuard(['CUSTOMER'])],
+    loadComponent: () =>
+      import('./features/try-on/customer-try-on')
+        .then((m) => m.CustomerTryOnPage)
+  },
+  {
     path: 'favoritos',
     canActivate: [authGuard, roleGuard(['CUSTOMER'])],
     loadComponent: () =>

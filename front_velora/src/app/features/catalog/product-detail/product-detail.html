@@ -314,22 +314,49 @@
               </section>
             }
           </div>
-
           <aside class="future-experience">
             <span>
               EXPERIENCIA VÉLORA
             </span>
 
-            <strong>
+            <h2>
               Probador virtual
-            </strong>
+            </h2>
 
-            <p>
-              La experiencia con cámara,
-              realidad aumentada y visualización
-              digital estará disponible
-              próximamente.
-            </p>
+            @if (item.tryOnReady) {
+              <p>
+                Esta pieza está preparada para visualizarse con una fotografía
+                suya. La categoría se obtiene automáticamente del catálogo.
+              </p>
+
+              @if (
+                auth.currentUser()?.role ===
+                'CUSTOMER'
+              ) {
+                <a
+                  class="tryon-link"
+                  routerLink="/probador"
+                  [queryParams]="{
+                    producto: item.slug
+                  }"
+                >
+                  PROBAR ESTA PRENDA
+                </a>
+              }
+              @else {
+                <a
+                  class="tryon-link"
+                  routerLink="/login"
+                >
+                  INICIAR SESIÓN PARA PROBAR
+                </a>
+              }
+            }
+            @else {
+              <p>
+                Esta pieza todavía no tiene una imagen Try-On preparada.
+              </p>
+            }
           </aside>
         </div>
       </section>

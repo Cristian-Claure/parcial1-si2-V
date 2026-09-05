@@ -1,0 +1,247 @@
+<main class="tryon-page">
+  <header class="tryon-header">
+    <div>
+      <span>EXPERIENCIA VÉLORA</span>
+      <h1>Probador virtual</h1>
+      <p>
+        Elija una prenda compatible y use una foto clara de cuerpo completo.
+        VÉLORA procesa la imagen solo para generar esta experiencia.
+      </p>
+    </div>
+
+    <a
+      routerLink="/catalogo"
+      class="back-link"
+    >
+      ← Volver a la colección
+    </a>
+  </header>
+
+  @if (loading()) {
+    <section class="state-card">
+      Preparando prendas compatibles...
+    </section>
+  }
+  @else if (error() && !selectedProduct()) {
+    <section class="state-card error">
+      {{ error() }}
+    </section>
+  }
+  @else if (!tryOnProducts().length) {
+    <section class="state-card">
+      <strong>
+        Aún no hay prendas listas para el probador.
+      </strong>
+      <p>
+        Las piezas aparecerán aquí cuando su imagen Try-On esté preparada.
+      </p>
+    </section>
+  }
+  @else {
+    <section class="tryon-grid">
+      <div class="configuration-card">
+        <span class="step-label">
+          01 · PRENDA
+        </span>
+
+        <label>
+          <strong>
+            Pieza compatible
+          </strong>
+
+          <select
+            [value]="selectedProductId()"
+            (change)="onProductChange($event)"
+            [disabled]="running()"
+          >
+            @for (
+              product of tryOnProducts();
+              track product.id
+            ) {
+              <option
+                [value]="product.id"
+              >
+                {{ product.name }}
+                · {{ product.categoryName }}
+              </option>
+            }
+          </select>
+        </label>
+
+        @if (
+          selectedProduct();
+          as product
+        ) {
+          <article class="selected-product">
+            @if (primaryImage(product)) {
+              <img
+                [src]="primaryImage(product)"
+                [alt]="product.name"
+              />
+            }
+
+            <div>
+              <small>
+                {{ product.categoryName }}
+              </small>
+              <h2>
+                {{ product.name }}
+              </h2>
+              <p>
+                Probador habilitado:
+                {{ product.tryOnCategory }}
+              </p>
+            </div>
+          </article>
+        }
+
+        <label>
+          <strong>
+            Color y talla
+          </strong>
+
+          <select
+            [value]="selectedVariantId()"
+            (change)="onVariantChange($event)"
+            [disabled]="running()"
+          >
+            @for (
+              variant of activeVariants();
+              track variant.id
+            ) {
+              <option
+                [value]="variant.id"
+              >
+                {{ variantLabel(variant) }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <span class="step-label">
+          02 · SU FOTO
+        </span>
+
+        <label class="upload-box">
+          <strong>
+            Tomar o elegir fotografía
+          </strong>
+          <small>
+            PNG, JPEG o WEBP · máximo 5 MB
+          </small>
+
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            capture="user"
+            [disabled]="running()"
+            (change)="onPersonSelected($event)"
+          />
+        </label>
+
+        @if (personPreviewUrl()) {
+          <div class="person-preview">
+            <img
+              [src]="personPreviewUrl()"
+              alt="Vista previa de la fotografía seleccionada"
+            />
+          </div>
+        }
+
+        <div class="privacy-note">
+          <strong>
+            Privacidad por diseño
+          </strong>
+          <p>
+            La foto de la persona se utiliza para la generación y VÉLORA no la
+            guarda como archivo del probador. El resultado generado sí puede
+            conservarse para poder mostrárselo.
+          </p>
+        </div>
+
+        @if (error()) {
+          <div class="feedback error">
+            {{ error() }}
+          </div>
+        }
+
+        <button
+          type="button"
+          class="primary-action"
+          [disabled]="!canSubmit()"
+          (click)="generate()"
+        >
+          @if (running()) {
+            GENERANDO...
+          }
+          @else {
+            PROBAR ESTA PRENDA
+          }
+        </button>
+
+        @if (running() && job()) {
+          <button
+            type="button"
+            class="secondary-action"
+            (click)="cancel()"
+          >
+            CANCELAR GENERACIÓN
+          </button>
+        }
+      </div>
+
+      <div class="result-card">
+        <span class="step-label">
+          03 · RESULTADO
+        </span>
+
+        @if (resultUrl()) {
+          <div class="result-image">
+            <img
+              [src]="resultUrl()"
+              alt="Resultado del probador virtual VÉLORA"
+            />
+          </div>
+
+          <div class="result-copy">
+            <strong>
+              Así se ve la pieza
+            </strong>
+            <p>
+              Puede volver a elegir otra talla, color o fotografía y generar
+              una nueva prueba.
+            </p>
+          </div>
+        }
+        @else if (running()) {
+          <div class="generation-state">
+            <div class="pulse"></div>
+            <strong>
+              {{ statusLabel() }}
+            </strong>
+            <p>
+              La generación se procesa en línea. Puede tardar algunos segundos.
+            </p>
+          </div>
+        }
+        @else {
+          <div class="empty-result">
+            <strong>
+              Su resultado aparecerá aquí.
+            </strong>
+            <p>
+              Seleccione una prenda, una variante y una fotografía para comenzar.
+            </p>
+          </div>
+        }
+
+        @if (job()?.durationMs) {
+          <small class="duration">
+            Generación:
+            {{ job()?.durationMs }} ms
+          </small>
+        }
+      </div>
+    </section>
+  }
+</main>

@@ -29,6 +29,7 @@ export const CUSTOMER_NAV_ITEMS: ShellNavItem[] = [
   },
   {
     label: 'Probador virtual',
+    route: '/probador',
     disabled: true
   }
 ];
