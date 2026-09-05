@@ -2,9 +2,12 @@ import secrets
 
 from fastapi import (
     FastAPI,
+    File,
+    Form,
     Header,
     HTTPException,
     Request,
+    UploadFile,
     status,
 )
 
@@ -29,7 +32,13 @@ from .schemas import (
     ReportVoiceTranscriptionResponse,
 )
 from .settings import settings
-from .tryon.service import tryon_capabilities
+from .tryon.service import (
+    TryOnServiceError,
+    cancel_tryon_job,
+    create_tryon_job,
+    get_tryon_job,
+    tryon_capabilities,
+)
 
 
 app = FastAPI(
@@ -92,6 +101,94 @@ def virtual_try_on_capabilities(
     # Internal P11 capability endpoint. Never returns provider secrets.
     _authorize(x_velora_ai_token)
     return tryon_capabilities()
+
+
+@app.post(
+    "/try-on/jobs",
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def create_virtual_try_on_job(
+    person: UploadFile = File(...),
+    garment: UploadFile = File(...),
+    category: str = Form(...),
+    provider: str | None = Form(default=None),
+    x_velora_ai_token: str | None = Header(
+        default=None,
+        alias="X-Velora-AI-Token",
+    ),
+) -> dict[str, object]:
+    _authorize(x_velora_ai_token)
+
+    person_content = await person.read()
+    garment_content = await garment.read()
+
+    try:
+        job = create_tryon_job(
+            provider_name=provider,
+            category=category,
+            person_content=person_content,
+            person_content_type=person.content_type,
+            person_filename=person.filename,
+            garment_content=garment_content,
+            garment_content_type=garment.content_type,
+            garment_filename=garment.filename,
+        )
+    except TryOnServiceError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=str(exc),
+        ) from exc
+    finally:
+        await person.close()
+        await garment.close()
+
+    return job.to_dict()
+
+
+@app.get("/try-on/jobs/{provider}/{job_id}")
+def virtual_try_on_job(
+    provider: str,
+    job_id: str,
+    x_velora_ai_token: str | None = Header(
+        default=None,
+        alias="X-Velora-AI-Token",
+    ),
+) -> dict[str, object]:
+    _authorize(x_velora_ai_token)
+
+    try:
+        return get_tryon_job(
+            provider,
+            job_id,
+        ).to_dict()
+    except TryOnServiceError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=str(exc),
+        ) from exc
+
+
+@app.delete("/try-on/jobs/{provider}/{job_id}")
+def cancel_virtual_try_on_job(
+    provider: str,
+    job_id: str,
+    x_velora_ai_token: str | None = Header(
+        default=None,
+        alias="X-Velora-AI-Token",
+    ),
+) -> dict[str, object]:
+    _authorize(x_velora_ai_token)
+
+    try:
+        return cancel_tryon_job(
+            provider,
+            job_id,
+        ).to_dict()
+    except TryOnServiceError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=str(exc),
+        ) from exc
 
 
 @app.post(
