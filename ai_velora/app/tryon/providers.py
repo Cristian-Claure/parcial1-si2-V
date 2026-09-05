@@ -1,6 +1,6 @@
 from __future__ import annotations
+import io
 
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -70,47 +70,43 @@ class ReplicateTryOnProvider:
         self._require_configured()
         client = self._client()
 
-        with tempfile.TemporaryDirectory(
-            prefix="velora_tryon_replicate_"
-        ) as temp_dir:
-            root = Path(temp_dir)
-            person_path = root / self._safe_filename(
-                person.filename,
-                "person",
-                person.content_type,
-            )
-            garment_path = root / self._safe_filename(
-                garment.filename,
-                "garment",
-                garment.content_type,
-            )
+        # Privacy invariant: keep VELORA-side inputs in memory.
+        # Replicate SDK accepts io.IOBase and uploads it directly.
+        person_file = io.BytesIO(person.content)
+        person_file.name = self._safe_filename(
+            person.filename,
+            "person",
+            person.content_type,
+        )
 
-            person_path.write_bytes(person.content)
-            garment_path.write_bytes(garment.content)
+        garment_file = io.BytesIO(garment.content)
+        garment_file.name = self._safe_filename(
+            garment.filename,
+            "garment",
+            garment.content_type,
+        )
 
-            try:
-                with (
-                    person_path.open("rb") as person_file,
-                    garment_path.open("rb") as garment_file,
-                ):
-                    prediction = client.predictions.create(
-                        model=settings.velora_tryon_replicate_model.strip(),
-                        input={
-                            "person_image": person_file,
-                            "garment_images": [garment_file],
-                            "prompt": "",
-                            "output_format": "jpg",
-                            "output_quality": 95,
-                            "preserve_input_size": True,
-                        },
-                    )
-            except Exception as exc:
-                raise TryOnProviderError(
-                    "Replicate no pudo crear la generación."
-                ) from exc
+        try:
+            prediction = client.predictions.create(
+                model=settings.velora_tryon_replicate_model.strip(),
+                input={
+                    "person_image": person_file,
+                    "garment_images": [garment_file],
+                    "prompt": "",
+                    "output_format": "jpg",
+                    "output_quality": 95,
+                    "preserve_input_size": True,
+                },
+            )
+        except Exception as exc:
+            raise TryOnProviderError(
+                "Replicate no pudo crear la generación."
+            ) from exc
+        finally:
+            person_file.close()
+            garment_file.close()
 
         return self._prediction_to_job(prediction)
-
     def get(self, job_id: str) -> TryOnJob:
         self._require_configured()
 
