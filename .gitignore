@@ -85,3 +85,6 @@ ai_velora/**/*.pyo
 
 # Local catalog assets (runtime only; production uses object storage)
 back_velora/storage/
+
+# Local virtual try-on results (runtime only; GCS in production)
+back_velora/storage/try-on-results/

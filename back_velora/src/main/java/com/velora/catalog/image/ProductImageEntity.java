@@ -27,6 +27,9 @@ public class ProductImageEntity {
     @Column(name = "image_url", nullable = false, length = 1000)
     private String imageUrl;
 
+    @Column(name = "storage_key", length = 120)
+    private String storageKey;
+
     @Column(name = "alt_text", length = 250)
     private String altText;
 
@@ -58,6 +61,9 @@ public class ProductImageEntity {
 
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public String getStorageKey() { return storageKey; }
+    public void setStorageKey(String storageKey) { this.storageKey = storageKey; }
 
     public String getAltText() { return altText; }
     public void setAltText(String altText) { this.altText = altText; }

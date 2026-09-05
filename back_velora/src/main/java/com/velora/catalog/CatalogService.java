@@ -344,6 +344,40 @@ public class CatalogService {
             UUID productId,
             ImageRequest request
     ) {
+        return createImageInternal(
+                productId,
+                request,
+                null
+        );
+    }
+
+    public ImageResponse createManagedImage(
+            UUID productId,
+            ImageRequest request,
+            String storageKey
+    ) {
+        if (
+                storageKey == null
+                || storageKey.isBlank()
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "La imagen administrada requiere una clave de almacenamiento."
+            );
+        }
+
+        return createImageInternal(
+                productId,
+                request,
+                storageKey.trim()
+        );
+    }
+
+    private ImageResponse createImageInternal(
+            UUID productId,
+            ImageRequest request,
+            String storageKey
+    ) {
         ProductEntity product = requireProduct(productId);
 
         ProductVariantEntity variant = null;
@@ -371,6 +405,7 @@ public class CatalogService {
         entity.setProduct(product);
         entity.setVariant(variant);
         entity.setImageUrl(request.imageUrl().trim());
+        entity.setStorageKey(storageKey);
         entity.setAltText(trimToNull(request.altText()));
         entity.setPurpose(
                 request.purpose() == null

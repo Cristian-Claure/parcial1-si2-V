@@ -47,6 +47,13 @@ velora:
   ai:
     base-url: ${VELORA_AI_BASE_URL:http://127.0.0.1:8001}
     internal-token: ${VELORA_AI_INTERNAL_TOKEN:}
+  tryon:
+    default-provider: ${VELORA_TRYON_PROVIDER:replicate}
+    max-input-bytes: ${VELORA_TRYON_MAX_INPUT_BYTES:5242880}
+    results:
+      provider: ${VELORA_TRYON_RESULT_PROVIDER:local}
+      local-directory: ${VELORA_TRYON_RESULT_LOCAL_DIR:./storage/try-on-results}
+      max-bytes: ${VELORA_TRYON_RESULT_MAX_BYTES:12582912}
   push:
     firebase:
       enabled: ${VELORA_FIREBASE_ENABLED:false}

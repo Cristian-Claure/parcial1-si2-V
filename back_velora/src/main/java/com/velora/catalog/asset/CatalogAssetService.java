@@ -41,7 +41,7 @@ public class CatalogAssetService {
                 storage.store(file);
 
         try {
-            return catalogService.createImage(
+            return catalogService.createManagedImage(
                     productId,
                     new ImageRequest(
                             variantId,
@@ -52,7 +52,8 @@ public class CatalogAssetService {
                                     : purpose,
                             sortOrder == null ? 0 : sortOrder,
                             Boolean.TRUE.equals(primary)
-                    )
+                    ),
+                    stored.storageKey()
             );
         } catch (RuntimeException ex) {
             storage.delete(stored.storageKey());
