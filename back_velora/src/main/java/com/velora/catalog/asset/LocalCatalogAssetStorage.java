@@ -106,6 +106,7 @@ public class LocalCatalogAssetStorage implements CatalogAssetStorage {
         Path target = resolveStorageKey(storageKey);
 
         try {
+            Files.createDirectories(root);
             Files.write(
                     target,
                     bytes,

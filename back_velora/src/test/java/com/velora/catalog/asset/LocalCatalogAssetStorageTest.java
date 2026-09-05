@@ -55,6 +55,32 @@ class LocalCatalogAssetStorageTest {
     }
 
     @Test
+    void recreatesLocalRootBeforeStoreWhenDirectoryWasRemoved()
+            throws IOException {
+        Path catalogRoot = tempDir.resolve("catalog");
+
+        LocalCatalogAssetStorage storage =
+                new LocalCatalogAssetStorage(
+                        catalogRoot.toString(),
+                        "http://localhost:8080",
+                        1024
+                );
+
+        Files.delete(catalogRoot);
+
+        assertFalse(Files.exists(catalogRoot));
+
+        CatalogAssetStorage.StoredAsset stored =
+                storage.store(pngFile());
+
+        assertTrue(
+                Files.isRegularFile(
+                        catalogRoot.resolve(stored.storageKey())
+                )
+        );
+    }
+
+    @Test
     void rejectsFileWhoseContentIsNotAnAllowedImage() {
         LocalCatalogAssetStorage storage =
                 new LocalCatalogAssetStorage(
