@@ -75,6 +75,7 @@
           <article class="selected-product">
             @if (primaryImage(product)) {
               <img
+                loading="lazy"
                 [src]="primaryImage(product)"
                 [alt]="product.name"
               />
@@ -142,6 +143,7 @@
         @if (personPreviewUrl()) {
           <div class="person-preview">
             <img
+              loading="lazy"
               [src]="personPreviewUrl()"
               alt="Vista previa de la fotografía seleccionada"
             />
@@ -198,6 +200,7 @@
         @if (resultUrl()) {
           <div class="result-image">
             <img
+              loading="lazy"
               [src]="resultUrl()"
               alt="Resultado del probador virtual VÉLORA"
             />

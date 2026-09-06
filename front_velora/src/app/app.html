@@ -325,6 +325,7 @@
                   product.images[0].imageUrl
                 ) {
                   <img
+                    loading="lazy"
                     [src]="product.images[0].imageUrl"
                     [alt]="product.images[0].altText || product.name"
                   />

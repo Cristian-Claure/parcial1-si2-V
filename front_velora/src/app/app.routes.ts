@@ -1,10 +1,14 @@
 import { Routes } from '@angular/router';
 
 import { authGuard, roleGuard } from './core/auth/auth.guard';
-import { HomeRoute } from './features/home/home-route';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', component: HomeRoute },
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./features/home/home-route').then((m) => m.HomeRoute)
+  },
   {
     path: 'catalogo',
     loadComponent: () =>
