@@ -30,6 +30,7 @@ private enum class CustomerScreen {
     HOME,
     CATALOG,
     PRODUCT_DETAIL,
+    TRY_ON,
     FAVORITES,
     CART,
     ACCOUNT,
@@ -253,6 +254,12 @@ private fun CustomerHome(
 
     var selectedProduct by remember {
         mutableStateOf<MobileProduct?>(
+            null
+        )
+    }
+
+    var selectedTryOnVariantId by remember {
+        mutableStateOf<String?>(
             null
         )
     }
@@ -697,64 +704,24 @@ private fun CustomerHome(
                     Modifier.height(28.dp)
                 )
 
-                Surface(
+                CustomerTile(
+                    title =
+                        "PROBADOR VIRTUAL",
+                    subtitle =
+                        "Pruebe prendas compatibles con una foto suya",
                     modifier =
                         Modifier.fillMaxWidth(),
-                    shape =
-                        MaterialTheme
-                            .shapes
-                            .medium,
-                    color =
-                        VeloraColors.SurfaceSoft
-                ) {
+                    onClick = {
+                        selectedProduct =
+                            null
 
-                    Column(
-                        modifier =
-                            Modifier.padding(
-                                20.dp
-                            )
-                    ) {
+                        selectedTryOnVariantId =
+                            null
 
-                        Text(
-                            text =
-                                "PRÓXIMAMENTE",
-                            color =
-                                VeloraColors.RoseGold,
-                            fontWeight =
-                                FontWeight.Bold,
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .labelSmall
-                        )
-
-                        Spacer(
-                            Modifier.height(6.dp)
-                        )
-
-                        Text(
-                            text =
-                                "Probador virtual VÉLORA",
-                            color =
-                                VeloraColors.Ink,
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .titleMedium
-                        )
-
-                        Text(
-                            text =
-                                "Experiencia de cámara, realidad aumentada y visualización digital.",
-                            color =
-                                VeloraColors.Muted,
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .bodyMedium
-                        )
+                        customerScreen =
+                            CustomerScreen.TRY_ON
                     }
-                }
+                )
             }
 
             CustomerScreen.FAVORITES -> {
@@ -1036,9 +1003,49 @@ private fun CustomerHome(
                             customerScreen =
                                 CustomerScreen
                                     .CART
+                        },
+
+                        onOpenTryOn = {
+                            variantId ->
+
+                            selectedTryOnVariantId =
+                                variantId
+
+                            customerScreen =
+                                CustomerScreen
+                                    .TRY_ON
                         }
                     )
                 }
+            }
+
+            CustomerScreen.TRY_ON -> {
+
+                CustomerTryOnSection(
+                    initialProduct =
+                        selectedProduct,
+
+                    initialVariantId =
+                        selectedTryOnVariantId,
+
+                    onBack = {
+                        selectedTryOnVariantId =
+                            null
+
+                        customerScreen =
+                            if (
+                                selectedProduct !=
+                                    null
+                            ) {
+                                CustomerScreen
+                                    .PRODUCT_DETAIL
+                            }
+                            else {
+                                CustomerScreen
+                                    .CATALOG
+                            }
+                    }
+                )
             }
 
             CustomerScreen.ORDERS -> {

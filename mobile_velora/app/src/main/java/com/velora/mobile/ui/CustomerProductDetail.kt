@@ -47,7 +47,8 @@ fun CustomerProductDetail(
     onAddToCart: (String) -> Unit,
     onToggleFavorite: () -> Unit,
     onBackToCatalog: () -> Unit,
-    onOpenCart: () -> Unit
+    onOpenCart: () -> Unit,
+    onOpenTryOn: (String) -> Unit
 ) {
     val activeVariants =
         product.variants.filter {
@@ -638,12 +639,46 @@ fun CustomerProductDetail(
                     )
                 )
 
-                Text(
-                    text =
-                        "Cámara, realidad aumentada y visualización 3D estarán disponibles próximamente.",
-                    color =
-                        VeloraColors.Muted
-                )
+                if (
+                    product.tryOnEnabled &&
+                    product.tryOnReady &&
+                    selectedVariant != null
+                ) {
+                    Text(
+                        text =
+                            "Esta pieza está preparada para una prueba virtual. La categoría se obtiene automáticamente del catálogo.",
+                        color =
+                            VeloraColors.Muted
+                    )
+
+                    Spacer(
+                        Modifier.height(
+                            12.dp
+                        )
+                    )
+
+                    Button(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        onClick = {
+                            onOpenTryOn(
+                                selectedVariant.id
+                            )
+                        }
+                    ) {
+                        Text(
+                            "PROBAR ESTA PRENDA"
+                        )
+                    }
+                }
+                else {
+                    Text(
+                        text =
+                            "Esta pieza todavía no tiene una imagen Try-On preparada.",
+                        color =
+                            VeloraColors.Muted
+                    )
+                }
             }
         }
 

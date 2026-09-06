@@ -30,8 +30,7 @@ export class RoleShell {
         { label: 'Pedidos y ventas', route: '/admin/pedidos' },
         { label: 'POS y cajas', route: '/admin/pos' },
         { label: 'Reportes IA', route: '/admin/reportes' },
-        { label: 'Auditoría', disabled: true },
-        { label: 'Configuración', disabled: true }
+        { label: 'Auditoría', route: '/admin/auditoria' },
       ];
     }
 

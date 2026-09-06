@@ -82,3 +82,9 @@ mobile_velora/app/google-services.json
 ai_velora/**/__pycache__/
 ai_velora/**/*.pyc
 ai_velora/**/*.pyo
+
+# Local catalog assets (runtime only; production uses object storage)
+back_velora/storage/
+
+# Local virtual try-on results (runtime only; GCS in production)
+back_velora/storage/try-on-results/

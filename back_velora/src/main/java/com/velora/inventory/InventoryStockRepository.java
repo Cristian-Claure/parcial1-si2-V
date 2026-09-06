@@ -37,4 +37,23 @@ public interface InventoryStockRepository
     List<InventoryStockEntity> findAllForWarehouse(
             @Param("warehouseId") UUID warehouseId
     );
+
+    @Query("""
+        select stock
+        from InventoryStockEntity stock
+        join fetch stock.warehouse w
+        join fetch w.store s
+    """)
+    List<InventoryStockEntity> findForReportAll();
+
+    @Query("""
+        select stock
+        from InventoryStockEntity stock
+        join fetch stock.warehouse w
+        join fetch w.store s
+        where s.id = :storeId
+    """)
+    List<InventoryStockEntity> findForReportStore(
+            @Param("storeId") UUID storeId
+    );
 }

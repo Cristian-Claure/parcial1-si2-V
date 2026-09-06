@@ -148,6 +148,19 @@ class CatalogOfflineCodec {
                         product.status
                     )
                     .put(
+                        "tryOnEnabled",
+                        product.tryOnEnabled
+                    )
+                    .put(
+                        "tryOnCategory",
+                        product.tryOnCategory
+                            ?: JSONObject.NULL
+                    )
+                    .put(
+                        "tryOnReady",
+                        product.tryOnReady
+                    )
+                    .put(
                         "variants",
                         variants
                     )
@@ -379,6 +392,24 @@ class CatalogOfflineCodec {
                             product.optString(
                                 "status",
                                 "ACTIVE"
+                            ),
+
+                        tryOnEnabled =
+                            product.optBoolean(
+                                "tryOnEnabled",
+                                false
+                            ),
+
+                        tryOnCategory =
+                            nullableString(
+                                product,
+                                "tryOnCategory"
+                            ),
+
+                        tryOnReady =
+                            product.optBoolean(
+                                "tryOnReady",
+                                false
                             ),
 
                         variants =

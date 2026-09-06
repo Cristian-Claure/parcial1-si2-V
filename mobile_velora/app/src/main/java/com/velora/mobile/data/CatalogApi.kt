@@ -37,6 +37,9 @@ data class MobileProduct(
     val careInstructions: String?,
     val fitNotes: String?,
     val status: String,
+    val tryOnEnabled: Boolean,
+    val tryOnCategory: String?,
+    val tryOnReady: Boolean,
     val variants: List<MobileVariant>,
     val images: List<MobileImage>
 )
@@ -319,6 +322,24 @@ class CatalogApi(
                 json.optString(
                     "status",
                     "ACTIVE"
+                ),
+
+            tryOnEnabled =
+                json.optBoolean(
+                    "tryOnEnabled",
+                    false
+                ),
+
+            tryOnCategory =
+                nullableString(
+                    json,
+                    "tryOnCategory"
+                ),
+
+            tryOnReady =
+                json.optBoolean(
+                    "tryOnReady",
+                    false
                 ),
 
             variants =

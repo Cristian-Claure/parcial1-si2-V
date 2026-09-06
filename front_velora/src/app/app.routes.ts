@@ -1,10 +1,14 @@
 import { Routes } from '@angular/router';
 
 import { authGuard, roleGuard } from './core/auth/auth.guard';
-import { HomeRoute } from './features/home/home-route';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', component: HomeRoute },
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./features/home/home-route').then((m) => m.HomeRoute)
+  },
   {
     path: 'catalogo',
     loadComponent: () =>
@@ -23,6 +27,13 @@ export const routes: Routes = [
   {
     path: 'registro',
     loadComponent: () => import('./features/auth/register/register').then((m) => m.Register)
+  },
+  {
+    path: 'probador',
+    canActivate: [authGuard, roleGuard(['CUSTOMER'])],
+    loadComponent: () =>
+      import('./features/try-on/customer-try-on')
+        .then((m) => m.CustomerTryOnPage)
   },
   {
     path: 'favoritos',
@@ -115,6 +126,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/operations/inventory-management/inventory-management')
         .then((m) => m.InventoryManagement)
+  },
+  {
+    path: 'admin/auditoria',
+    canActivate: [authGuard, roleGuard(['ADMIN'])],
+    loadComponent: () =>
+      import('./features/admin/audit/admin-audit')
+        .then((m) => m.AdminAuditPage)
   },
   {
     path: 'admin/reportes',

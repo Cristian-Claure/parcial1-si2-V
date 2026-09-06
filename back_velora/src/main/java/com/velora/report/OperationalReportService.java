@@ -93,35 +93,18 @@ public class OperationalReportService {
                 );
 
         List<OrderEntity> scopedOrders =
-                orders.findAll()
-                        .stream()
-                        .filter(
-                                order ->
-                                        matchesScope(
-                                                scope,
-                                                order
-                                                        .getWarehouse()
-                                                        .getStore()
-                                                        .getId()
-                                        )
-                        )
-                        .toList();
+                scope.storeId() == null
+                        ? orders.findForReportAll()
+                        : orders.findForReportStore(
+                                scope.storeId()
+                        );
 
         List<PaymentEntity> scopedPayments =
-                payments.findAll()
-                        .stream()
-                        .filter(
-                                payment ->
-                                        matchesScope(
-                                                scope,
-                                                payment
-                                                        .getOrder()
-                                                        .getWarehouse()
-                                                        .getStore()
-                                                        .getId()
-                                        )
-                        )
-                        .toList();
+                scope.storeId() == null
+                        ? payments.findForReportAll()
+                        : payments.findForReportStore(
+                                scope.storeId()
+                        );
 
         List<PaymentEntity> paidEvents =
                 scopedPayments
@@ -226,19 +209,11 @@ public class OperationalReportService {
                         );
 
         List<InventoryStockEntity> scopedStocks =
-                stocks.findAll()
-                        .stream()
-                        .filter(
-                                stock ->
-                                        matchesScope(
-                                                scope,
-                                                stock
-                                                        .getWarehouse()
-                                                        .getStore()
-                                                        .getId()
-                                        )
-                        )
-                        .toList();
+                scope.storeId() == null
+                        ? stocks.findForReportAll()
+                        : stocks.findForReportStore(
+                                scope.storeId()
+                        );
 
         long availableUnits =
                 scopedStocks
@@ -393,29 +368,17 @@ public class OperationalReportService {
                         REPORT_ZONE
                 );
 
-        LocalDate minDate =
-                orders.findAll()
-                        .stream()
-                        .filter(
-                                order ->
-                                        matchesScope(
-                                                scope,
-                                                order
-                                                        .getWarehouse()
-                                                        .getStore()
-                                                        .getId()
-                                        )
-                        )
-                        .map(OrderEntity::getCreatedAt)
-                        .filter(
-                                value ->
-                                        value != null
-                        )
-                        .map(this::localDate)
-                        .min(LocalDate::compareTo)
-                        .orElse(
-                                today.minusDays(29)
+        Instant minCreatedAt =
+                scope.storeId() == null
+                        ? orders.findMinCreatedAtForReportAll()
+                        : orders.findMinCreatedAtForReportStore(
+                                scope.storeId()
                         );
+
+        LocalDate minDate =
+                minCreatedAt == null
+                        ? today.minusDays(29)
+                        : localDate(minCreatedAt);
 
         return new ReportPeriodBoundsResponse(
                 minDate,
@@ -1241,8 +1204,15 @@ public class OperationalReportService {
         Map<String, BigDecimal> revenues =
                 new HashMap<>();
 
+        List<OrderItemEntity> retainedItems =
+                retainedPaidOrderIds.isEmpty()
+                        ? List.of()
+                        : orderItems.findAllByOrderIdIn(
+                                retainedPaidOrderIds
+                        );
+
         for (OrderItemEntity item :
-                orderItems.findAll()) {
+                retainedItems) {
             if (
                     !retainedPaidOrderIds.contains(
                             item.getOrder().getId()

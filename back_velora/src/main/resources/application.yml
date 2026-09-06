@@ -10,6 +10,11 @@ spring:
   flyway:
     enabled: true
 
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 7MB
+
 server:
   port: 8080
 
@@ -26,8 +31,16 @@ management:
 
 velora:
   security:
-    jwt-secret: ${VELORA_JWT_SECRET:velora-local-development-secret-change-me-2026}
+    jwt-secret: ${VELORA_JWT_SECRET:}
     jwt-expiration-minutes: 120
+    rate-limit:
+      auth:
+        max-requests: ${VELORA_AUTH_RATE_LIMIT_MAX_REQUESTS:10}
+        window-seconds: ${VELORA_AUTH_RATE_LIMIT_WINDOW_SECONDS:60}
+      expensive:
+        max-requests: ${VELORA_EXPENSIVE_RATE_LIMIT_MAX_REQUESTS:30}
+        window-seconds: ${VELORA_EXPENSIVE_RATE_LIMIT_WINDOW_SECONDS:60}
+      trust-proxy-headers: ${VELORA_RATE_LIMIT_TRUST_PROXY_HEADERS:false}
   bootstrap:
     admin:
       email: ${VELORA_ADMIN_EMAIL:}
@@ -42,7 +55,20 @@ velora:
   ai:
     base-url: ${VELORA_AI_BASE_URL:http://127.0.0.1:8001}
     internal-token: ${VELORA_AI_INTERNAL_TOKEN:}
+  tryon:
+    default-provider: ${VELORA_TRYON_PROVIDER:replicate}
+    max-input-bytes: ${VELORA_TRYON_MAX_INPUT_BYTES:5242880}
+    results:
+      provider: ${VELORA_TRYON_RESULT_PROVIDER:local}
+      local-directory: ${VELORA_TRYON_RESULT_LOCAL_DIR:./storage/try-on-results}
+      max-bytes: ${VELORA_TRYON_RESULT_MAX_BYTES:12582912}
   push:
     firebase:
       enabled: ${VELORA_FIREBASE_ENABLED:false}
       project-id: ${VELORA_FIREBASE_PROJECT_ID:}
+  catalog:
+    assets:
+      provider: ${VELORA_CATALOG_ASSET_PROVIDER:local}
+      local-directory: ${VELORA_CATALOG_ASSET_LOCAL_DIR:./storage/catalog}
+      public-base-url: ${VELORA_CATALOG_ASSET_PUBLIC_BASE_URL:http://localhost:8080}
+      max-bytes: ${VELORA_CATALOG_ASSET_MAX_BYTES:5242880}

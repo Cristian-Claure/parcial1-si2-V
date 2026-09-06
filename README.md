@@ -68,62 +68,103 @@ Los clientes pueden clasificarse como:
 - VÉLORA Urubó
 - VÉLORA Zona Norte
 
-## Estado
+## Estado actual — cierre del Punto 12
 
-Proyecto en desarrollo.
+Al 6 de septiembre de 2026, VÉLORA tiene cerrada la implementación funcional planificada de Web, PWA, Mobile, Backend e IA hasta el Punto 12. Fuera de correcciones que puedan surgir durante la estabilización, no quedan nuevas funcionalidades de producto pendientes antes de las pruebas integradas y la documentación final.
 
-## Estado actual — Ciclo 1
+### Estado del roadmap
 
-El primer ciclo de VÉLORA establece la base operativa e integrada de la plataforma omnicanal.
+| Punto | Alcance | Estado |
+| --- | --- | --- |
+| 1 | CUSTOMER Offline Backend | ✅ Cerrado |
+| 2 | Web + PWA CUSTOMER Offline | ✅ Cerrado |
+| 3 | Mobile CUSTOMER Offline | ✅ Cerrado |
+| 4 | UX/UI CUSTOMER Web + Mobile | ✅ Cerrado |
+| 5 | Feedback premium, toasts y errores | ✅ Cerrado |
+| 6 | Pagos online y arquitectura Stripe | ✅ Cerrado |
+| 7 | Asistente IA de productos | ✅ Cerrado |
+| 8 | Reportes dinámicos con IA | ✅ Cerrado |
+| 9 | Reportes por voz | ✅ Cerrado |
+| 10 | Notificaciones push FCM Mobile | ✅ Cerrado |
+| 11 | Probador virtual | ✅ Cerrado |
+| 12 | Auditoría, seguridad, performance y limpieza final | ✅ Cerrado |
+| 13 | Pruebas integradas | ⏳ Pendiente |
+| 14 | Documentación final PUDS | ⏳ Pendiente |
 
-### Backend
+La implementación funcional está cerrada en **12 de 14 puntos**. El siguiente bloque de ingeniería es el **Punto 13 — pruebas integradas**; después se completará la documentación PUDS y la preparación del despliegue final.
 
-- Spring Boot 4.1.1 y Java 21.
-- PostgreSQL 17.
-- Flyway con migraciones V1–V5.
-- Autenticación JWT.
-- Roles ADMIN, STORE_MANAGER y CUSTOMER.
-- Gestión de sucursales.
-- Catálogo global de productos, categorías y variantes.
-- Inventario por almacén y sucursal.
-- Control de stock físico, comprometido y disponible.
-- Movimientos de inventario auditables.
-- Control de concurrencia del stock.
+### Capacidades funcionales implementadas
 
-### Frontend web
+- Autenticación y registro con JWT y control de acceso por roles `ADMIN`, `STORE_MANAGER` y `CUSTOMER`.
+- Administración de sucursales, usuarios/encargados, catálogo, variantes, inventario, almacenes, POS y cajas.
+- Catálogo público, favoritos, carrito, checkout, pedidos y experiencia CUSTOMER.
+- Stock web consumido desde inventario de almacén, sin capa duplicada de stock por sucursal.
+- PICKUP validado exclusivamente contra el almacén principal/default de la sucursal seleccionada.
+- Flujo de pagos con tarjeta mediante Stripe y soporte de QR.
+- Operación CUSTOMER offline en Web/PWA y Android, con sincronización posterior.
+- Notificaciones push en Android mediante Firebase Cloud Messaging.
+- Asistente IA de productos integrado con backend.
+- Reportes operativos dinámicos, consultas con IA, narrativa de hallazgos y reportes por voz.
+- Probador virtual con pipeline de assets de catálogo, proveedor `LOCAL` para desarrollo y `Replicate` como proveedor externo evaluado.
+- Navegación por rol depurada, sin placeholders funcionales falsos ni rutas de navegación pendientes.
 
-- Angular 22.
-- Home pública VÉLORA.
-- Catálogo público conectado al backend.
-- Login y registro.
-- Área CUSTOMER.
-- Dashboard ADMIN.
-- Dashboard STORE_MANAGER.
-- Gestión de catálogo.
-- Gestión de inventario.
-- Navegación autenticada por rol.
-- Cierre de sesión.
-- Base PWA con manifest y Service Worker.
+### Backend y datos
+
+- Java 21 + Spring Boot.
+- PostgreSQL + Flyway, actualmente en **V22**.
+- Spring Security con JWT stateless y autorización por rol.
+- Auditoría transversal de mutaciones de negocio con consulta administrativa y filtros.
+- Historial de estados de pago preservado como bitácora especializada.
+- Rate limiting para autenticación y endpoints costosos.
+- Validación de uploads por tamaño, tipo y firma real en los flujos sensibles.
+- Verificación de firma de webhooks de Stripe.
+- Token interno para la comunicación Backend ↔ servicio IA.
+- Índices y consultas optimizadas para órdenes, reportes y operaciones pesadas.
+
+### Frontend Web / PWA
+
+- Angular + TypeScript + SCSS.
+- PWA con Service Worker e IndexedDB.
+- UX CUSTOMER para catálogo, favoritos, bolsa/carrito, checkout, pedidos, cuenta y probador virtual.
+- Áreas operativas para ADMIN y STORE_MANAGER.
+- Reportes IA y auditoría disponibles desde navegación administrativa.
+- Carga lazy de rutas relevantes y optimización de imágenes.
+- Navegación final sin elementos deshabilitados ni rutas huérfanas.
 
 ### Aplicación Android
 
-- Kotlin y Jetpack Compose.
-- Aplicación orientada principalmente al CUSTOMER.
-- Login y registro.
-- Persistencia de sesión.
-- Cierre de sesión.
-- Catálogo conectado al backend.
-- Visualización de productos, variantes y precios.
-- Base para notificaciones push con Firebase Cloud Messaging.
-- Permiso de notificaciones y canal VÉLORA.
-- Gradle Wrapper 9.5.0.
+- Kotlin + Jetpack Compose.
+- Experiencia CUSTOMER con navegación principal para Home, Catálogo, Favoritos, Carrito y Cuenta.
+- Login, registro y persistencia de sesión.
+- Catálogo, carrito, checkout y pedidos.
+- Operación offline CUSTOMER.
+- Notificaciones push mediante FCM.
+- Integración funcional alineada con el backend y los flujos Web/PWA.
 
-### Validación del ciclo
+### Inteligencia Artificial
 
-- Backend: Maven tests aprobados.
-- Frontend: build de producción aprobado.
-- Android: assembleDebug aprobado.
-- PostgreSQL y Flyway validados.
-- Código fuente validado en UTF-8.
+- Servicio Python + FastAPI.
+- Asistente de productos.
+- Motor de reportes analíticos y narrativa IA.
+- Flujo de reportes por voz.
+- Probador virtual desacoplado por proveedores.
+- Benchmark actual del probador virtual limitado a `LOCAL` y `Replicate`; FASHN no forma parte del alcance vigente.
 
-Las operaciones comerciales completas, pedidos, pagos, POS y sincronización offline se desarrollarán en el siguiente ciclo. Las funcionalidades de IA, reportes dinámicos por texto y voz y probador virtual se desarrollarán posteriormente.
+### Punto 12 — cierre técnico
+
+El Punto 12 quedó dividido y cerrado en cinco frentes:
+
+- **P12A — Auditoría:** bitácora transversal, actor, fecha/hora, categoría, entidad/ruta y consulta ADMIN.
+- **P12B — Seguridad:** JWT sin secreto de desarrollo por defecto, rate limiting, revisión de roles/endpoints, Stripe, uploads, IA interna y FCM.
+- **P12C — Performance:** índices Flyway V22, reducción de consultas pesadas en memoria, filtros ejecutados en base de datos, lazy loading y optimización de imágenes.
+- **P12D — Configuración ADMIN:** se eliminó el placeholder de “Configuración”; no se creó una pantalla ficticia porque la configuración técnica real se gestiona mediante entorno/backend.
+- **P12E — Navegación final:** `NAV_DISABLED=0` y `UNRESOLVED_NAV_ROUTES=0`; se eliminaron placeholders obsoletos.
+
+### Pendiente antes del despliegue final
+
+1. Ejecutar **Punto 13 — pruebas integradas** sobre autenticación, roles, catálogo, inventario, carrito, checkout, Stripe/QR, pedidos, offline, favoritos, FCM, IA, voz, probador virtual y permisos.
+2. Corregir únicamente regresiones o defectos encontrados durante las pruebas.
+3. Completar **Punto 14 — documentación PUDS**.
+4. Preparar y validar el despliegue en Google Cloud, incluyendo configuración productiva de secretos, CORS, almacenamiento y componentes que deban escalarse.
+
+> Nota de despliegue: el rate limiter actual es adecuado para la ejecución de una sola instancia; si el backend se escala horizontalmente deberá migrarse a una solución compartida o de gateway. Las configuraciones productivas y secretos no deben almacenarse en el repositorio.
