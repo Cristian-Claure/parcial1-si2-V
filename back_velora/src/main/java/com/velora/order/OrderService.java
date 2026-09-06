@@ -137,6 +137,19 @@ public class OrderService {
             );
         }
 
+        if (
+                request.fulfillmentType() == FulfillmentType.PICKUP
+                && (
+                        !warehouse.isDefaultWarehouse()
+                        || !warehouse.getStore().isActive()
+                )
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El retiro en tienda solo puede abastecerse desde el almacén principal de una sucursal activa."
+            );
+        }
+
         CustomerAddressEntity deliveryAddress =
                 resolveAddress(
                         customer,
@@ -336,6 +349,19 @@ public class OrderService {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "El almacén seleccionado está inactivo."
+            );
+        }
+
+        if (
+                request.fulfillmentType() == FulfillmentType.PICKUP
+                && (
+                        !warehouse.isDefaultWarehouse()
+                        || !warehouse.getStore().isActive()
+                )
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El retiro en tienda solo puede abastecerse desde el almacén principal de una sucursal activa."
             );
         }
 

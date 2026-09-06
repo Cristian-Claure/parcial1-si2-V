@@ -17,5 +17,11 @@ public interface WarehouseRepository
             UUID storeId
     );
 
+    boolean existsByStore_IdAndDefaultWarehouseTrue(
+            UUID storeId
+    );
+
+    List<WarehouseEntity> findAllByDefaultWarehouseTrueOrderByNameAsc();
+
     List<WarehouseEntity> findAllByOrderByNameAsc();
 }
