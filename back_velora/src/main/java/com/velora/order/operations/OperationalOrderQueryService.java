@@ -43,22 +43,15 @@ public class OperationalOrderQueryService {
         UserEntity actor =
                 requireOperationalActor(actorId);
 
-        return orders.findAll()
+        List<OrderEntity> accessibleOrders =
+                actor.getRole() == UserRole.ADMIN
+                        ? orders.findOperationalAdminOrderByCreatedAtDesc()
+                        : orders.findOperationalByStoreIdOrderByCreatedAtDesc(
+                                actor.getStore().getId()
+                        );
+
+        return accessibleOrders
                 .stream()
-                .filter(
-                        order ->
-                                canAccess(
-                                        actor,
-                                        order
-                                )
-                )
-                .sorted(
-                        Comparator
-                                .comparing(
-                                        OrderEntity::getCreatedAt
-                                )
-                                .reversed()
-                )
                 .map(this::response)
                 .toList();
     }

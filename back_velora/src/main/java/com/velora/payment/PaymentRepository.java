@@ -90,4 +90,25 @@ public interface PaymentRepository
             @Param("cashSessionId") UUID cashSessionId,
             @Param("status") PaymentStatus status
     );
+
+    @Query("""
+        select p
+        from PaymentEntity p
+        join fetch p.order o
+        join fetch o.warehouse w
+        join fetch w.store s
+    """)
+    List<PaymentEntity> findForReportAll();
+
+    @Query("""
+        select p
+        from PaymentEntity p
+        join fetch p.order o
+        join fetch o.warehouse w
+        join fetch w.store s
+        where s.id = :storeId
+    """)
+    List<PaymentEntity> findForReportStore(
+            @Param("storeId") UUID storeId
+    );
 }

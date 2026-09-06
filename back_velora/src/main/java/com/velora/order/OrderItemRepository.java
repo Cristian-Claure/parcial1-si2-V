@@ -10,4 +10,8 @@ public interface OrderItemRepository
 
     List<OrderItemEntity>
         findAllByOrderIdOrderByProductNameAscSkuAsc(UUID orderId);
+
+    List<OrderItemEntity> findAllByOrderIdIn(
+            java.util.Collection<UUID> orderIds
+    );
 }
