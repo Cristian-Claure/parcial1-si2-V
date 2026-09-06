@@ -151,10 +151,6 @@ export class PosManagement {
             label: 'Auditoría',
             route: '/admin/auditoria'
           },
-          {
-            label: 'Configuración',
-            disabled: true
-          }
         ];
       }
 

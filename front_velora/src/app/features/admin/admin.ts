@@ -49,7 +49,6 @@ export class Admin {
     { label: 'POS y cajas', route: '/admin/pos' },
     { label: 'Reportes IA', route: '/admin/reportes' },
     { label: 'Auditoría', route: '/admin/auditoria' },
-    { label: 'Configuración', disabled: true }
   ];
 
   readonly storeForm = this.fb.nonNullable.group({

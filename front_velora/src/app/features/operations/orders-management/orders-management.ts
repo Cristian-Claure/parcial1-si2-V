@@ -145,10 +145,6 @@ export class OrdersManagement {
             label: 'Auditoría',
             route: '/admin/auditoria'
           },
-          {
-            label: 'Configuración',
-            disabled: true
-          }
         ];
       }
 
