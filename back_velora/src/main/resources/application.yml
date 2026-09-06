@@ -31,8 +31,16 @@ management:
 
 velora:
   security:
-    jwt-secret: ${VELORA_JWT_SECRET:velora-local-development-secret-change-me-2026}
+    jwt-secret: ${VELORA_JWT_SECRET:}
     jwt-expiration-minutes: 120
+    rate-limit:
+      auth:
+        max-requests: ${VELORA_AUTH_RATE_LIMIT_MAX_REQUESTS:10}
+        window-seconds: ${VELORA_AUTH_RATE_LIMIT_WINDOW_SECONDS:60}
+      expensive:
+        max-requests: ${VELORA_EXPENSIVE_RATE_LIMIT_MAX_REQUESTS:30}
+        window-seconds: ${VELORA_EXPENSIVE_RATE_LIMIT_WINDOW_SECONDS:60}
+      trust-proxy-headers: ${VELORA_RATE_LIMIT_TRUST_PROXY_HEADERS:false}
   bootstrap:
     admin:
       email: ${VELORA_ADMIN_EMAIL:}

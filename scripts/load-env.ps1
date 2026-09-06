@@ -24,3 +24,29 @@ $env:SPRING_DATASOURCE_URL =
 
 $env:SPRING_DATASOURCE_USERNAME = $env:VELORA_DB_USER
 $env:SPRING_DATASOURCE_PASSWORD = $env:VELORA_DB_PASSWORD
+# VELORA_P12B_JWT_SECRET_LOADER_START
+# Carga el JWT local desde .env sin imprimirlo.
+$veloraP12bRepoRoot = Split-Path -Parent $PSScriptRoot
+$veloraP12bEnvFile = Join-Path $veloraP12bRepoRoot ".env"
+
+if (
+    -not $env:VELORA_JWT_SECRET -and
+    (Test-Path -LiteralPath $veloraP12bEnvFile)
+) {
+    $veloraP12bJwtLine = Get-Content -LiteralPath $veloraP12bEnvFile |
+        Where-Object {
+            $_ -match '^\s*VELORA_JWT_SECRET\s*='
+        } |
+        Select-Object -Last 1
+
+    if ($null -ne $veloraP12bJwtLine) {
+        $veloraP12bJwtValue = $veloraP12bJwtLine.Substring(
+            $veloraP12bJwtLine.IndexOf('=') + 1
+        ).Trim().Trim('"').Trim("'")
+
+        if (-not [string]::IsNullOrWhiteSpace($veloraP12bJwtValue)) {
+            $env:VELORA_JWT_SECRET = $veloraP12bJwtValue
+        }
+    }
+}
+# VELORA_P12B_JWT_SECRET_LOADER_END
