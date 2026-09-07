@@ -31,6 +31,9 @@ public class WarehouseEntity {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(name = "default_warehouse", nullable = false)
+    private boolean defaultWarehouse = false;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -73,4 +76,10 @@ public class WarehouseEntity {
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+
+    public boolean isDefaultWarehouse() { return defaultWarehouse; }
+    public void setDefaultWarehouse(boolean defaultWarehouse) {
+        this.defaultWarehouse = defaultWarehouse;
+    }
+
 }

@@ -106,6 +106,12 @@ public class InventoryService {
         entity.setName(request.name());
         entity.setDescription(request.description());
         entity.setActive(request.active() == null || request.active());
+        entity.setDefaultWarehouse(
+                entity.isActive()
+                        && !warehouseRepository.existsByStore_IdAndDefaultWarehouseTrue(
+                                store.getId()
+                        )
+        );
 
         return toWarehouseResponse(warehouseRepository.save(entity));
     }

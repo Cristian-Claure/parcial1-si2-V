@@ -16,7 +16,7 @@ spring:
       max-request-size: 7MB
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 management:
   endpoints:
@@ -62,6 +62,9 @@ velora:
       provider: ${VELORA_TRYON_RESULT_PROVIDER:local}
       local-directory: ${VELORA_TRYON_RESULT_LOCAL_DIR:./storage/try-on-results}
       max-bytes: ${VELORA_TRYON_RESULT_MAX_BYTES:12582912}
+      gcs:
+        bucket: ${VELORA_TRYON_RESULT_GCS_BUCKET:}
+        prefix: ${VELORA_TRYON_RESULT_GCS_PREFIX:tryon-results}
   push:
     firebase:
       enabled: ${VELORA_FIREBASE_ENABLED:false}
@@ -72,3 +75,6 @@ velora:
       local-directory: ${VELORA_CATALOG_ASSET_LOCAL_DIR:./storage/catalog}
       public-base-url: ${VELORA_CATALOG_ASSET_PUBLIC_BASE_URL:http://localhost:8080}
       max-bytes: ${VELORA_CATALOG_ASSET_MAX_BYTES:5242880}
+      gcs:
+        bucket: ${VELORA_CATALOG_GCS_BUCKET:}
+        prefix: ${VELORA_CATALOG_GCS_PREFIX:catalog}

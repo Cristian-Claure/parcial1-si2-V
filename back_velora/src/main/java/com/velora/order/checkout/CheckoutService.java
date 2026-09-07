@@ -76,7 +76,7 @@ public class CheckoutService {
         }
 
         return warehouses
-                .findAllByOrderByNameAsc()
+                .findAllByDefaultWarehouseTrueOrderByNameAsc()
                 .stream()
                 .filter(WarehouseEntity::isActive)
                 .filter(
