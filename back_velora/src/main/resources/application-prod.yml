@@ -1,0 +1,32 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+server:
+  port: ${PORT:8080}
+
+velora:
+  security:
+    rate-limit:
+      trust-proxy-headers: true
+  stripe:
+    success-url: ${STRIPE_SUCCESS_URL}
+    cancel-url: ${STRIPE_CANCEL_URL}
+  ai:
+    base-url: ${VELORA_AI_BASE_URL}
+    internal-token: ${VELORA_AI_INTERNAL_TOKEN}
+  tryon:
+    default-provider: replicate
+    results:
+      provider: gcs
+      gcs:
+        bucket: ${VELORA_TRYON_RESULT_GCS_BUCKET}
+        prefix: ${VELORA_TRYON_RESULT_GCS_PREFIX:tryon-results}
+  catalog:
+    assets:
+      provider: gcs
+      public-base-url: ${VELORA_PUBLIC_BASE_URL}
+      gcs:
+        bucket: ${VELORA_CATALOG_GCS_BUCKET}
+        prefix: ${VELORA_CATALOG_GCS_PREFIX:catalog}

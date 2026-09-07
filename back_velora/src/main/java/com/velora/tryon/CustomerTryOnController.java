@@ -33,8 +33,6 @@ public class CustomerTryOnController {
             @RequestParam UUID productId,
             @RequestParam(required = false)
             UUID variantId,
-            @RequestParam(required = false)
-            String provider,
             @RequestParam("person")
             MultipartFile person
     ) {
@@ -42,7 +40,6 @@ public class CustomerTryOnController {
                 userId(jwt),
                 productId,
                 variantId,
-                provider,
                 person
         );
     }

@@ -1,170 +1,233 @@
 # VÉLORA
 
-Plataforma omnicanal de comercio electrónico orientada a una cadena de moda femenina en Santa Cruz de la Sierra, Bolivia.
+VÉLORA es una plataforma omnicanal para una boutique de moda femenina de Santa Cruz de la Sierra, Bolivia. El proyecto integra comercio electrónico, operación por sucursal, inventario por almacén, pagos, experiencia CUSTOMER web/móvil, reportes con IA, notificaciones y un Probador Virtual preparado para producción en Google Cloud.
+
+## Estado del proyecto
+
+El desarrollo funcional y el hardening técnico previo al despliegue están cerrados en la rama `test/cycle7-integrated-tests`.
+
+Validación integrada final aprobada el 7 de septiembre de 2026:
+
+- Backend Java/Spring Boot: PASS.
+- PostgreSQL + Flyway: PASS, 23 migraciones validadas.
+- Frontend Angular production build: PASS.
+- Android/Kotlin compile + unit tests: PASS.
+- Servicio AI Python/FastAPI: PASS, 6 tests.
+- Seguridad/performance: PASS.
+- Bitácora/auditoría: PASS.
+- Cloud Try-On + GCS hardening: PASS.
+- Git/secret scan/production boundary: PASS.
+
+El despliegue real a Google Cloud todavía no se ejecuta en este checkpoint.
 
 ## Arquitectura
 
-El proyecto se organiza como un monorepo compuesto por aplicaciones independientes:
+El repositorio es un monorepo formado por aplicaciones independientes:
 
-- `back_velora`: API y lógica de negocio desarrollada con Java y Spring Boot.
-- `front_velora`: aplicación web desarrollada con Angular y capacidades PWA.
-- `mobile_velora`: aplicación Android nativa desarrollada con Kotlin.
-- `ai_velora`: servicio de inteligencia artificial desarrollado con Python y FastAPI.
-- `docs`: documentación del proyecto, PUDS, UML 2.5 y diseño de datos.
-- `infra`: infraestructura y configuración Docker.
-- `scripts`: scripts de automatización y desarrollo.
+- `back_velora`: API REST, autenticación, negocio, inventario, pedidos, pagos, auditoría y orquestación del Probador Virtual.
+- `front_velora`: aplicación Angular/PWA para CUSTOMER, ADMIN y STORE_MANAGER.
+- `mobile_velora`: aplicación Android nativa con Kotlin y Jetpack Compose.
+- `ai_velora`: servicio FastAPI para funciones de IA y Virtual Try-On.
+- `scripts`: automatización de entorno y arranque local.
+- `docs`: documentación técnica y académica del proyecto.
 
-## Stack principal
+Flujo principal:
+
+`Web / Android -> Backend Spring Boot -> PostgreSQL`
+
+Para IA:
+
+`Web / Android -> Backend -> AI FastAPI`
+
+En producción del Probador Virtual:
+
+`Backend / AI -> Replicate`
+
+Persistencia de imágenes de catálogo y resultados de Try-On en producción:
+
+`Backend -> Google Cloud Storage`
+
+## Stack validado
 
 ### Backend
-- Java 21 LTS
-- Spring Boot
-- Spring Security
-- Spring Data JPA
-- PostgreSQL
-- Flyway
-- Maven Wrapper
+
+- Java 21.
+- Spring Boot 4.1.1.
+- Spring Security.
+- Spring Data JPA.
+- PostgreSQL 17.
+- Flyway.
+- Maven Wrapper.
 
 ### Frontend
-- Angular
-- TypeScript
-- SCSS
-- PWA
-- IndexedDB
 
-### Mobile
-- Kotlin
-- Jetpack Compose
-- CameraX
-- MediaPipe
-- ARCore
+- Angular.
+- TypeScript.
+- SCSS.
+- PWA.
+- IndexedDB.
+- pnpm.
+- Build validado con Node.js 24.16.0.
 
-### Inteligencia Artificial
-- Python
-- FastAPI
-- Speech-to-Text
-- LLM
-- Motor de consultas analíticas
+### Android
 
-### Infraestructura
-- Docker Desktop
-- Docker Compose
-- PostgreSQL
+- Kotlin.
+- Jetpack Compose.
+- Gradle Wrapper 9.5.0.
+- Firebase Cloud Messaging.
+
+### AI
+
+- Python 3.13.
+- FastAPI.
+- Replicate como proveedor cloud del Probador Virtual.
+- pytest para pruebas del servicio.
 
 ## Roles
 
-- ADMIN
-- STORE_MANAGER
-- CUSTOMER
+- `ADMIN`: administración global y creación de encargados.
+- `STORE_MANAGER`: operación de su sucursal según permisos.
+- `CUSTOMER`: navegación, carrito, checkout, pedidos y experiencia de compra.
 
-Los clientes pueden clasificarse como:
+## Inventario y PICKUP
 
-- B2C
-- B2B
+El stock comercial se obtiene directamente del inventario de `Warehouse`; `Store` no mantiene una segunda capa duplicada de stock.
 
-## Tiendas iniciales
+Para `PICKUP`:
 
-- VÉLORA Equipetrol
-- VÉLORA Urubó
-- VÉLORA Zona Norte
+- se usa únicamente el Warehouse principal/default de la tienda seleccionada;
+- la tienda debe poder cubrir el carrito completo;
+- no se agregan existencias de Warehouses secundarios;
+- no existe pickup multi-tienda;
+- el carrito normal no reserva stock de forma prolongada.
 
-## Estado actual — cierre del Punto 12
+## Funcionalidades principales
 
-Al 6 de septiembre de 2026, VÉLORA tiene cerrada la implementación funcional planificada de Web, PWA, Mobile, Backend e IA hasta el Punto 12. Fuera de correcciones que puedan surgir durante la estabilización, no quedan nuevas funcionalidades de producto pendientes antes de las pruebas integradas y la documentación final.
+- autenticación y registro CUSTOMER;
+- administración de usuarios y encargados;
+- catálogo, categorías, productos y variantes;
+- inventario por Warehouse;
+- carrito y checkout;
+- pedidos y PICKUP;
+- pagos online;
+- POS y operación administrativa;
+- favoritos;
+- notificaciones;
+- PWA;
+- experiencia Android;
+- reportes y analítica con IA;
+- interacción por voz;
+- bitácora/auditoría administrativa;
+- Probador Virtual;
+- almacenamiento cloud preparado para GCS.
 
-### Estado del roadmap
+## Probador Virtual
 
-| Punto | Alcance | Estado |
-| --- | --- | --- |
-| 1 | CUSTOMER Offline Backend | ✅ Cerrado |
-| 2 | Web + PWA CUSTOMER Offline | ✅ Cerrado |
-| 3 | Mobile CUSTOMER Offline | ✅ Cerrado |
-| 4 | UX/UI CUSTOMER Web + Mobile | ✅ Cerrado |
-| 5 | Feedback premium, toasts y errores | ✅ Cerrado |
-| 6 | Pagos online y arquitectura Stripe | ✅ Cerrado |
-| 7 | Asistente IA de productos | ✅ Cerrado |
-| 8 | Reportes dinámicos con IA | ✅ Cerrado |
-| 9 | Reportes por voz | ✅ Cerrado |
-| 10 | Notificaciones push FCM Mobile | ✅ Cerrado |
-| 11 | Probador virtual | ✅ Cerrado |
-| 12 | Auditoría, seguridad, performance y limpieza final | ✅ Cerrado |
-| 13 | Pruebas integradas | ⏳ Pendiente |
-| 14 | Documentación final PUDS | ⏳ Pendiente |
+El benchmark vigente contempla únicamente:
 
-La implementación funcional está cerrada en **12 de 14 puntos**. El siguiente bloque de ingeniería es el **Punto 13 — pruebas integradas**; después se completará la documentación PUDS y la preparación del despliegue final.
+- `LOCAL`: adaptador de desarrollo;
+- `REPLICATE`: proveedor cloud y objetivo de producción.
 
-### Capacidades funcionales implementadas
+FASHN no forma parte del alcance actual.
 
-- Autenticación y registro con JWT y control de acceso por roles `ADMIN`, `STORE_MANAGER` y `CUSTOMER`.
-- Administración de sucursales, usuarios/encargados, catálogo, variantes, inventario, almacenes, POS y cajas.
-- Catálogo público, favoritos, carrito, checkout, pedidos y experiencia CUSTOMER.
-- Stock web consumido desde inventario de almacén, sin capa duplicada de stock por sucursal.
-- PICKUP validado exclusivamente contra el almacén principal/default de la sucursal seleccionada.
-- Flujo de pagos con tarjeta mediante Stripe y soporte de QR.
-- Operación CUSTOMER offline en Web/PWA y Android, con sincronización posterior.
-- Notificaciones push en Android mediante Firebase Cloud Messaging.
-- Asistente IA de productos integrado con backend.
-- Reportes operativos dinámicos, consultas con IA, narrativa de hallazgos y reportes por voz.
-- Probador virtual con pipeline de assets de catálogo, proveedor `LOCAL` para desarrollo y `Replicate` como proveedor externo evaluado.
-- Navegación por rol depurada, sin placeholders funcionales falsos ni rutas de navegación pendientes.
+Reglas de producción:
 
-### Backend y datos
+- el cliente no selecciona el proveedor;
+- el proveedor se configura en servidor;
+- la foto de la persona es transitoria y VÉLORA no la persiste;
+- imágenes de catálogo y resultados se preparan para Google Cloud Storage;
+- autenticación GCS mediante ADC/service account de runtime;
+- no se deben versionar archivos JSON de service account;
+- tokens de Replicate y otros secretos se inyectan por entorno/Secret Manager.
 
-- Java 21 + Spring Boot.
-- PostgreSQL + Flyway, actualmente en **V22**.
-- Spring Security con JWT stateless y autorización por rol.
-- Auditoría transversal de mutaciones de negocio con consulta administrativa y filtros.
-- Historial de estados de pago preservado como bitácora especializada.
-- Rate limiting para autenticación y endpoints costosos.
-- Validación de uploads por tamaño, tipo y firma real en los flujos sensibles.
-- Verificación de firma de webhooks de Stripe.
-- Token interno para la comunicación Backend ↔ servicio IA.
-- Índices y consultas optimizadas para órdenes, reportes y operaciones pesadas.
+## Seguridad
 
-### Frontend Web / PWA
+- autenticación JWT;
+- sesiones backend stateless;
+- rate limiting configurable;
+- soporte de proxy headers;
+- CORS configurable mediante `VELORA_CORS_ALLOWED_ORIGINS`;
+- localhost queda únicamente como default de desarrollo;
+- `.env` está ignorado por Git;
+- no se detectaron credenciales privadas rastreadas en el checkpoint final.
 
-- Angular + TypeScript + SCSS.
-- PWA con Service Worker e IndexedDB.
-- UX CUSTOMER para catálogo, favoritos, bolsa/carrito, checkout, pedidos, cuenta y probador virtual.
-- Áreas operativas para ADMIN y STORE_MANAGER.
-- Reportes IA y auditoría disponibles desde navegación administrativa.
-- Carga lazy de rutas relevantes y optimización de imágenes.
-- Navegación final sin elementos deshabilitados ni rutas huérfanas.
+## Bitácora y auditoría
 
-### Aplicación Android
+La bitácora incluye:
 
-- Kotlin + Jetpack Compose.
-- Experiencia CUSTOMER con navegación principal para Home, Catálogo, Favoritos, Carrito y Cuenta.
-- Login, registro y persistencia de sesión.
-- Catálogo, carrito, checkout y pedidos.
-- Operación offline CUSTOMER.
-- Notificaciones push mediante FCM.
-- Integración funcional alineada con el backend y los flujos Web/PWA.
+- entidad y repositorio de eventos;
+- servicio paginado;
+- captura de mutaciones;
+- API administrativa de consulta;
+- interfaz web para ADMIN;
+- persistencia mediante migración Flyway.
 
-### Inteligencia Artificial
+## Configuración
 
-- Servicio Python + FastAPI.
-- Asistente de productos.
-- Motor de reportes analíticos y narrativa IA.
-- Flujo de reportes por voz.
-- Probador virtual desacoplado por proveedores.
-- Benchmark actual del probador virtual limitado a `LOCAL` y `Replicate`; FASHN no forma parte del alcance vigente.
+Copia `.env.example` a `.env` y completa los valores locales necesarios.
 
-### Punto 12 — cierre técnico
+Nunca subas `.env`, passwords, tokens, API keys, credenciales Stripe, credenciales de Firebase privadas, tokens de Replicate ni service-account JSON.
 
-El Punto 12 quedó dividido y cerrado en cinco frentes:
+Variables relevantes para producción cloud:
 
-- **P12A — Auditoría:** bitácora transversal, actor, fecha/hora, categoría, entidad/ruta y consulta ADMIN.
-- **P12B — Seguridad:** JWT sin secreto de desarrollo por defecto, rate limiting, revisión de roles/endpoints, Stripe, uploads, IA interna y FCM.
-- **P12C — Performance:** índices Flyway V22, reducción de consultas pesadas en memoria, filtros ejecutados en base de datos, lazy loading y optimización de imágenes.
-- **P12D — Configuración ADMIN:** se eliminó el placeholder de “Configuración”; no se creó una pantalla ficticia porque la configuración técnica real se gestiona mediante entorno/backend.
-- **P12E — Navegación final:** `NAV_DISABLED=0` y `UNRESOLVED_NAV_ROUTES=0`; se eliminaron placeholders obsoletos.
+- `VELORA_AI_BASE_URL`
+- `VELORA_AI_INTERNAL_TOKEN`
+- `VELORA_CORS_ALLOWED_ORIGINS`
+- `VELORA_CATALOG_ASSET_PROVIDER`
+- `VELORA_CATALOG_GCS_BUCKET`
+- `VELORA_CATALOG_GCS_PREFIX`
+- `VELORA_TRYON_PROVIDER`
+- `REPLICATE_API_TOKEN`
+- `VELORA_TRYON_REPLICATE_MODEL`
+- `VELORA_TRYON_RESULT_PROVIDER`
+- `VELORA_TRYON_RESULT_GCS_BUCKET`
+- `VELORA_TRYON_RESULT_GCS_PREFIX`
+- `VELORA_JWT_SECRET`
 
-### Pendiente antes del despliegue final
+## Ejecución local
 
-1. Ejecutar **Punto 13 — pruebas integradas** sobre autenticación, roles, catálogo, inventario, carrito, checkout, Stripe/QR, pedidos, offline, favoritos, FCM, IA, voz, probador virtual y permisos.
-2. Corregir únicamente regresiones o defectos encontrados durante las pruebas.
-3. Completar **Punto 14 — documentación PUDS**.
-4. Preparar y validar el despliegue en Google Cloud, incluyendo configuración productiva de secretos, CORS, almacenamiento y componentes que deban escalarse.
+Consulta [INSTALLATION.md](INSTALLATION.md) para preparar una PC nueva, configurar PostgreSQL, instalar dependencias, arrancar cada módulo y ejecutar las pruebas.
 
-> Nota de despliegue: el rate limiter actual es adecuado para la ejecución de una sola instancia; si el backend se escala horizontalmente deberá migrarse a una solución compartida o de gateway. Las configuraciones productivas y secretos no deben almacenarse en el repositorio.
+## Validaciones principales
+
+Backend:
+
+```powershell
+cd back_velora
+.\mvnw.cmd test
+```
+
+Frontend:
+
+```powershell
+cd front_velora
+pnpm install
+pnpm run build
+```
+
+Android:
+
+```powershell
+cd mobile_velora
+.\gradlew.bat :app:compileDebugKotlin
+.\gradlew.bat :app:testDebugUnitTest
+```
+
+AI:
+
+```powershell
+.\ai_velora\.venv\Scripts\python.exe -m pip install -r ai_velora\requirements.txt
+.\ai_velora\.venv\Scripts\python.exe -m pip install -r ai_velora\requirements-dev.txt
+cd ai_velora
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+## Despliegue
+
+Objetivo de producción: Google Cloud.
+
+El despliegue se realizará después del cierre documental, checkpoint GitHub y tareas adicionales solicitadas antes de publicar producción.
+
+## Documentación
+
+`Punto 14` corresponde al cierre documental y no se presenta como una fase de implementación del producto.

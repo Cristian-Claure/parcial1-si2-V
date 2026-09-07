@@ -156,24 +156,38 @@ def cancel_tryon_job(
 
 def _provider(name: str | None):
     selected = (
-        name
-        if name is not None and name.strip()
-        else settings.velora_tryon_provider
+        settings.velora_tryon_provider
+        .strip()
+        .lower()
     )
+    requested = (
+        (name or "")
+        .strip()
+        .lower()
+    )
+
+    if requested and requested != selected:
+        raise TryOnServiceError(
+            (
+                "El proveedor de Try-On es administrado "
+                "por la configuraciÃ³n del servidor."
+            ),
+            400,
+        )
 
     try:
         provider = provider_for(selected)
     except TryOnProviderError as exc:
         raise TryOnServiceError(
             str(exc),
-            400,
+            503,
         ) from exc
 
     if not provider.status().configured:
         raise TryOnServiceError(
             (
-                "El proveedor de Try-On seleccionado "
-                "no está configurado."
+                "El proveedor de Try-On configurado "
+                "en el servidor no estÃ¡ disponible."
             ),
             503,
         )

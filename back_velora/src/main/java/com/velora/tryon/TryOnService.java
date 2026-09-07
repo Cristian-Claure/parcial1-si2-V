@@ -119,7 +119,6 @@ public class TryOnService {
             UUID userId,
             UUID productId,
             UUID variantId,
-            String providerValue,
             MultipartFile person
     ) {
         requireCustomer(userId);
@@ -165,7 +164,7 @@ public class TryOnService {
 
         TryOnProviderName provider =
                 TryOnProviderName.parse(
-                        providerValue,
+                        null,
                         defaultProvider
                 );
 
