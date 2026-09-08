@@ -88,3 +88,17 @@ back_velora/storage/
 
 # Local virtual try-on results (runtime only; GCS in production)
 back_velora/storage/try-on-results/
+# ==========================================
+# NEW STACK - Next.js / React / React Native
+# ==========================================
+node_modules/
+.pnpm-store/
+apps/api/.next/
+apps/api/coverage/
+apps/web/dist/
+apps/web/coverage/
+apps/mobile/.expo/
+apps/mobile/.expo-export-check/
+apps/mobile/dist/
+packages/*/dist/
+*.tsbuildinfo

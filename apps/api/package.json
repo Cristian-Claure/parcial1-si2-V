@@ -1,0 +1,29 @@
+{
+    "name": "@velora/api",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "test": "vitest run --passWithNoTests",
+        "typecheck": "tsc --noEmit",
+        "lint": "eslint ."
+    },
+    "dependencies": {
+        "@velora/config": "workspace:*",
+        "@velora/contracts": "workspace:*",
+        "@velora/database": "workspace:*",
+        "jose": "^6.2.12",
+        "next": "16.3.4",
+        "zod": "^4.5.4"
+    },
+    "devDependencies": {
+        "@types/node": "^20",
+        "@types/react": "^19",
+        "eslint": "^9",
+        "eslint-config-next": "16.3.4",
+        "typescript": "^5",
+        "vitest": "4.0.8"
+    }
+}
