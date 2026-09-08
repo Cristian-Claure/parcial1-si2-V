@@ -1,9 +1,26 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
+import tseslint from "typescript-eslint";
 
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"])
-]);
-
-export default eslintConfig;
+export default tseslint.config(
+  {
+    ignores: [
+      "dist/**",
+      "coverage/**",
+    ],
+  },
+  ...tseslint.configs.recommended,
+  {
+    files: [
+      "src/**/*.ts",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_"
+        }
+      ]
+    }
+  }
+);

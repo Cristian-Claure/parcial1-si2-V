@@ -1,40 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# VÉLORA API
 
-## Getting Started
+Backend REST headless de VÉLORA implementado con NestJS y TypeScript.
 
-First, run the development server:
+## Arquitectura
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+La API mantiene separación Clean Code por responsabilidad:
+
+- `controller`: capa HTTP;
+- `service`: reglas de negocio y casos de uso;
+- `repository`: persistencia PostgreSQL mediante Drizzle;
+- `guard`: autenticación y autorización;
+- `filter`: traducción uniforme de errores HTTP;
+- `packages/contracts`: contratos compartidos y validación Zod;
+- `packages/config`: configuración runtime;
+- `packages/database`: acceso y schema Drizzle.
+
+## Desarrollo
+
+Desde la raíz del monorepo:
+
+```powershell
+pnpm --filter @velora/api dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La API usa `PORT=3000` por defecto.
 
-You can start editing the page by modifying `app/route.ts`. The page auto-updates as you edit the file.
+Health check:
 
-## Learn More
+```text
+GET /api/health
+```
 
-To learn more about Next.js, take a look at the following resources:
+Autenticación:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Validación
 
-## Deploy on Vercel
+```powershell
+pnpm --filter @velora/api typecheck
+pnpm --filter @velora/api lint
+pnpm --filter @velora/api test
+pnpm --filter @velora/api build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Persistencia
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+PostgreSQL sigue siendo la fuente de datos. Las 23 migraciones Flyway históricas se preservan durante la migración tecnológica y Drizzle refleja el schema existente.
 
-## API Routes
+## Seguridad
 
-This directory contains example API routes for the headless API app.
+- JWT HS256 con issuer `velora`;
+- BCrypt con factor 10;
+- CORS configurable;
+- rate limiting de autenticación configurable;
+- secretos solo por variables de entorno/configuración segura.
 
-For more details, see [route.js file convention](https://nextjs.org/docs/app/api-reference/file-conventions/route).
+## Despliegue objetivo
+
+Microsoft Azure App Service para la API. El frontend React/PWA se desplegará por separado y la aplicación móvil usa React Native/Expo.
