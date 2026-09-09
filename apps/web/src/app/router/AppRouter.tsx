@@ -14,6 +14,7 @@ import { AdminDashboard, ManagerDashboard } from "../../features/operations/Dash
 import { CatalogManagementPage } from "../../features/operations/CatalogManagementPage";
 import { InventoryPage } from "../../features/operations/InventoryPage";
 import { OperationalOrdersPage } from "../../features/operations/OperationalOrdersPage";
+import { PosPage } from "../../features/operations/PosPage";
 import { DeferredPage } from "../../features/deferred/DeferredPage";
 
 function NotFound() { return <main className="page centered"><span className="eyebrow">404</span><h1>Ruta no encontrada</h1><p>La navegación React no reconoce esta dirección.</p></main>; }
@@ -41,7 +42,7 @@ export function AppRouter() {
       <Route path="admin/catalogo" element={<CatalogManagementPage />} />
       <Route path="admin/inventario" element={<InventoryPage />} />
       <Route path="admin/pedidos" element={<OperationalOrdersPage />} />
-      <Route path="admin/pos" element={<DeferredPage phase="N8" title="POS y cajas" description="El POS se migrará completo con sesiones de caja y venta física en N8." />} />
+      <Route path="admin/pos" element={<PosPage />} />
       <Route path="admin/reportes" element={<DeferredPage phase="N10" title="Reportes" description="Reportes, KPIs e integración IA se migrarán en N10." />} />
       <Route path="admin/auditoria" element={<DeferredPage phase="N10" title="Auditoría" description="La bitácora y trazabilidad administrativa se migrarán en N10." />} />
     </Route>
@@ -50,7 +51,7 @@ export function AppRouter() {
       <Route path="sucursal/catalogo" element={<CatalogManagementPage />} />
       <Route path="sucursal/inventario" element={<InventoryPage />} />
       <Route path="sucursal/pedidos" element={<OperationalOrdersPage />} />
-      <Route path="sucursal/pos" element={<DeferredPage phase="N8" title="POS de sucursal" description="El POS se migrará completo en N8." />} />
+      <Route path="sucursal/pos" element={<PosPage />} />
       <Route path="sucursal/reportes" element={<DeferredPage phase="N10" title="Reportes de sucursal" description="Los reportes operativos se migrarán en N10." />} />
     </Route>
     <Route path="*" element={<NotFound />} />

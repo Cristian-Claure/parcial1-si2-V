@@ -12,9 +12,10 @@ import { HealthModule } from "./health/health.module.js";
 import { InventoryModule } from "./inventory/inventory.module.js";
 import { OrdersModule } from "./orders/orders.module.js";
 import { PaymentsModule } from "./payments/payments.module.js";
+import { PosModule } from "./pos/pos.module.js";
 import { StoresModule } from "./stores/stores.module.js";
 
 @Module({
-  imports: [RuntimeConfigModule, HealthModule, AuthModule, AuthorizationModule, CompaniesModule, AdminModule, CustomerModule, StoresModule, CatalogModule, InventoryModule, CartModule, CheckoutModule, OrdersModule, PaymentsModule],
+  imports: [RuntimeConfigModule, HealthModule, AuthModule, AuthorizationModule, CompaniesModule, AdminModule, CustomerModule, StoresModule, CatalogModule, InventoryModule, CartModule, CheckoutModule, OrdersModule, PaymentsModule, PosModule],
 })
 export class AppModule {}

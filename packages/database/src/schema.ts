@@ -2201,6 +2201,469 @@ export type InventoryStockRow =
 
 export type InventoryMovementRow =
   typeof inventoryMovements.$inferSelect;
+export type DatabaseCashSessionStatus =
+  | "OPEN"
+  | "CLOSED";
+
+export type DatabaseCashMovementType =
+  | "CASH_IN"
+  | "CASH_OUT";
+
+export const pointsOfSale =
+  pgTable(
+    "points_of_sale",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      storeId:
+        uuid("store_id")
+          .notNull()
+          .references(
+            () => stores.id,
+          ),
+
+      warehouseId:
+        uuid("warehouse_id")
+          .notNull()
+          .references(
+            () => warehouses.id,
+          ),
+
+      code:
+        varchar(
+          "code",
+          {
+            length: 40,
+          },
+        )
+          .notNull(),
+
+      name:
+        varchar(
+          "name",
+          {
+            length: 120,
+          },
+        )
+          .notNull(),
+
+      active:
+        boolean("active")
+          .notNull()
+          .default(true),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone: true,
+            mode: "date",
+          },
+        )
+          .notNull(),
+
+      updatedAt:
+        timestamp(
+          "updated_at",
+          {
+            withTimezone: true,
+            mode: "date",
+          },
+        )
+          .notNull(),
+    },
+    (table) => [
+      unique(
+        "uq_points_of_sale_store_code",
+      ).on(
+        table.storeId,
+        table.code,
+      ),
+
+      unique(
+        "uq_points_of_sale_id_warehouse",
+      ).on(
+        table.id,
+        table.warehouseId,
+      ),
+
+      index(
+        "idx_points_of_sale_store",
+      ).on(
+        table.storeId,
+      ),
+
+      index(
+        "idx_points_of_sale_warehouse",
+      ).on(
+        table.warehouseId,
+      ),
+
+      index(
+        "idx_points_of_sale_active",
+      ).on(
+        table.active,
+      ),
+    ],
+  );
+
+export const cashSessions =
+  pgTable(
+    "cash_sessions",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      sessionNumber:
+        varchar(
+          "session_number",
+          {
+            length: 50,
+          },
+        )
+          .notNull()
+          .unique(),
+
+      pointOfSaleId:
+        uuid("point_of_sale_id")
+          .notNull()
+          .references(
+            () => pointsOfSale.id,
+          ),
+
+      openedBy:
+        uuid("opened_by")
+          .notNull()
+          .references(
+            () => appUsers.id,
+          ),
+
+      closedBy:
+        uuid("closed_by")
+          .references(
+            () => appUsers.id,
+          ),
+
+      status:
+        varchar(
+          "status",
+          {
+            length: 20,
+          },
+        )
+          .$type<DatabaseCashSessionStatus>()
+          .notNull(),
+
+      currency:
+        varchar(
+          "currency",
+          {
+            length: 3,
+          },
+        )
+          .notNull(),
+
+      openingAmount:
+        numeric(
+          "opening_amount",
+          {
+            precision: 12,
+            scale: 2,
+          },
+        )
+          .notNull(),
+
+      expectedCashAmount:
+        numeric(
+          "expected_cash_amount",
+          {
+            precision: 12,
+            scale: 2,
+          },
+        ),
+
+      countedCashAmount:
+        numeric(
+          "counted_cash_amount",
+          {
+            precision: 12,
+            scale: 2,
+          },
+        ),
+
+      cashDifference:
+        numeric(
+          "cash_difference",
+          {
+            precision: 12,
+            scale: 2,
+          },
+        ),
+
+      openingNotes:
+        varchar(
+          "opening_notes",
+          {
+            length: 500,
+          },
+        ),
+
+      closingNotes:
+        varchar(
+          "closing_notes",
+          {
+            length: 500,
+          },
+        ),
+
+      openedAt:
+        timestamp(
+          "opened_at",
+          {
+            withTimezone: true,
+            mode: "date",
+          },
+        )
+          .notNull(),
+
+      closedAt:
+        timestamp(
+          "closed_at",
+          {
+            withTimezone: true,
+            mode: "date",
+          },
+        ),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone: true,
+            mode: "date",
+          },
+        )
+          .notNull(),
+
+      updatedAt:
+        timestamp(
+          "updated_at",
+          {
+            withTimezone: true,
+            mode: "date",
+          },
+        )
+          .notNull(),
+
+      version:
+        bigint(
+          "version",
+          {
+            mode: "number",
+          },
+        )
+          .notNull()
+          .default(0),
+    },
+    (table) => [
+      unique(
+        "uq_cash_sessions_id_pos",
+      ).on(
+        table.id,
+        table.pointOfSaleId,
+      ),
+
+      uniqueIndex(
+        "uq_cash_sessions_open_pos",
+      )
+        .on(
+          table.pointOfSaleId,
+        )
+        .where(
+          sql`
+            ${table.status}
+            = 'OPEN'
+          `,
+        ),
+
+      index(
+        "idx_cash_sessions_pos",
+      ).on(
+        table.pointOfSaleId,
+        table.openedAt,
+      ),
+
+      index(
+        "idx_cash_sessions_opened_by",
+      ).on(
+        table.openedBy,
+        table.openedAt,
+      ),
+
+      index(
+        "idx_cash_sessions_status",
+      ).on(
+        table.status,
+      ),
+
+      check(
+        "ck_cash_sessions_status",
+        sql`
+          ${table.status}
+          in ('OPEN', 'CLOSED')
+        `,
+      ),
+
+      check(
+        "ck_cash_sessions_opening_amount",
+        sql`${table.openingAmount} >= 0`,
+      ),
+
+      check(
+        "ck_cash_sessions_expected_amount",
+        sql`
+          ${table.expectedCashAmount}
+          is null
+          or ${table.expectedCashAmount} >= 0
+        `,
+      ),
+
+      check(
+        "ck_cash_sessions_counted_amount",
+        sql`
+          ${table.countedCashAmount}
+          is null
+          or ${table.countedCashAmount} >= 0
+        `,
+      ),
+
+      check(
+        "ck_cash_sessions_state",
+        sql`
+          (
+            ${table.status} = 'OPEN'
+            and ${table.closedBy} is null
+            and ${table.closedAt} is null
+            and ${table.expectedCashAmount} is null
+            and ${table.countedCashAmount} is null
+            and ${table.cashDifference} is null
+          )
+          or
+          (
+            ${table.status} = 'CLOSED'
+            and ${table.closedBy} is not null
+            and ${table.closedAt} is not null
+            and ${table.expectedCashAmount} is not null
+            and ${table.countedCashAmount} is not null
+            and ${table.cashDifference} is not null
+          )
+        `,
+      ),
+    ],
+  );
+
+export const cashMovements =
+  pgTable(
+    "cash_movements",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      cashSessionId:
+        uuid("cash_session_id")
+          .notNull()
+          .references(
+            () => cashSessions.id,
+          ),
+
+      movementType:
+        varchar(
+          "movement_type",
+          {
+            length: 20,
+          },
+        )
+          .$type<DatabaseCashMovementType>()
+          .notNull(),
+
+      amount:
+        numeric(
+          "amount",
+          {
+            precision: 12,
+            scale: 2,
+          },
+        )
+          .notNull(),
+
+      reason:
+        varchar(
+          "reason",
+          {
+            length: 500,
+          },
+        )
+          .notNull(),
+
+      createdBy:
+        uuid("created_by")
+          .notNull()
+          .references(
+            () => appUsers.id,
+          ),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone: true,
+            mode: "date",
+          },
+        )
+          .notNull(),
+    },
+    (table) => [
+      index(
+        "idx_cash_movements_session",
+      ).on(
+        table.cashSessionId,
+        table.createdAt,
+      ),
+
+      index(
+        "idx_cash_movements_type",
+      ).on(
+        table.movementType,
+      ),
+
+      check(
+        "ck_cash_movements_type",
+        sql`
+          ${table.movementType}
+          in ('CASH_IN', 'CASH_OUT')
+        `,
+      ),
+
+      check(
+        "ck_cash_movements_amount",
+        sql`${table.amount} > 0`,
+      ),
+    ],
+  );
+
+export type PointOfSaleRow =
+  typeof pointsOfSale.$inferSelect;
+
+export type CashSessionRow =
+  typeof cashSessions.$inferSelect;
+
+export type CashMovementRow =
+  typeof cashMovements.$inferSelect;
+
 export const shoppingCarts =
   pgTable(
     "shopping_carts",
@@ -2927,6 +3390,32 @@ export const orders =
             is not null
           `,
         ),
+
+      foreignKey({
+        columns: [
+          table.pointOfSaleId,
+          table.warehouseId,
+        ],
+        foreignColumns: [
+          pointsOfSale.id,
+          pointsOfSale.warehouseId,
+        ],
+        name:
+          "fk_orders_pos_warehouse",
+      }),
+
+      foreignKey({
+        columns: [
+          table.cashSessionId,
+          table.pointOfSaleId,
+        ],
+        foreignColumns: [
+          cashSessions.id,
+          cashSessions.pointOfSaleId,
+        ],
+        name:
+          "fk_orders_cash_session_pos",
+      }),
 
       check(
         "ck_orders_channel",
