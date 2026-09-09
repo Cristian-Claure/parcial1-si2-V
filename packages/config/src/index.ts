@@ -142,6 +142,18 @@ export const serverRuntimeConfigSchema =
           "http://localhost:5173/mis-pedidos",
         ),
 
+    VELORA_PUBLIC_BACKEND_URL:
+      z
+        .string()
+        .url()
+        .regex(
+          /^https?:\/\//,
+          "VELORA_PUBLIC_BACKEND_URL debe usar http o https.",
+        )
+        .default(
+          "http://127.0.0.1:8080",
+        ),
+
     OPENAI_API_KEY:
       z
         .string()

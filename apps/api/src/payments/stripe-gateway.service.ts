@@ -15,6 +15,11 @@ import {
   ApiHttpError,
 } from "../common/http/api-http.error.js";
 
+import {
+  stripeCheckoutRedirects,
+  type StripeReturnTarget,
+} from "./stripe-return-target.js";
+
 export interface StripePaymentSnapshot {
   id:
     string;
@@ -129,6 +134,9 @@ export class StripeGatewayService {
   async createCheckoutSession(
     input:
       StripeCheckoutInput,
+    returnTarget:
+      StripeReturnTarget =
+        "WEB",
   ): Promise<StripeCheckoutSession> {
     const secret =
       this.requireSecretKey();
@@ -138,9 +146,25 @@ export class StripeGatewayService {
         input.amount,
       );
 
+    const redirects =
+      stripeCheckoutRedirects(
+        {
+          webSuccessUrl:
+            this.config.value
+              .STRIPE_SUCCESS_URL,
+          webCancelUrl:
+            this.config.value
+              .STRIPE_CANCEL_URL,
+          publicBackendUrl:
+            this.config.value
+              .VELORA_PUBLIC_BACKEND_URL,
+        },
+        returnTarget,
+        input.paymentId,
+      );
+
     const successBase =
-      this.config.value
-        .STRIPE_SUCCESS_URL;
+      redirects.successBase;
 
     const successUrl =
       successBase +
@@ -168,8 +192,7 @@ export class StripeGatewayService {
     );
     body.set(
       "cancel_url",
-      this.config.value
-        .STRIPE_CANCEL_URL,
+      redirects.cancelUrl,
     );
     body.set(
       "client_reference_id",

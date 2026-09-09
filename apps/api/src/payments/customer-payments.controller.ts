@@ -235,6 +235,32 @@ export class CustomerPaymentsController {
           request,
         ),
         orderId,
+        "WEB",
+      );
+  }
+
+  @Post(
+    "orders/:orderId/payments/stripe-checkout/mobile",
+  )
+  stripeCheckoutMobile(
+    @Req()
+    request:
+      AuthenticatedRequest,
+
+    @Param(
+      "orderId",
+      new ParseUUIDPipe(),
+    )
+    orderId:
+      string,
+  ): Promise<StripeCheckoutResponse> {
+    return this.payments
+      .stripeCheckout(
+        this.principal(
+          request,
+        ),
+        orderId,
+        "MOBILE",
       );
   }
 

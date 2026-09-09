@@ -1,56 +1,80 @@
-# Welcome to your Expo app 👋
+# VÉLORA Mobile · React Native + Expo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación móvil CUSTOMER del monorepo VÉLORA.
 
-## Get started
+## Stack
 
-1. Install dependencies
+- React Native 0.86
+- Expo SDK 57
+- Expo Router
+- TanStack Query
+- Zustand
+- Expo SecureStore para la sesión
+- Expo SQLite para caché y cola offline
+- NetInfo para conectividad
+- `@velora/contracts` como contratos compartidos
 
-   ```bash
-   npm install
-   ```
+## Alcance N7
 
-2. Start the app
+- Login y registro CUSTOMER.
+- Restauración segura de sesión.
+- Selección explícita de Company cuando existe más de una.
+- Home, catálogo, detalle y variantes.
+- Favoritos.
+- Bolsa.
+- Checkout DELIVERY/PICKUP.
+- Perfil y direcciones.
+- Pedidos y pagos.
+- Stripe Checkout mediante navegador seguro.
+- Caché offline y cola de pedidos con idempotencia.
+- Estados offline `PENDING`, `SYNCING` y `CONFLICT`.
+- Sincronización al recuperar conexión.
 
-   ```bash
-   npx expo start
-   ```
+La bolsa no reserva inventario. Un pedido offline tampoco reserva inventario ni
+crea pagos hasta que el backend lo sincroniza correctamente.
 
-In the output, you'll find options to open the app in a
+PICKUP usa únicamente una Store cuyo `default_warehouse` pueda cubrir la bolsa
+completa; esa elegibilidad la decide el backend autoritativo.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Configuración local
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+El valor por defecto para Android Emulator es:
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```text
+http://10.0.2.2:8080
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Puede sobrescribirse mediante:
 
-### Other setup steps
+```text
+EXPO_PUBLIC_API_BASE_URL
+EXPO_PUBLIC_STOREFRONT_COMPANY_ID
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+`EXPO_PUBLIC_STOREFRONT_COMPANY_ID` puede quedar vacío. Si existe una sola
+Company activa, la aplicación la selecciona automáticamente. Con varias
+Companies y sin configuración previa, el cliente debe escoger explícitamente.
 
-## Learn more
+## Ejecutar
 
-To learn more about developing your project with Expo, look at the following resources:
+Desde la raíz del monorepo:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```powershell
+pnpm install --frozen-lockfile
+pnpm build:packages
+pnpm --filter @velora/mobile typecheck
+pnpm --filter @velora/mobile start
+```
 
-## Join the community
+Validación de bundle Android:
 
-Join our community of developers creating universal apps.
+```powershell
+pnpm --filter @velora/mobile validate:bundle
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Fases posteriores
+
+- POS: N8.
+- Virtual Try-On + IA + Azure Blob: N9.
+- Reports + Audit: N10.
+- Integración cloud/plataforma, CI/CD y Azure: N11.

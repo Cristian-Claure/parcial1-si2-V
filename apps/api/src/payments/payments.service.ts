@@ -263,6 +263,10 @@ export class PaymentsService {
       AuthPrincipal,
     orderId:
       string,
+    returnTarget:
+      "WEB" |
+      "MOBILE" =
+        "WEB",
   ): Promise<StripeCheckoutResponse> {
     const customerId =
       await this.requireCustomer(
@@ -278,6 +282,7 @@ export class PaymentsService {
             this.stripe
               .createCheckoutSession(
                 input,
+                returnTarget,
               ),
         );
 

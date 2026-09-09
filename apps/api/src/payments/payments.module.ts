@@ -23,6 +23,10 @@ import {
 } from "./payment-operations.controller.js";
 
 import {
+  MobileStripeReturnController,
+} from "./mobile-stripe-return.controller.js";
+
+import {
   PaymentsRepository,
 } from "./payments.repository.js";
 
@@ -51,6 +55,7 @@ import {
   controllers: [
     CustomerPaymentsController,
     PaymentOperationsController,
+    MobileStripeReturnController,
     StripeWebhookController,
   ],
   providers: [
