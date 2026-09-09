@@ -77,6 +77,9 @@ export const warehouseResponseSchema =
 
     active:
       z.boolean(),
+
+    defaultWarehouse:
+      z.boolean(),
   });
 
 export type WarehouseResponse =

@@ -23,6 +23,10 @@ import {
 } from "./health/health.module.js";
 
 import {
+  InventoryModule,
+} from "./inventory/inventory.module.js";
+
+import {
   StoresModule,
 } from "./stores/stores.module.js";
 
@@ -34,6 +38,7 @@ import {
     AuthorizationModule,
     StoresModule,
     CatalogModule,
+    InventoryModule,
   ],
 })
 export class AppModule {}
