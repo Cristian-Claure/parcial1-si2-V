@@ -293,3 +293,26 @@ export type OrderResponse =
   z.infer<
     typeof orderResponseSchema
   >;
+export const fulfillmentTypeSchema =
+  z.enum([
+    "DELIVERY",
+    "PICKUP",
+    "IN_STORE",
+  ]);
+
+export type FulfillmentType =
+  z.infer<
+    typeof fulfillmentTypeSchema
+  >;
+
+export const operationalOrderResponseSchema =
+  orderResponseSchema
+    .extend({
+      fulfillmentType:
+        fulfillmentTypeSchema,
+    });
+
+export type OperationalOrderResponse =
+  z.infer<
+    typeof operationalOrderResponseSchema
+  >;

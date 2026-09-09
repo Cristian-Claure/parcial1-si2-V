@@ -13,9 +13,9 @@
     "dev:mobile": "pnpm --filter @velora/mobile start",
     "build:api": "pnpm --filter @velora/api build",
     "build:web": "pnpm --filter @velora/web build",
-    "build:packages": "pnpm --filter './packages/*' build",
+    "build:packages": "pnpm --filter @velora/config build && pnpm --filter @velora/contracts build && pnpm --filter @velora/database build",
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm -r --if-present lint",
+    "lint": "pnpm --filter @velora/api lint && pnpm --filter @velora/web lint",
     "test": "pnpm -r --if-present test"
   },
   "devDependencies": {

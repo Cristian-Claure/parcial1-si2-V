@@ -126,6 +126,22 @@ export const serverRuntimeConfigSchema =
         .string()
         .optional(),
 
+    STRIPE_SUCCESS_URL:
+      z
+        .string()
+        .min(1)
+        .default(
+          "http://localhost:5173/pago/stripe/retorno",
+        ),
+
+    STRIPE_CANCEL_URL:
+      z
+        .string()
+        .min(1)
+        .default(
+          "http://localhost:5173/mis-pedidos",
+        ),
+
     OPENAI_API_KEY:
       z
         .string()

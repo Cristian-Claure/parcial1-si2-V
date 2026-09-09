@@ -39,6 +39,10 @@ import {
 } from "./orders/orders.module.js";
 
 import {
+  PaymentsModule,
+} from "./payments/payments.module.js";
+
+import {
   StoresModule,
 } from "./stores/stores.module.js";
 
@@ -54,6 +58,7 @@ import {
     CartModule,
     CheckoutModule,
     OrdersModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}

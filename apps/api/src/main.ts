@@ -58,6 +58,10 @@ async function bootstrap():
         NestExpressApplication
       >(
         AppModule,
+        {
+          rawBody:
+            true,
+        },
       );
 
   const config =
@@ -108,6 +112,7 @@ async function bootstrap():
     allowedHeaders: [
       "Authorization",
       "Content-Type",
+      "Stripe-Signature",
     ],
 
     credentials:

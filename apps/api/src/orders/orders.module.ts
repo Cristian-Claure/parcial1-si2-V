@@ -15,6 +15,18 @@ import {
 } from "../database/database.module.js";
 
 import {
+  OrderOperationsController,
+} from "./order-operations.controller.js";
+
+import {
+  OrderOperationsRepository,
+} from "./order-operations.repository.js";
+
+import {
+  OrderOperationsService,
+} from "./order-operations.service.js";
+
+import {
   OrdersController,
 } from "./orders.controller.js";
 
@@ -34,10 +46,13 @@ import {
   ],
   controllers: [
     OrdersController,
+    OrderOperationsController,
   ],
   providers: [
     OrdersRepository,
     OrdersService,
+    OrderOperationsRepository,
+    OrderOperationsService,
   ],
 })
 export class OrdersModule {}
