@@ -2201,3 +2201,185 @@ export type InventoryStockRow =
 
 export type InventoryMovementRow =
   typeof inventoryMovements.$inferSelect;
+export const shoppingCarts =
+  pgTable(
+    "shopping_carts",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      userId:
+        uuid("user_id")
+          .notNull()
+          .references(
+            () =>
+              appUsers.id,
+          ),
+
+      status:
+        varchar(
+          "status",
+          {
+            length:
+              20,
+          },
+        )
+          .$type<
+            | "ACTIVE"
+            | "CONVERTED"
+            | "ABANDONED"
+          >()
+          .notNull(),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+
+      updatedAt:
+        timestamp(
+          "updated_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+    },
+    (table) => [
+      index(
+        "idx_shopping_carts_user",
+      ).on(
+        table.userId,
+      ),
+
+      check(
+        "ck_shopping_carts_status",
+        sql`
+          ${table.status}
+          in (
+            'ACTIVE',
+            'CONVERTED',
+            'ABANDONED'
+          )
+        `,
+      ),
+
+      uniqueIndex(
+        "uq_shopping_carts_active_user",
+      )
+        .on(
+          table.userId,
+        )
+        .where(
+          sql`
+            ${table.status}
+            =
+            'ACTIVE'
+          `,
+        ),
+    ],
+  );
+
+export const shoppingCartItems =
+  pgTable(
+    "shopping_cart_items",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      cartId:
+        uuid("cart_id")
+          .notNull()
+          .references(
+            () =>
+              shoppingCarts.id,
+            {
+              onDelete:
+                "cascade",
+            },
+          ),
+
+      variantId:
+        uuid("variant_id")
+          .notNull()
+          .references(
+            () =>
+              productVariants.id,
+          ),
+
+      quantity:
+        integer(
+          "quantity",
+        )
+          .notNull(),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+
+      updatedAt:
+        timestamp(
+          "updated_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+    },
+    (table) => [
+      unique(
+        "uq_shopping_cart_item_variant",
+      ).on(
+        table.cartId,
+        table.variantId,
+      ),
+
+      index(
+        "idx_shopping_cart_items_cart",
+      ).on(
+        table.cartId,
+      ),
+
+      index(
+        "idx_shopping_cart_items_variant",
+      ).on(
+        table.variantId,
+      ),
+
+      check(
+        "ck_shopping_cart_items_quantity",
+        sql`
+          ${table.quantity}
+          >
+          0
+        `,
+      ),
+    ],
+  );

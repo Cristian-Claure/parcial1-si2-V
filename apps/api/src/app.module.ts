@@ -7,6 +7,10 @@ import {
 } from "./auth/auth.module.js";
 
 import {
+  CartModule,
+} from "./cart/cart.module.js";
+
+import {
   CatalogModule,
 } from "./catalog/catalog.module.js";
 
@@ -39,6 +43,7 @@ import {
     StoresModule,
     CatalogModule,
     InventoryModule,
+    CartModule,
   ],
 })
 export class AppModule {}
