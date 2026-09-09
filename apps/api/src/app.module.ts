@@ -7,6 +7,10 @@ import {
 } from "./auth/auth.module.js";
 
 import {
+  CatalogModule,
+} from "./catalog/catalog.module.js";
+
+import {
   AuthorizationModule,
 } from "./common/authz/authorization.module.js";
 
@@ -29,6 +33,7 @@ import {
     AuthModule,
     AuthorizationModule,
     StoresModule,
+    CatalogModule,
   ],
 })
 export class AppModule {}

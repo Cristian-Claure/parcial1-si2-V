@@ -2,6 +2,21 @@ import {
   z,
 } from "zod";
 
+import {
+  companyIdSchema,
+} from "./companies.js";
+
+export const catalogCompanyQuerySchema =
+  z.object({
+    companyId:
+      companyIdSchema,
+  });
+
+export type CatalogCompanyQuery =
+  z.infer<
+    typeof catalogCompanyQuerySchema
+  >;
+
 export const productStatusSchema =
   z.enum([
     "DRAFT",
@@ -43,7 +58,7 @@ export type ProductImagePurpose =
 export const categoryRequestSchema =
   z.object({
     companyId:
-      z.string().uuid(),
+      companyIdSchema,
 
     name:
       z.string()
@@ -83,7 +98,7 @@ export type CategoryRequest =
 export const categoryResponseSchema =
   z.object({
     companyId:
-      z.string().uuid(),
+      companyIdSchema,
 
     id:
       z.string().uuid(),
@@ -163,6 +178,7 @@ export const variantRequestSchema =
 
     currency:
       z.string()
+        .trim()
         .length(3)
         .nullable()
         .optional(),
@@ -326,7 +342,7 @@ export type ImageResponse =
 export const productRequestSchema =
   z.object({
     companyId:
-      z.string().uuid(),
+      companyIdSchema,
 
     categoryId:
       z.string().uuid(),
@@ -425,7 +441,7 @@ export type ProductRequest =
 export const productResponseSchema =
   z.object({
     companyId:
-      z.string().uuid(),
+      companyIdSchema,
 
     id:
       z.string().uuid(),
