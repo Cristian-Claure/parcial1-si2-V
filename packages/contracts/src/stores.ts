@@ -2,6 +2,10 @@ import {
   z,
 } from "zod";
 
+import {
+  companyIdSchema,
+} from "./companies.js";
+
 const nullableText =
   z.string().nullable();
 
@@ -11,7 +15,7 @@ export const storeSchema =
       z.string().uuid(),
 
     companyId:
-      z.string().uuid(),
+      companyIdSchema,
 
     code:
       z.string()
@@ -61,10 +65,21 @@ export type Store =
     typeof storeSchema
   >;
 
+export const listStoresQuerySchema =
+  z.object({
+    companyId:
+      companyIdSchema,
+  });
+
+export type ListStoresQuery =
+  z.infer<
+    typeof listStoresQuerySchema
+  >;
+
 export const createStoreRequestSchema =
   z.object({
     companyId:
-      z.string().uuid(),
+      companyIdSchema,
 
     code:
       z.string()
@@ -92,6 +107,7 @@ export const createStoreRequestSchema =
 
     address:
       z.string()
+        .trim()
         .max(240)
         .nullable()
         .optional(),
@@ -108,7 +124,7 @@ export const storeResponseSchema =
       z.string().uuid(),
 
     companyId:
-      z.string().uuid(),
+      companyIdSchema,
 
     code:
       z.string(),

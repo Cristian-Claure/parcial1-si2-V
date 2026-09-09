@@ -72,6 +72,10 @@ export interface UserRecord {
   storeName:
     string |
     null;
+
+  storeCompanyId:
+    string |
+    null;
 }
 
 const userSelection = {
@@ -113,6 +117,9 @@ const userSelection = {
 
   storeName:
     stores.name,
+
+  storeCompanyId:
+    stores.companyId,
 } as const;
 
 @Injectable()
@@ -313,6 +320,9 @@ export class UsersRepository {
       ...user,
 
       storeName:
+        null,
+
+      storeCompanyId:
         null,
     };
   }

@@ -7,6 +7,10 @@ import {
 } from "./auth/auth.module.js";
 
 import {
+  AuthorizationModule,
+} from "./common/authz/authorization.module.js";
+
+import {
   RuntimeConfigModule,
 } from "./common/config/runtime-config.module.js";
 
@@ -14,11 +18,17 @@ import {
   HealthModule,
 } from "./health/health.module.js";
 
+import {
+  StoresModule,
+} from "./stores/stores.module.js";
+
 @Module({
   imports: [
     RuntimeConfigModule,
     HealthModule,
     AuthModule,
+    AuthorizationModule,
+    StoresModule,
   ],
 })
 export class AppModule {}
