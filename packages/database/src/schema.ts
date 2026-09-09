@@ -62,9 +62,9 @@ export type DatabaseInventoryMovementType =
   | "TRANSFER_IN"
   | "TRANSFER_OUT";
 
-export const stores =
+export const companies =
   pgTable(
-    "stores",
+    "companies",
     {
       id:
         uuid("id")
@@ -80,6 +80,95 @@ export const stores =
         )
           .notNull()
           .unique(),
+
+      name:
+        varchar(
+          "name",
+          {
+            length:
+              160,
+          },
+        )
+          .notNull(),
+
+      description:
+        varchar(
+          "description",
+          {
+            length:
+              500,
+          },
+        ),
+
+      active:
+        boolean("active")
+          .notNull()
+          .default(true),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+
+      updatedAt:
+        timestamp(
+          "updated_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+    },
+    (table) => [
+      index(
+        "idx_companies_active",
+      ).on(
+        table.active,
+      ),
+    ],
+  );
+
+export const stores =
+  pgTable(
+    "stores",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      companyId:
+        uuid("company_id")
+          .notNull()
+          .references(
+            () =>
+              companies.id,
+            {
+              onDelete:
+                "restrict",
+            },
+          ),
+
+      code:
+        varchar(
+          "code",
+          {
+            length:
+              40,
+          },
+        )
+          .notNull(),
 
       name:
         varchar(
@@ -168,6 +257,19 @@ export const stores =
           .notNull(),
     },
     (table) => [
+      unique(
+        "uq_stores_company_code",
+      ).on(
+        table.companyId,
+        table.code,
+      ),
+
+      index(
+        "idx_stores_company_id",
+      ).on(
+        table.companyId,
+      ),
+
       index(
         "idx_stores_city",
       ).on(
@@ -422,6 +524,18 @@ export const categories =
         uuid("id")
           .primaryKey(),
 
+      companyId:
+        uuid("company_id")
+          .notNull()
+          .references(
+            () =>
+              companies.id,
+            {
+              onDelete:
+                "restrict",
+            },
+          ),
+
       parentId:
         uuid("parent_id"),
 
@@ -443,8 +557,7 @@ export const categories =
               140,
           },
         )
-          .notNull()
-          .unique(),
+          .notNull(),
 
       description:
         varchar(
@@ -487,18 +600,40 @@ export const categories =
           .notNull(),
     },
     (table) => [
+      unique(
+        "uq_categories_company_id_id",
+      ).on(
+        table.companyId,
+        table.id,
+      ),
+
+      unique(
+        "uq_categories_company_slug",
+      ).on(
+        table.companyId,
+        table.slug,
+      ),
+
       foreignKey({
         columns: [
+          table.companyId,
           table.parentId,
         ],
 
         foreignColumns: [
+          table.companyId,
           table.id,
         ],
 
         name:
-          "categories_parent_id_fkey",
+          "fk_categories_company_parent",
       }),
+
+      index(
+        "idx_categories_company_id",
+      ).on(
+        table.companyId,
+      ),
 
       index(
         "idx_categories_parent_id",
@@ -534,13 +669,21 @@ export const products =
         uuid("id")
           .primaryKey(),
 
-      categoryId:
-        uuid("category_id")
+      companyId:
+        uuid("company_id")
           .notNull()
           .references(
             () =>
-              categories.id,
+              companies.id,
+            {
+              onDelete:
+                "restrict",
+            },
           ),
+
+      categoryId:
+        uuid("category_id")
+          .notNull(),
 
       name:
         varchar(
@@ -560,8 +703,7 @@ export const products =
               200,
           },
         )
-          .notNull()
-          .unique(),
+          .notNull(),
 
       description:
         text("description"),
@@ -678,6 +820,34 @@ export const products =
           .notNull(),
     },
     (table) => [
+      unique(
+        "uq_products_company_slug",
+      ).on(
+        table.companyId,
+        table.slug,
+      ),
+
+      foreignKey({
+        columns: [
+          table.companyId,
+          table.categoryId,
+        ],
+
+        foreignColumns: [
+          categories.companyId,
+          categories.id,
+        ],
+
+        name:
+          "fk_products_company_category",
+      }),
+
+      index(
+        "idx_products_company_id",
+      ).on(
+        table.companyId,
+      ),
+
       index(
         "idx_products_category_id",
       ).on(
@@ -1587,10 +1757,45 @@ export const inventoryMovements =
     ],
   );
 
+export const companiesRelations =
+  relations(
+    companies,
+    ({ many }) => ({
+      stores:
+        many(
+          stores,
+        ),
+
+      categories:
+        many(
+          categories,
+        ),
+
+      products:
+        many(
+          products,
+        ),
+    }),
+  );
+
 export const storesRelations =
   relations(
     stores,
-    ({ many }) => ({
+    ({ one, many }) => ({
+      company:
+        one(
+          companies,
+          {
+            fields: [
+              stores.companyId,
+            ],
+
+            references: [
+              companies.id,
+            ],
+          },
+        ),
+
       users:
         many(
           appUsers,
@@ -1654,15 +1859,31 @@ export const categoriesRelations =
   relations(
     categories,
     ({ one, many }) => ({
+      company:
+        one(
+          companies,
+          {
+            fields: [
+              categories.companyId,
+            ],
+
+            references: [
+              companies.id,
+            ],
+          },
+        ),
+
       parent:
         one(
           categories,
           {
             fields: [
+              categories.companyId,
               categories.parentId,
             ],
 
             references: [
+              categories.companyId,
               categories.id,
             ],
 
@@ -1691,15 +1912,31 @@ export const productsRelations =
   relations(
     products,
     ({ one, many }) => ({
+      company:
+        one(
+          companies,
+          {
+            fields: [
+              products.companyId,
+            ],
+
+            references: [
+              companies.id,
+            ],
+          },
+        ),
+
       category:
         one(
           categories,
           {
             fields: [
+              products.companyId,
               products.categoryId,
             ],
 
             references: [
+              categories.companyId,
               categories.id,
             ],
           },
@@ -1934,6 +2171,9 @@ export const inventoryMovementsRelations =
         ),
     }),
   );
+
+export type CompanyRow =
+  typeof companies.$inferSelect;
 
 export type StoreRow =
   typeof stores.$inferSelect;

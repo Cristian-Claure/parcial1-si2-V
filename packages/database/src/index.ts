@@ -15,10 +15,10 @@ export const VELORA_DATABASE_BASELINE = {
     "postgresql",
 
   historicalMigrations:
-    23,
+    24,
 
   migrationPolicy:
-    "preserve-v1-v23",
+    "preserve-v1-v24",
 } as const;
 
 export function createDatabase(

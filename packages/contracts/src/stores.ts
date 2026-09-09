@@ -10,6 +10,9 @@ export const storeSchema =
     id:
       z.string().uuid(),
 
+    companyId:
+      z.string().uuid(),
+
     code:
       z.string()
         .max(40),
@@ -60,6 +63,9 @@ export type Store =
 
 export const createStoreRequestSchema =
   z.object({
+    companyId:
+      z.string().uuid(),
+
     code:
       z.string()
         .trim()
@@ -99,6 +105,9 @@ export type CreateStoreRequest =
 export const storeResponseSchema =
   z.object({
     id:
+      z.string().uuid(),
+
+    companyId:
       z.string().uuid(),
 
     code:

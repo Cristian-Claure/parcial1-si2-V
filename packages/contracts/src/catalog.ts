@@ -42,6 +42,9 @@ export type ProductImagePurpose =
 
 export const categoryRequestSchema =
   z.object({
+    companyId:
+      z.string().uuid(),
+
     name:
       z.string()
         .trim()
@@ -79,6 +82,9 @@ export type CategoryRequest =
 
 export const categoryResponseSchema =
   z.object({
+    companyId:
+      z.string().uuid(),
+
     id:
       z.string().uuid(),
 
@@ -319,6 +325,9 @@ export type ImageResponse =
 
 export const productRequestSchema =
   z.object({
+    companyId:
+      z.string().uuid(),
+
     categoryId:
       z.string().uuid(),
 
@@ -415,6 +424,9 @@ export type ProductRequest =
 
 export const productResponseSchema =
   z.object({
+    companyId:
+      z.string().uuid(),
+
     id:
       z.string().uuid(),
 
