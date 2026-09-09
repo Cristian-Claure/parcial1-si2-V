@@ -3691,6 +3691,73 @@ export const paymentStatusHistory =
     ],
   );
 
+export const customerFavorites =
+  pgTable(
+    "customer_favorites",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      customerId:
+        uuid("customer_id")
+          .notNull()
+          .references(
+            () => appUsers.id,
+            {
+              onDelete:
+                "cascade",
+            },
+          ),
+
+      productId:
+        uuid("product_id")
+          .notNull()
+          .references(
+            () => products.id,
+            {
+              onDelete:
+                "cascade",
+            },
+          ),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+    },
+    (table) => [
+      unique(
+        "uq_customer_favorites_customer_product",
+      ).on(
+        table.customerId,
+        table.productId,
+      ),
+
+      index(
+        "idx_customer_favorites_customer",
+      ).on(
+        table.customerId,
+      ),
+
+      index(
+        "idx_customer_favorites_product",
+      ).on(
+        table.productId,
+      ),
+    ],
+  );
+
+export type CustomerFavoriteRow =
+  typeof customerFavorites.$inferSelect;
 export type CustomerAddressRow =
   typeof customerAddresses.$inferSelect;
 

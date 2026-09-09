@@ -6,6 +6,8 @@ export * from "./inventory.js";
 export * from "./cart.js";
 export * from "./orders.js";
 export * from "./payments.js";
+export * from "./customer.js";
+export * from "./admin.js";
+export * from "./operations.js";
 
-export const VELORA_API_CONTRACT_VERSION =
-  "company-domain-v1" as const;
+export const VELORA_API_CONTRACT_VERSION = "react-web-parity-v1" as const;
