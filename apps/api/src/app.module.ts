@@ -23,12 +23,20 @@ import {
 } from "./common/config/runtime-config.module.js";
 
 import {
+  CheckoutModule,
+} from "./checkout/checkout.module.js";
+
+import {
   HealthModule,
 } from "./health/health.module.js";
 
 import {
   InventoryModule,
 } from "./inventory/inventory.module.js";
+
+import {
+  OrdersModule,
+} from "./orders/orders.module.js";
 
 import {
   StoresModule,
@@ -44,6 +52,8 @@ import {
     CatalogModule,
     InventoryModule,
     CartModule,
+    CheckoutModule,
+    OrdersModule,
   ],
 })
 export class AppModule {}

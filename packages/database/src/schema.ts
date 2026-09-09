@@ -2383,3 +2383,1325 @@ export const shoppingCartItems =
       ),
     ],
   );
+export type DatabaseOrderChannel =
+  | "ECOMMERCE"
+  | "POS";
+
+export type DatabaseFulfillmentType =
+  | "DELIVERY"
+  | "PICKUP"
+  | "IN_STORE";
+
+export type DatabaseOrderStatus =
+  | "RESERVED"
+  | "CANCELLED"
+  | "FULFILLED";
+
+export const customerAddresses =
+  pgTable(
+    "customer_addresses",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      userId:
+        uuid("user_id")
+          .notNull()
+          .references(
+            () =>
+              appUsers.id,
+          ),
+
+      label:
+        varchar(
+          "label",
+          {
+            length:
+              60,
+          },
+        )
+          .notNull(),
+
+      recipientName:
+        varchar(
+          "recipient_name",
+          {
+            length:
+              180,
+          },
+        )
+          .notNull(),
+
+      recipientPhone:
+        varchar(
+          "recipient_phone",
+          {
+            length:
+              40,
+          },
+        )
+          .notNull(),
+
+      department:
+        varchar(
+          "department",
+          {
+            length:
+              100,
+          },
+        )
+          .notNull(),
+
+      city:
+        varchar(
+          "city",
+          {
+            length:
+              100,
+          },
+        )
+          .notNull(),
+
+      zone:
+        varchar(
+          "zone",
+          {
+            length:
+              120,
+          },
+        ),
+
+      addressLine:
+        varchar(
+          "address_line",
+          {
+            length:
+              240,
+          },
+        )
+          .notNull(),
+
+      reference:
+        varchar(
+          "reference",
+          {
+            length:
+              300,
+          },
+        ),
+
+      isDefault:
+        boolean(
+          "is_default",
+        )
+          .notNull()
+          .default(false),
+
+      active:
+        boolean("active")
+          .notNull()
+          .default(true),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+
+      updatedAt:
+        timestamp(
+          "updated_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+    },
+    (table) => [
+      index(
+        "idx_customer_addresses_user_id",
+      ).on(
+        table.userId,
+      ),
+
+      index(
+        "idx_customer_addresses_user_active",
+      ).on(
+        table.userId,
+        table.active,
+      ),
+
+      uniqueIndex(
+        "uq_customer_default_active_address",
+      )
+        .on(
+          table.userId,
+        )
+        .where(
+          sql`
+            ${table.isDefault}
+            =
+            true
+            and
+            ${table.active}
+            =
+            true
+          `,
+        ),
+    ],
+  );
+
+export const orders =
+  pgTable(
+    "orders",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      orderNumber:
+        varchar(
+          "order_number",
+          {
+            length:
+              40,
+          },
+        )
+          .notNull()
+          .unique(),
+
+      customerId:
+        uuid(
+          "customer_id",
+        )
+          .references(
+            () =>
+              appUsers.id,
+          ),
+
+      sourceCartId:
+        uuid(
+          "source_cart_id",
+        )
+          .references(
+            () =>
+              shoppingCarts.id,
+          )
+          .unique(),
+
+      warehouseId:
+        uuid(
+          "warehouse_id",
+        )
+          .notNull()
+          .references(
+            () =>
+              warehouses.id,
+          ),
+
+      addressId:
+        uuid(
+          "address_id",
+        )
+          .references(
+            () =>
+              customerAddresses.id,
+          ),
+
+      orderChannel:
+        varchar(
+          "order_channel",
+          {
+            length:
+              20,
+          },
+        )
+          .$type<
+            DatabaseOrderChannel
+          >()
+          .notNull(),
+
+      pointOfSaleId:
+        uuid(
+          "point_of_sale_id",
+        ),
+
+      cashSessionId:
+        uuid(
+          "cash_session_id",
+        ),
+
+      fulfillmentType:
+        varchar(
+          "fulfillment_type",
+          {
+            length:
+              20,
+          },
+        )
+          .$type<
+            DatabaseFulfillmentType
+          >()
+          .notNull(),
+
+      status:
+        varchar(
+          "status",
+          {
+            length:
+              20,
+          },
+        )
+          .$type<
+            DatabaseOrderStatus
+          >()
+          .notNull(),
+
+      currency:
+        varchar(
+          "currency",
+          {
+            length:
+              3,
+          },
+        )
+          .notNull(),
+
+      subtotal:
+        numeric(
+          "subtotal",
+          {
+            precision:
+              12,
+
+            scale:
+              2,
+          },
+        )
+          .notNull(),
+
+      total:
+        numeric(
+          "total",
+          {
+            precision:
+              12,
+
+            scale:
+              2,
+          },
+        )
+          .notNull(),
+
+      recipientName:
+        varchar(
+          "recipient_name",
+          {
+            length:
+              180,
+          },
+        ),
+
+      recipientPhone:
+        varchar(
+          "recipient_phone",
+          {
+            length:
+              40,
+          },
+        ),
+
+      department:
+        varchar(
+          "department",
+          {
+            length:
+              100,
+          },
+        ),
+
+      city:
+        varchar(
+          "city",
+          {
+            length:
+              100,
+          },
+        ),
+
+      zone:
+        varchar(
+          "zone",
+          {
+            length:
+              120,
+          },
+        ),
+
+      addressLine:
+        varchar(
+          "address_line",
+          {
+            length:
+              240,
+          },
+        ),
+
+      addressReference:
+        varchar(
+          "address_reference",
+          {
+            length:
+              300,
+          },
+        ),
+
+      notes:
+        varchar(
+          "notes",
+          {
+            length:
+              500,
+          },
+        ),
+
+      clientOperationId:
+        uuid(
+          "client_operation_id",
+        ),
+
+      clientCreatedAt:
+        timestamp(
+          "client_created_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        ),
+
+      syncedAt:
+        timestamp(
+          "synced_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        ),
+
+      cancelledAt:
+        timestamp(
+          "cancelled_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        ),
+
+      fulfilledAt:
+        timestamp(
+          "fulfilled_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        ),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+
+      updatedAt:
+        timestamp(
+          "updated_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+    },
+    (table) => [
+      index(
+        "idx_orders_customer",
+      ).on(
+        table.customerId,
+        table.createdAt,
+      ),
+
+      index(
+        "idx_orders_warehouse",
+      ).on(
+        table.warehouseId,
+        table.createdAt,
+      ),
+
+      index(
+        "idx_orders_status",
+      ).on(
+        table.status,
+      ),
+
+      index(
+        "idx_orders_channel",
+      ).on(
+        table.orderChannel,
+      ),
+
+      index(
+        "idx_orders_point_of_sale",
+      ).on(
+        table.pointOfSaleId,
+        table.createdAt,
+      ),
+
+      index(
+        "idx_orders_cash_session",
+      ).on(
+        table.cashSessionId,
+        table.createdAt,
+      ),
+
+      uniqueIndex(
+        "uq_orders_client_operation",
+      )
+        .on(
+          table.clientOperationId,
+        )
+        .where(
+          sql`
+            ${table.clientOperationId}
+            is not null
+          `,
+        ),
+
+      index(
+        "idx_orders_ecommerce_offline_sync",
+      )
+        .on(
+          table.customerId,
+          table.syncedAt,
+        )
+        .where(
+          sql`
+            ${table.orderChannel}
+            =
+            'ECOMMERCE'
+            and
+            ${table.clientOperationId}
+            is not null
+          `,
+        ),
+
+      check(
+        "ck_orders_channel",
+        sql`
+          ${table.orderChannel}
+          in (
+            'ECOMMERCE',
+            'POS'
+          )
+        `,
+      ),
+
+      check(
+        "ck_orders_fulfillment_type",
+        sql`
+          ${table.fulfillmentType}
+          in (
+            'DELIVERY',
+            'PICKUP',
+            'IN_STORE'
+          )
+        `,
+      ),
+
+      check(
+        "ck_orders_status",
+        sql`
+          ${table.status}
+          in (
+            'RESERVED',
+            'CANCELLED',
+            'FULFILLED'
+          )
+        `,
+      ),
+
+      check(
+        "ck_orders_totals",
+        sql`
+          ${table.subtotal}
+          >= 0
+          and
+          ${table.total}
+          >= 0
+        `,
+      ),
+
+      check(
+        "ck_orders_channel_shape",
+        sql`
+          (
+            ${table.orderChannel}
+            =
+            'ECOMMERCE'
+            and
+            ${table.customerId}
+            is not null
+            and
+            ${table.pointOfSaleId}
+            is null
+            and
+            ${table.cashSessionId}
+            is null
+            and
+            (
+              (
+                ${table.sourceCartId}
+                is not null
+                and
+                ${table.clientOperationId}
+                is null
+                and
+                ${table.clientCreatedAt}
+                is null
+                and
+                ${table.syncedAt}
+                is null
+              )
+              or
+              (
+                ${table.sourceCartId}
+                is null
+                and
+                ${table.clientOperationId}
+                is not null
+                and
+                ${table.clientCreatedAt}
+                is not null
+                and
+                ${table.syncedAt}
+                is not null
+              )
+            )
+          )
+          or
+          (
+            ${table.orderChannel}
+            =
+            'POS'
+            and
+            ${table.sourceCartId}
+            is null
+            and
+            ${table.pointOfSaleId}
+            is not null
+            and
+            ${table.cashSessionId}
+            is not null
+            and
+            ${table.fulfillmentType}
+            =
+            'IN_STORE'
+          )
+        `,
+      ),
+
+      check(
+        "ck_orders_fulfillment_address",
+        sql`
+          (
+            ${table.orderChannel}
+            =
+            'ECOMMERCE'
+            and
+            ${table.fulfillmentType}
+            =
+            'DELIVERY'
+            and
+            ${table.addressId}
+            is not null
+            and
+            ${table.recipientName}
+            is not null
+            and
+            ${table.recipientPhone}
+            is not null
+            and
+            ${table.department}
+            is not null
+            and
+            ${table.city}
+            is not null
+            and
+            ${table.addressLine}
+            is not null
+          )
+          or
+          (
+            ${table.orderChannel}
+            =
+            'ECOMMERCE'
+            and
+            ${table.fulfillmentType}
+            =
+            'PICKUP'
+            and
+            ${table.addressId}
+            is null
+          )
+          or
+          (
+            ${table.orderChannel}
+            =
+            'POS'
+            and
+            ${table.fulfillmentType}
+            =
+            'IN_STORE'
+            and
+            ${table.addressId}
+            is null
+          )
+        `,
+      ),
+    ],
+  );
+
+export const orderItems =
+  pgTable(
+    "order_items",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      orderId:
+        uuid(
+          "order_id",
+        )
+          .notNull()
+          .references(
+            () =>
+              orders.id,
+            {
+              onDelete:
+                "cascade",
+            },
+          ),
+
+      variantId:
+        uuid(
+          "variant_id",
+        )
+          .notNull()
+          .references(
+            () =>
+              productVariants.id,
+          ),
+
+      productName:
+        varchar(
+          "product_name",
+          {
+            length:
+              180,
+          },
+        )
+          .notNull(),
+
+      sku:
+        varchar(
+          "sku",
+          {
+            length:
+              80,
+          },
+        )
+          .notNull(),
+
+      size:
+        varchar(
+          "size",
+          {
+            length:
+              30,
+          },
+        )
+          .notNull(),
+
+      color:
+        varchar(
+          "color",
+          {
+            length:
+              80,
+          },
+        )
+          .notNull(),
+
+      unitPrice:
+        numeric(
+          "unit_price",
+          {
+            precision:
+              12,
+
+            scale:
+              2,
+          },
+        )
+          .notNull(),
+
+      currency:
+        varchar(
+          "currency",
+          {
+            length:
+              3,
+          },
+        )
+          .notNull(),
+
+      quantity:
+        integer(
+          "quantity",
+        )
+          .notNull(),
+
+      subtotal:
+        numeric(
+          "subtotal",
+          {
+            precision:
+              12,
+
+            scale:
+              2,
+          },
+        )
+          .notNull(),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+    },
+    (table) => [
+      unique(
+        "uq_order_item_variant",
+      ).on(
+        table.orderId,
+        table.variantId,
+      ),
+
+      index(
+        "idx_order_items_order",
+      ).on(
+        table.orderId,
+      ),
+
+      index(
+        "idx_order_items_variant",
+      ).on(
+        table.variantId,
+      ),
+
+      check(
+        "ck_order_items_quantity",
+        sql`
+          ${table.quantity}
+          >
+          0
+        `,
+      ),
+
+      check(
+        "ck_order_items_amounts",
+        sql`
+          ${table.unitPrice}
+          >=
+          0
+          and
+          ${table.subtotal}
+          >=
+          0
+        `,
+      ),
+    ],
+  );
+
+
+export type DatabasePaymentMethod =
+  | "COD"
+  | "CASH"
+  | "CARD"
+  | "WEB"
+  | "QR";
+
+export type DatabasePaymentStatus =
+  | "PENDING"
+  | "PAID"
+  | "FAILED"
+  | "CANCELLED"
+  | "REFUNDED";
+
+export const payments =
+  pgTable(
+    "payments",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      orderId:
+        uuid("order_id")
+          .notNull()
+          .references(
+            () =>
+              orders.id,
+          ),
+
+      method:
+        varchar(
+          "method",
+          {
+            length:
+              20,
+          },
+        )
+          .$type<
+            DatabasePaymentMethod
+          >()
+          .notNull(),
+
+      status:
+        varchar(
+          "status",
+          {
+            length:
+              20,
+          },
+        )
+          .$type<
+            DatabasePaymentStatus
+          >()
+          .notNull(),
+
+      amount:
+        numeric(
+          "amount",
+          {
+            precision:
+              12,
+
+            scale:
+              2,
+          },
+        )
+          .notNull(),
+
+      currency:
+        varchar(
+          "currency",
+          {
+            length:
+              3,
+          },
+        )
+          .notNull(),
+
+      provider:
+        varchar(
+          "provider",
+          {
+            length:
+              80,
+          },
+        ),
+
+      externalReference:
+        varchar(
+          "external_reference",
+          {
+            length:
+              160,
+          },
+        ),
+
+      notes:
+        varchar(
+          "notes",
+          {
+            length:
+              500,
+          },
+        ),
+
+      createdBy:
+        uuid("created_by")
+          .notNull()
+          .references(
+            () =>
+              appUsers.id,
+          ),
+
+      processedBy:
+        uuid("processed_by")
+          .references(
+            () =>
+              appUsers.id,
+          ),
+
+      paidAt:
+        timestamp(
+          "paid_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        ),
+
+      failedAt:
+        timestamp(
+          "failed_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        ),
+
+      cancelledAt:
+        timestamp(
+          "cancelled_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        ),
+
+      refundedAt:
+        timestamp(
+          "refunded_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        ),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+
+      updatedAt:
+        timestamp(
+          "updated_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+    },
+    (table) => [
+      index(
+        "idx_payments_order",
+      ).on(
+        table.orderId,
+        table.createdAt,
+      ),
+
+      index(
+        "idx_payments_status",
+      ).on(
+        table.status,
+      ),
+
+      index(
+        "idx_payments_method",
+      ).on(
+        table.method,
+      ),
+
+      uniqueIndex(
+        "uq_payments_pending_order",
+      )
+        .on(
+          table.orderId,
+        )
+        .where(
+          sql`
+            ${table.status}
+            =
+            'PENDING'
+          `,
+        ),
+
+      uniqueIndex(
+        "uq_payments_paid_order",
+      )
+        .on(
+          table.orderId,
+        )
+        .where(
+          sql`
+            ${table.status}
+            =
+            'PAID'
+          `,
+        ),
+
+      uniqueIndex(
+        "uq_payments_provider_reference",
+      )
+        .on(
+          table.provider,
+          table.externalReference,
+        )
+        .where(
+          sql`
+            ${table.provider}
+            is not null
+            and
+            ${table.externalReference}
+            is not null
+          `,
+        ),
+
+      check(
+        "ck_payments_method",
+        sql`
+          ${table.method}
+          in (
+            'COD',
+            'CASH',
+            'CARD',
+            'WEB',
+            'QR'
+          )
+        `,
+      ),
+
+      check(
+        "ck_payments_status",
+        sql`
+          ${table.status}
+          in (
+            'PENDING',
+            'PAID',
+            'FAILED',
+            'CANCELLED',
+            'REFUNDED'
+          )
+        `,
+      ),
+
+      check(
+        "ck_payments_amount",
+        sql`
+          ${table.amount}
+          >
+          0
+        `,
+      ),
+    ],
+  );
+
+export const paymentStatusHistory =
+  pgTable(
+    "payment_status_history",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      paymentId:
+        uuid("payment_id")
+          .notNull()
+          .references(
+            () =>
+              payments.id,
+            {
+              onDelete:
+                "cascade",
+            },
+          ),
+
+      fromStatus:
+        varchar(
+          "from_status",
+          {
+            length:
+              20,
+          },
+        )
+          .$type<
+            DatabasePaymentStatus
+          >(),
+
+      toStatus:
+        varchar(
+          "to_status",
+          {
+            length:
+              20,
+          },
+        )
+          .$type<
+            DatabasePaymentStatus
+          >()
+          .notNull(),
+
+      changedBy:
+        uuid("changed_by")
+          .notNull()
+          .references(
+            () =>
+              appUsers.id,
+          ),
+
+      reason:
+        varchar(
+          "reason",
+          {
+            length:
+              500,
+          },
+        ),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+    },
+    (table) => [
+      index(
+        "idx_payment_history_payment",
+      ).on(
+        table.paymentId,
+        table.createdAt,
+      ),
+
+      check(
+        "ck_payment_history_from_status",
+        sql`
+          ${table.fromStatus}
+          is null
+          or
+          ${table.fromStatus}
+          in (
+            'PENDING',
+            'PAID',
+            'FAILED',
+            'CANCELLED',
+            'REFUNDED'
+          )
+        `,
+      ),
+
+      check(
+        "ck_payment_history_to_status",
+        sql`
+          ${table.toStatus}
+          in (
+            'PENDING',
+            'PAID',
+            'FAILED',
+            'CANCELLED',
+            'REFUNDED'
+          )
+        `,
+      ),
+    ],
+  );
+
+export type CustomerAddressRow =
+  typeof customerAddresses.$inferSelect;
+
+export type OrderRow =
+  typeof orders.$inferSelect;
+
+export type OrderItemRow =
+  typeof orderItems.$inferSelect;
+
+export type PaymentRow =
+  typeof payments.$inferSelect;
+
+export type PaymentStatusHistoryRow =
+  typeof paymentStatusHistory.$inferSelect;
