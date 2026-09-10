@@ -135,6 +135,7 @@ export function Field({
 export type CustomerNavKey =
   | "home"
   | "catalog"
+  | "tryon"
   | "favorites"
   | "cart"
   | "account";
@@ -146,6 +147,7 @@ const navItems: Array<{
 }> = [
   { key: "home", label: "Inicio", href: "/home" },
   { key: "catalog", label: "Catálogo", href: "/catalog" },
+  { key: "tryon", label: "Probador", href: "/try-on" },
   { key: "favorites", label: "Favoritos", href: "/favorites" },
   { key: "cart", label: "Bolsa", href: "/cart" },
   { key: "account", label: "Cuenta", href: "/account" },
@@ -230,7 +232,7 @@ const styles = StyleSheet.create({
   },
   navText: {
     color: colors.muted,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
   },
   navTextActive: {

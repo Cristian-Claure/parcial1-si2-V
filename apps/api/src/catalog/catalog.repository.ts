@@ -171,6 +171,10 @@ export interface ImageRecord {
   purpose:
     DatabaseProductImagePurpose;
 
+  storageKey:
+    string |
+    null;
+
   sortOrder:
     number;
 
@@ -263,6 +267,9 @@ const imageSelection = {
 
   purpose:
     productImages.purpose,
+
+  storageKey:
+    productImages.storageKey,
 
   sortOrder:
     productImages.sortOrder,

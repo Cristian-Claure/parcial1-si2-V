@@ -10,6 +10,7 @@ import { CheckoutPage } from "../../features/checkout/CheckoutPage";
 import { OrdersPage } from "../../features/orders/OrdersPage";
 import { AccountPage } from "../../features/account/AccountPage";
 import { StripeReturnPage } from "../../features/payments/StripeReturnPage";
+import { TryOnPage } from "../../features/try-on/TryOnPage";
 import { AdminDashboard, ManagerDashboard } from "../../features/operations/Dashboards";
 import { CatalogManagementPage } from "../../features/operations/CatalogManagementPage";
 import { InventoryPage } from "../../features/operations/InventoryPage";
@@ -35,7 +36,7 @@ export function AppRouter() {
       <Route path="mis-pedidos" element={<OrdersPage />} />
       <Route path="mi-cuenta" element={<AccountPage />} />
       <Route path="pago/stripe/retorno" element={<StripeReturnPage />} />
-      <Route path="probador" element={<DeferredPage phase="N9" title="Probador Virtual" description="El frontend se conectará cuando migremos Try-On, AI y Azure Blob Storage." />} />
+      <Route path="probador" element={<TryOnPage />} />
     </Route>
     <Route element={<RequireRole roles={["ADMIN"]}><OperationsShell role="ADMIN" /></RequireRole>}>
       <Route path="admin" element={<AdminDashboard />} />

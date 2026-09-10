@@ -43,12 +43,71 @@ export function storedAccessToken(): string | null {
   }
 }
 
+function authHeaders(
+  initHeaders?: HeadersInit,
+): Headers {
+  const headers = new Headers(initHeaders);
+  const token = storedAccessToken();
+
+  if (token) {
+    headers.set(
+      "Authorization",
+      `Bearer ${token}`,
+    );
+  }
+
+  return headers;
+}
+
+async function responseError(
+  response: Response,
+): Promise<ApiClientError> {
+  const contentType =
+    response.headers.get("content-type") ?? "";
+
+  let payload: unknown = null;
+
+  try {
+    payload = contentType.includes("application/json")
+      ? await response.json() as unknown
+      : await response.text();
+  }
+  catch {
+    payload = null;
+  }
+
+  const candidate =
+    payload as Partial<ApiError> | null;
+
+  const message =
+    candidate &&
+    typeof candidate === "object" &&
+    typeof candidate.message === "string"
+      ? candidate.message
+      : `La solicitud falló (${response.status}).`;
+
+  const errors =
+    candidate &&
+    typeof candidate === "object" &&
+    candidate.errors
+      ? candidate.errors
+      : {};
+
+  return new ApiClientError(
+    response.status,
+    message,
+    errors,
+  );
+}
+
 export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
   auth = true,
 ): Promise<T> {
-  const headers = new Headers(init.headers);
+  const headers = auth
+    ? authHeaders(init.headers)
+    : new Headers(init.headers);
 
   if (
     init.body &&
@@ -59,17 +118,6 @@ export async function apiRequest<T>(
       "Content-Type",
       "application/json",
     );
-  }
-
-  if (auth) {
-    const token = storedAccessToken();
-
-    if (token) {
-      headers.set(
-        "Authorization",
-        `Bearer ${token}`,
-      );
-    }
   }
 
   let response: Response;
@@ -90,6 +138,12 @@ export async function apiRequest<T>(
     );
   }
 
+  if (!response.ok) {
+    throw await responseError(
+      response,
+    );
+  }
+
   if (response.status === 204) {
     return undefined as T;
   }
@@ -102,32 +156,37 @@ export async function apiRequest<T>(
       ? await response.json() as unknown
       : await response.text();
 
-  if (!response.ok) {
-    const candidate =
-      responsePayload as Partial<ApiError> | null;
+  return responsePayload as T;
+}
 
-    const message =
-      candidate &&
-      typeof candidate === "object" &&
-      typeof candidate.message === "string"
-        ? candidate.message
-        : `La solicitud falló (${response.status}).`;
+export async function apiBlobRequest(
+  path: string,
+): Promise<Blob> {
+  let response: Response;
 
-    const errors =
-      candidate &&
-      typeof candidate === "object" &&
-      candidate.errors
-        ? candidate.errors
-        : {};
-
+  try {
+    response = await fetch(
+      `${apiBaseUrl}${path}`,
+      {
+        headers:
+          authHeaders(),
+      },
+    );
+  }
+  catch {
     throw new ApiClientError(
-      response.status,
-      message,
-      errors,
+      0,
+      "No hay conexión con el servidor.",
     );
   }
 
-  return responsePayload as T;
+  if (!response.ok) {
+    throw await responseError(
+      response,
+    );
+  }
+
+  return response.blob();
 }
 
 export const jsonBody = (

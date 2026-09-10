@@ -76,6 +76,77 @@ function booleanFromEnv(
   );
 }
 
+function optionalStringFromEnv() {
+  return z.preprocess(
+    (value) => {
+      if (
+        typeof value === "string" &&
+        value.trim() === ""
+      ) {
+        return undefined;
+      }
+
+      return value;
+    },
+    z
+      .string()
+      .trim()
+      .min(1)
+      .optional(),
+  );
+}
+
+function optionalHttpUrlFromEnv() {
+  return z.preprocess(
+    (value) => {
+      if (
+        typeof value === "string" &&
+        value.trim() === ""
+      ) {
+        return undefined;
+      }
+
+      return value;
+    },
+    z
+      .string()
+      .url()
+      .regex(
+        /^https?:\/\//,
+        "La URL debe usar http o https.",
+      )
+      .optional(),
+  );
+}
+
+function httpUrlFromEnv(
+  fallback: string,
+) {
+  return z.preprocess(
+    (value) => {
+      if (
+        value === undefined ||
+        value === null ||
+        (
+          typeof value === "string" &&
+          value.trim() === ""
+        )
+      ) {
+        return fallback;
+      }
+
+      return value;
+    },
+    z
+      .string()
+      .url()
+      .regex(
+        /^https?:\/\//,
+        "La URL debe usar http o https.",
+      ),
+  );
+}
+
 export const serverRuntimeConfigSchema =
   z.object({
     DATABASE_URL:
@@ -117,14 +188,10 @@ export const serverRuntimeConfigSchema =
       ),
 
     STRIPE_SECRET_KEY:
-      z
-        .string()
-        .optional(),
+      optionalStringFromEnv(),
 
     STRIPE_WEBHOOK_SECRET:
-      z
-        .string()
-        .optional(),
+      optionalStringFromEnv(),
 
     STRIPE_SUCCESS_URL:
       z
@@ -143,26 +210,127 @@ export const serverRuntimeConfigSchema =
         ),
 
     VELORA_PUBLIC_BACKEND_URL:
-      z
-        .string()
-        .url()
-        .regex(
-          /^https?:\/\//,
-          "VELORA_PUBLIC_BACKEND_URL debe usar http o https.",
-        )
-        .default(
-          "http://127.0.0.1:8080",
-        ),
+      httpUrlFromEnv(
+        "http://127.0.0.1:8080",
+      ),
 
     OPENAI_API_KEY:
-      z
-        .string()
-        .optional(),
+      optionalStringFromEnv(),
+
+    VELORA_AI_MODEL:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() !== ""
+            ? value.trim()
+            : "gpt-5.6-luna",
+        z.string().min(1),
+      ),
+
+    VELORA_AI_MAX_CATALOG_PRODUCTS:
+      positiveIntegerFromEnv(
+        120,
+      ),
+
+    VELORA_OPENAI_BASE_URL:
+      httpUrlFromEnv(
+        "https://api.openai.com/v1",
+      ),
 
     REPLICATE_API_TOKEN:
-      z
-        .string()
-        .optional(),
+      optionalStringFromEnv(),
+
+    VELORA_REPLICATE_BASE_URL:
+      httpUrlFromEnv(
+        "https://api.replicate.com/v1",
+      ),
+
+    VELORA_TRYON_PROVIDER:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() !== ""
+            ? value.trim().toUpperCase()
+            : "LOCAL",
+        z.enum([
+          "LOCAL",
+          "REPLICATE",
+        ]),
+      ),
+
+    VELORA_TRYON_LOCAL_URL:
+      optionalHttpUrlFromEnv(),
+
+    VELORA_TRYON_LOCAL_MODEL:
+      optionalStringFromEnv(),
+
+    VELORA_TRYON_REPLICATE_MODEL:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() !== ""
+            ? value.trim()
+            : "prunaai/p-image-try-on",
+        z.string().min(3),
+      ),
+
+    VELORA_TRYON_MAX_INPUT_BYTES:
+      positiveIntegerFromEnv(
+        5 * 1024 * 1024,
+      ),
+
+    VELORA_TRYON_PROVIDER_TIMEOUT_SECONDS:
+      positiveIntegerFromEnv(
+        30,
+      ),
+
+    VELORA_TRYON_RESULT_MAX_BYTES:
+      positiveIntegerFromEnv(
+        12 * 1024 * 1024,
+      ),
+
+    VELORA_ASSET_STORAGE_PROVIDER:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() !== ""
+            ? value.trim().toUpperCase()
+            : "LOCAL",
+        z.enum([
+          "LOCAL",
+          "AZURE_BLOB",
+        ]),
+      ),
+
+    VELORA_ASSET_LOCAL_DIR:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() !== ""
+            ? value.trim()
+            : "./storage/assets",
+        z.string().min(1),
+      ),
+
+    AZURE_STORAGE_CONNECTION_STRING:
+      optionalStringFromEnv(),
+
+    VELORA_AZURE_BLOB_CONTAINER:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() !== ""
+            ? value.trim().toLowerCase()
+            : "velora-assets",
+        z
+          .string()
+          .min(3)
+          .max(63)
+          .regex(
+            /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/,
+            "El nombre del contenedor Azure Blob es inválido.",
+          ),
+      ),
   });
 
 export type ServerRuntimeConfig =

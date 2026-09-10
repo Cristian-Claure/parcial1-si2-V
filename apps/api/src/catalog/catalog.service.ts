@@ -1084,10 +1084,12 @@ export class CatalogService {
         product.tryOnEnabled &&
         product.tryOnCategory !==
           null &&
-        imageResponses.some(
+        images.some(
           (image) =>
             image.purpose ===
-            "TRY_ON_GARMENT",
+              "TRY_ON_GARMENT" &&
+            image.storageKey !==
+              null,
         ),
 
       variants:

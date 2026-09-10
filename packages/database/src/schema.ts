@@ -51,6 +51,17 @@ export type DatabaseProductImagePurpose =
   | "GALLERY"
   | "TRY_ON_GARMENT";
 
+export type DatabaseTryOnProvider =
+  | "LOCAL"
+  | "REPLICATE";
+
+export type DatabaseTryOnJobStatus =
+  | "QUEUED"
+  | "PROCESSING"
+  | "SUCCEEDED"
+  | "FAILED"
+  | "CANCELLED";
+
 export type DatabaseInventoryMovementType =
   | "ENTRY"
   | "ADJUSTMENT_IN"
@@ -1260,6 +1271,281 @@ export const productImages =
           ${table.storageKey}
           ~
           '^[0-9a-fA-F-]{36}\.(jpg|png|webp)$'
+        `,
+      ),
+    ],
+  );
+
+
+export const tryOnJobs =
+  pgTable(
+    "try_on_jobs",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      userId:
+        uuid("user_id")
+          .notNull()
+          .references(
+            () =>
+              appUsers.id,
+            {
+              onDelete:
+                "cascade",
+            },
+          ),
+
+      productId:
+        uuid("product_id")
+          .notNull()
+          .references(
+            () =>
+              products.id,
+          ),
+
+      variantId:
+        uuid("variant_id")
+          .references(
+            () =>
+              productVariants.id,
+          ),
+
+      garmentImageId:
+        uuid("garment_image_id")
+          .notNull()
+          .references(
+            () =>
+              productImages.id,
+          ),
+
+      provider:
+        varchar(
+          "provider",
+          {
+            length:
+              20,
+          },
+        )
+          .$type<
+            DatabaseTryOnProvider
+          >()
+          .notNull(),
+
+      externalJobId:
+        varchar(
+          "external_job_id",
+          {
+            length:
+              255,
+          },
+        ),
+
+      status:
+        varchar(
+          "status",
+          {
+            length:
+              20,
+          },
+        )
+          .$type<
+            DatabaseTryOnJobStatus
+          >()
+          .notNull(),
+
+      resultStorageKey:
+        varchar(
+          "result_storage_key",
+          {
+            length:
+              120,
+          },
+        ),
+
+      resultContentType:
+        varchar(
+          "result_content_type",
+          {
+            length:
+              60,
+          },
+        ),
+
+      resultSizeBytes:
+        bigint(
+          "result_size_bytes",
+          {
+            mode:
+              "number",
+          },
+        ),
+
+      errorMessage:
+        varchar(
+          "error_message",
+          {
+            length:
+              500,
+          },
+        ),
+
+      durationMs:
+        bigint(
+          "duration_ms",
+          {
+            mode:
+              "number",
+          },
+        ),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone:
+              true,
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+
+      updatedAt:
+        timestamp(
+          "updated_at",
+          {
+            withTimezone:
+              true,
+            mode:
+              "date",
+          },
+        )
+          .notNull(),
+
+      completedAt:
+        timestamp(
+          "completed_at",
+          {
+            withTimezone:
+              true,
+            mode:
+              "date",
+          },
+        ),
+    },
+    (table) => [
+      index(
+        "idx_try_on_jobs_user_created",
+      ).on(
+        table.userId,
+        table.createdAt.desc(),
+      ),
+
+      index(
+        "idx_try_on_jobs_user_status",
+      ).on(
+        table.userId,
+        table.status,
+      ),
+
+      uniqueIndex(
+        "uq_try_on_jobs_provider_external",
+      )
+        .on(
+          table.provider,
+          table.externalJobId,
+        )
+        .where(
+          sql`
+            ${table.externalJobId}
+            is not null
+          `,
+        ),
+
+      check(
+        "ck_try_on_jobs_provider",
+        sql`
+          ${table.provider}
+          in (
+            'LOCAL',
+            'REPLICATE'
+          )
+        `,
+      ),
+
+      check(
+        "ck_try_on_jobs_status",
+        sql`
+          ${table.status}
+          in (
+            'QUEUED',
+            'PROCESSING',
+            'SUCCEEDED',
+            'FAILED',
+            'CANCELLED'
+          )
+        `,
+      ),
+
+      check(
+        "ck_try_on_jobs_result_size",
+        sql`
+          ${table.resultSizeBytes}
+          is null
+          or
+          ${table.resultSizeBytes}
+          > 0
+        `,
+      ),
+
+      check(
+        "ck_try_on_jobs_duration",
+        sql`
+          ${table.durationMs}
+          is null
+          or
+          ${table.durationMs}
+          >= 0
+        `,
+      ),
+
+      check(
+        "ck_try_on_jobs_result_shape",
+        sql`
+          (
+            ${table.resultStorageKey}
+            is null
+            and
+            ${table.resultContentType}
+            is null
+            and
+            ${table.resultSizeBytes}
+            is null
+          )
+          or
+          (
+            ${table.resultStorageKey}
+            is not null
+            and
+            ${table.resultContentType}
+            is not null
+            and
+            ${table.resultSizeBytes}
+            is not null
+          )
+        `,
+      ),
+
+      check(
+        "ck_try_on_jobs_success_has_result",
+        sql`
+          ${table.status}
+          <> 'SUCCEEDED'
+          or
+          ${table.resultStorageKey}
+          is not null
         `,
       ),
     ],

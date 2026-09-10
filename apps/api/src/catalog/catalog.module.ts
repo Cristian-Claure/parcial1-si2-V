@@ -15,6 +15,23 @@ import {
 } from "../database/database.module.js";
 
 import {
+  StorageModule,
+} from "../storage/storage.module.js";
+
+import {
+  CatalogAssetsManageController,
+  CatalogAssetsPublicController,
+} from "./catalog-assets.controller.js";
+
+import {
+  CatalogAssetsRepository,
+} from "./catalog-assets.repository.js";
+
+import {
+  CatalogAssetsService,
+} from "./catalog-assets.service.js";
+
+import {
   CatalogManageController,
   CatalogPublicController,
 } from "./catalog.controller.js";
@@ -32,14 +49,19 @@ import {
     DatabaseModule,
     AuthModule,
     AuthorizationModule,
+    StorageModule,
   ],
   controllers: [
     CatalogPublicController,
     CatalogManageController,
+    CatalogAssetsPublicController,
+    CatalogAssetsManageController,
   ],
   providers: [
     CatalogRepository,
     CatalogService,
+    CatalogAssetsRepository,
+    CatalogAssetsService,
   ],
 })
 export class CatalogModule {}

@@ -4,7 +4,7 @@ import { useAuthStore } from "../../core/auth/authStore";
 import { useCompanyStore } from "../../core/company/companyStore";
 
 const customerNav = [
-  ["Catálogo", "/catalogo"], ["Favoritos", "/favoritos"], ["Mi bolsa", "/bolsa"], ["Mis pedidos", "/mis-pedidos"], ["Mi cuenta", "/mi-cuenta"],
+  ["Catálogo", "/catalogo"], ["Probador", "/probador"], ["Favoritos", "/favoritos"], ["Mi bolsa", "/bolsa"], ["Mis pedidos", "/mis-pedidos"], ["Mi cuenta", "/mi-cuenta"],
 ] as const;
 const adminNav = [
   ["Dashboard", "/admin"], ["Catálogo", "/admin/catalogo"], ["Inventario", "/admin/inventario"], ["Pedidos", "/admin/pedidos"],
