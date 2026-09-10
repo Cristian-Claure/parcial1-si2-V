@@ -16,7 +16,8 @@ import { CatalogManagementPage } from "../../features/operations/CatalogManageme
 import { InventoryPage } from "../../features/operations/InventoryPage";
 import { OperationalOrdersPage } from "../../features/operations/OperationalOrdersPage";
 import { PosPage } from "../../features/operations/PosPage";
-import { DeferredPage } from "../../features/deferred/DeferredPage";
+import { ReportsPage } from "../../features/reports/ReportsPage";
+import { AuditPage } from "../../features/audit/AuditPage";
 
 function NotFound() { return <main className="page centered"><span className="eyebrow">404</span><h1>Ruta no encontrada</h1><p>La navegación React no reconoce esta dirección.</p></main>; }
 
@@ -44,8 +45,8 @@ export function AppRouter() {
       <Route path="admin/inventario" element={<InventoryPage />} />
       <Route path="admin/pedidos" element={<OperationalOrdersPage />} />
       <Route path="admin/pos" element={<PosPage />} />
-      <Route path="admin/reportes" element={<DeferredPage phase="N10" title="Reportes" description="Reportes, KPIs e integración IA se migrarán en N10." />} />
-      <Route path="admin/auditoria" element={<DeferredPage phase="N10" title="Auditoría" description="La bitácora y trazabilidad administrativa se migrarán en N10." />} />
+      <Route path="admin/reportes" element={<ReportsPage />} />
+      <Route path="admin/auditoria" element={<AuditPage />} />
     </Route>
     <Route element={<RequireRole roles={["STORE_MANAGER"]}><OperationsShell role="STORE_MANAGER" /></RequireRole>}>
       <Route path="sucursal" element={<ManagerDashboard />} />
@@ -53,7 +54,7 @@ export function AppRouter() {
       <Route path="sucursal/inventario" element={<InventoryPage />} />
       <Route path="sucursal/pedidos" element={<OperationalOrdersPage />} />
       <Route path="sucursal/pos" element={<PosPage />} />
-      <Route path="sucursal/reportes" element={<DeferredPage phase="N10" title="Reportes de sucursal" description="Los reportes operativos se migrarán en N10." />} />
+      <Route path="sucursal/reportes" element={<ReportsPage />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes>;

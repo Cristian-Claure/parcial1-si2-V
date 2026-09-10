@@ -64,6 +64,18 @@ async function bootstrap():
         },
       );
 
+  app.useBodyParser(
+    "raw",
+    {
+      type: [
+        "audio/*",
+        "video/webm",
+      ],
+      limit:
+        "8mb",
+    },
+  );
+
   const config =
     app.get(
       RuntimeConfigService,
@@ -113,6 +125,7 @@ async function bootstrap():
       "Authorization",
       "Content-Type",
       "Stripe-Signature",
+      "X-Request-Id",
     ],
 
     credentials:

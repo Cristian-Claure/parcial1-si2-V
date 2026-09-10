@@ -2043,6 +2043,183 @@ export const inventoryMovements =
     ],
   );
 
+
+export type DatabaseAuditHttpMethod =
+  | "POST"
+  | "PUT"
+  | "PATCH"
+  | "DELETE";
+
+export const auditEvents =
+  pgTable(
+    "audit_events",
+    {
+      id:
+        uuid("id")
+          .primaryKey(),
+
+      occurredAt:
+        timestamp(
+          "occurred_at",
+          {
+            withTimezone:
+              true,
+            mode:
+              "date",
+          },
+        )
+          .notNull()
+          .defaultNow(),
+
+      actorUserId:
+        uuid("actor_user_id"),
+
+      actorEmail:
+        varchar(
+          "actor_email",
+          {
+            length:
+              254,
+          },
+        ),
+
+      actorName:
+        varchar(
+          "actor_name",
+          {
+            length:
+              200,
+          },
+        ),
+
+      actorRole:
+        varchar(
+          "actor_role",
+          {
+            length:
+              32,
+          },
+        )
+          .notNull(),
+
+      category:
+        varchar(
+          "category",
+          {
+            length:
+              48,
+          },
+        )
+          .notNull(),
+
+      httpMethod:
+        varchar(
+          "http_method",
+          {
+            length:
+              8,
+          },
+        )
+          .$type<
+            DatabaseAuditHttpMethod
+          >()
+          .notNull(),
+
+      routePattern:
+        varchar(
+          "route_pattern",
+          {
+            length:
+              512,
+          },
+        )
+          .notNull(),
+
+      requestPath:
+        varchar(
+          "request_path",
+          {
+            length:
+              512,
+          },
+        )
+          .notNull(),
+
+      statusCode:
+        integer(
+          "status_code",
+        )
+          .notNull(),
+
+      success:
+        boolean(
+          "success",
+        )
+          .notNull(),
+
+      requestId:
+        varchar(
+          "request_id",
+          {
+            length:
+              128,
+          },
+        ),
+    },
+    (table) => [
+      index(
+        "idx_audit_events_occurred_at",
+      ).on(
+        table.occurredAt,
+      ),
+
+      index(
+        "idx_audit_events_actor",
+      ).on(
+        table.actorUserId,
+        table.occurredAt,
+      ),
+
+      index(
+        "idx_audit_events_category",
+      ).on(
+        table.category,
+        table.occurredAt,
+      ),
+
+      index(
+        "idx_audit_events_route",
+      ).on(
+        table.routePattern,
+        table.occurredAt,
+      ),
+
+      check(
+        "ck_audit_events_http_method",
+        sql`
+          ${table.httpMethod}
+          in (
+            'POST',
+            'PUT',
+            'PATCH',
+            'DELETE'
+          )
+        `,
+      ),
+
+      check(
+        "ck_audit_events_status_code",
+        sql`
+          ${table.statusCode}
+          >= 100
+          and
+          ${table.statusCode}
+          <= 599
+        `,
+      ),
+    ],
+  );
+
 export const companiesRelations =
   relations(
     companies,

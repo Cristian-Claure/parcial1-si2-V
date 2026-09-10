@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { AdminModule } from "./admin/admin.module.js";
 import { AiModule } from "./ai/ai.module.js";
+import { AuditModule } from "./audit/audit.module.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { CartModule } from "./cart/cart.module.js";
 import { CatalogModule } from "./catalog/catalog.module.js";
@@ -14,6 +15,7 @@ import { InventoryModule } from "./inventory/inventory.module.js";
 import { OrdersModule } from "./orders/orders.module.js";
 import { PaymentsModule } from "./payments/payments.module.js";
 import { PosModule } from "./pos/pos.module.js";
+import { ReportsModule } from "./reports/reports.module.js";
 import { StorageModule } from "./storage/storage.module.js";
 import { StoresModule } from "./stores/stores.module.js";
 import { TryOnModule } from "./try-on/try-on.module.js";
@@ -38,6 +40,8 @@ import { TryOnModule } from "./try-on/try-on.module.js";
     PosModule,
     TryOnModule,
     AiModule,
+    ReportsModule,
+    AuditModule,
   ],
 })
 export class AppModule {}

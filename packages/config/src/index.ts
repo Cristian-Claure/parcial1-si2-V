@@ -227,6 +227,15 @@ export const serverRuntimeConfigSchema =
         z.string().min(1),
       ),
 
+    VELORA_AI_TRANSCRIBE_MODEL:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() !== ""
+            ? value.trim()
+            : "gpt-4o-mini-transcribe",
+        z.string().min(1),
+      ),
     VELORA_AI_MAX_CATALOG_PRODUCTS:
       positiveIntegerFromEnv(
         120,
