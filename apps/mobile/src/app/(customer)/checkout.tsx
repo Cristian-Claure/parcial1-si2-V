@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
@@ -15,13 +15,14 @@ import type {
 import { isConnectivityError } from "@/core/api/apiClient";
 import { veloraApi } from "@/core/api/veloraApi";
 import { useAuthStore } from "@/core/auth/authStore";
+import { useCompanyStore } from "@/core/company/companyStore";
 import { useNetworkStore } from "@/core/network/networkStore";
 import { cachedFetch } from "@/core/offline/cachedFetch";
 import {
   enqueueOfflineOrder,
   saveCache,
 } from "@/core/offline/mobileDb";
-import { buildOfflineOrder } from "@/core/offline/offlineOrder";
+import { buildOfflineOrder, createClientOperationId } from "@/core/offline/offlineOrder";
 import { colors, commonStyles } from "@/shared/theme";
 import {
   Button,
@@ -40,7 +41,9 @@ interface CheckoutData {
 
 export default function CheckoutScreen() {
   const user = useAuthStore((state) => state.user)!;
+  const companyId = useCompanyStore((state) => state.selectedCompanyId);
   const connected = useNetworkStore((state) => state.isConnected);
+  const checkoutCacheKey = `${user.id}:${companyId ?? "none"}`;
   const client = useQueryClient();
   const [fulfillmentType, setFulfillmentType] =
     useState<CustomerFulfillmentType>("PICKUP");
@@ -50,15 +53,16 @@ export default function CheckoutScreen() {
   const [offlineSaved, setOfflineSaved] = useState(false);
 
   const checkout = useQuery({
-    queryKey: ["mobile-checkout", user.id],
+    queryKey: ["mobile-checkout", user.id, companyId],
+    enabled: Boolean(companyId),
     queryFn: async (): Promise<CheckoutData> =>
-      cachedFetch("checkout", user.id, async () => {
+      cachedFetch("checkout", checkoutCacheKey, async () => {
         const [cart, warehouses, addresses] = await Promise.all([
-          veloraApi.cart(),
-          veloraApi.checkoutWarehouses(),
+          veloraApi.cart(companyId!),
+          veloraApi.checkoutWarehouses(companyId!),
           veloraApi.addresses(),
         ]);
-        await saveCache("cart", user.id, cart);
+        await saveCache("cart", checkoutCacheKey, cart);
         await saveCache("addresses", user.id, addresses);
         return { cart, warehouses, addresses };
       }),
@@ -69,17 +73,11 @@ export default function CheckoutScreen() {
     checkout.data?.addresses[0] ??
     null;
 
-  const effectiveWarehouseId =
-    warehouseId ?? checkout.data?.warehouses[0]?.warehouseId ?? null;
+  const modalityWarehouses = checkout.data?.warehouses.filter((warehouse) => fulfillmentType === "PICKUP" ? warehouse.pickupEligible : warehouse.deliveryEligible) ?? [];
+  const effectiveWarehouseId = modalityWarehouses.some((warehouse) => warehouse.warehouseId === warehouseId) ? warehouseId : modalityWarehouses[0]?.warehouseId ?? null;
   const effectiveAddressId = addressId ?? defaultAddress?.id ?? null;
 
-  const selectedWarehouse = useMemo(
-    () =>
-      checkout.data?.warehouses.find(
-        (warehouse) => warehouse.warehouseId === effectiveWarehouseId,
-      ) ?? null,
-    [checkout.data?.warehouses, effectiveWarehouseId],
-  );
+  const selectedWarehouse = modalityWarehouses.find((warehouse) => warehouse.warehouseId === effectiveWarehouseId) ?? null;
 
   const createOrder = useMutation({
     mutationFn: async () => {
@@ -111,12 +109,7 @@ export default function CheckoutScreen() {
       }
 
       try {
-        const order = await veloraApi.createOrder({
-          warehouseId: effectiveWarehouseId,
-          fulfillmentType,
-          addressId: address,
-          notes: notes.trim() || null,
-        });
+        const order = await veloraApi.createOrder({ companyId: companyId!, warehouseId: effectiveWarehouseId, fulfillmentType, addressId: address, notes: notes.trim() || null }, createClientOperationId());
 
         return { offline: false as const, order };
       } catch (error) {
@@ -151,6 +144,8 @@ export default function CheckoutScreen() {
       router.replace("/orders" as never);
     },
   });
+
+  if (!companyId) return <CustomerShell><Notice kind="error">Seleccione una compañía antes de continuar.</Notice></CustomerShell>;
 
   if (checkout.isLoading) {
     return (
@@ -221,13 +216,13 @@ export default function CheckoutScreen() {
         su bolsa.
       </Text>
 
-      {checkout.data.warehouses.length === 0 ? (
+      {modalityWarehouses.length === 0 ? (
         <EmptyState title="No hay sucursales elegibles">
           Revise disponibilidad o cambie las cantidades de su bolsa.
         </EmptyState>
       ) : (
         <View style={{ gap: 8 }}>
-          {checkout.data.warehouses.map((warehouse) => {
+          {modalityWarehouses.map((warehouse) => {
             const active = warehouse.warehouseId === effectiveWarehouseId;
             return (
               <Pressable

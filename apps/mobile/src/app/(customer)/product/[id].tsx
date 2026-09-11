@@ -85,10 +85,11 @@ export default function ProductDetailScreen() {
 
   const cartMutation = useMutation({
     mutationFn: async (variant: VariantResponse) =>
-      veloraApi.addCartItem({ variantId: variant.id, quantity: 1 }),
+      veloraApi.addCartItem({ companyId: companyId!, variantId: variant.id, quantity: 1 }),
     onSuccess: async (cart) => {
-      await saveCache("cart", user.id, cart);
-      client.setQueryData(["cart", user.id], cart);
+      const cartCacheKey = `${user.id}:${companyId}`;
+      await saveCache("cart", cartCacheKey, cart);
+      client.setQueryData(["cart", user.id, companyId], cart);
       setMessage("Producto agregado a la bolsa.");
     },
   });

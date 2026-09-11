@@ -1,247 +1,282 @@
-# Instalación de VÉLORA en otra PC
+# Instalación reproducible de VÉLORA
 
-Esta guía prepara un entorno local de desarrollo desde un clon limpio del repositorio.
+Esta guía levanta el stack vigente de VÉLORA desde un clon limpio.
 
 ## 1. Requisitos
 
-Instala:
+Obligatorios:
 
 - Git.
-- Java JDK 21.
-- PostgreSQL 17 o una versión compatible con el proyecto.
-- Node.js y pnpm.
-- Python 3.13.
-- Android Studio con Android SDK para el módulo móvil.
-- PowerShell 5.1+ o PowerShell 7.
+- Node.js `>=22.13.0`.
+- pnpm `11.24.0`.
+- Docker Desktop con Docker Engine operativo.
 
-Versiones usadas en la validación final del proyecto:
+Para desarrollo Mobile con emulador también se recomienda Android Studio. Para el bundle de validación se utiliza Expo CLI a través del workspace.
 
-- Java 21.0.12.1.
-- Spring Boot 4.1.1.
-- PostgreSQL 17.11.
-- Node.js 24.16.0.
-- Gradle 9.5.0.
-- Python 3.13.14.
-- pytest 8.4.x.
+Comprueba:
 
-## 2. Clonar el repositorio
+```powershell
+git --version
+node --version
+pnpm --version
+docker version
+```
+
+## 2. Clonar y seleccionar la rama
 
 ```powershell
 git clone <URL_DEL_REPOSITORIO>
-cd PARCIAL_SI2_V
-git status
+Set-Location PARCIAL_SI2_V
+git switch migration/nest-react-rn-azure
 ```
 
-## 3. Crear `.env`
+## 3. Instalar dependencias
+
+Desde la raíz:
+
+```powershell
+pnpm install --frozen-lockfile
+```
+
+El repositorio es un workspace pnpm. No instales dependencias por separado dentro de cada aplicación.
+
+## 4. Configuración local
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Edita `.env` y completa tus valores locales. Nunca publiques `.env`.
-
-Revisa como mínimo:
-
-- `VELORA_DB_HOST`
-- `VELORA_DB_PORT`
-- `VELORA_DB_NAME`
-- `VELORA_DB_USER`
-- `VELORA_DB_PASSWORD`
-- `VELORA_JWT_SECRET`
-- `VELORA_AI_BASE_URL`
-- `VELORA_AI_INTERNAL_TOKEN`
-- `VELORA_CORS_ALLOWED_ORIGINS`
-- credenciales Stripe si se probarán pagos;
-- configuración Firebase si se probarán notificaciones;
-- `REPLICATE_API_TOKEN` si se probará Replicate.
-
-Para desarrollo web local:
-
-```env
-VELORA_CORS_ALLOWED_ORIGINS=http://localhost:4200,http://127.0.0.1:4200
-```
-
-## 4. PostgreSQL
-
-Crea una base y un usuario según los valores definidos en `.env`.
-
-El puerto debe coincidir con `VELORA_DB_PORT`.
-
-Flyway aplica/valida las migraciones al iniciar el backend. En el checkpoint final existen 23 migraciones.
-
-No uses `flyway clean` en una base con datos que quieras conservar.
-
-## 5. Backend
-
-Desde la raíz:
-
-```powershell
-.\scripts\load-env.ps1
-cd back_velora
-.\mvnw.cmd -DskipTests package
-.\mvnw.cmd test
-.\mvnw.cmd spring-boot:run
-```
-
-Backend local esperado:
+Edita `.env` y cambia, como mínimo:
 
 ```text
-http://localhost:8080
+VELORA_DB_PASSWORD
+DATABASE_URL
+VELORA_JWT_SECRET
 ```
 
-## 6. Frontend Web
-
-```powershell
-cd front_velora
-pnpm install
-pnpm run build
-```
-
-Para desarrollo:
-
-```powershell
-cd ..
-.\scripts\start-front.ps1
-```
-
-Frontend local habitual:
+Para el entorno Docker incluido, los valores locales habituales son:
 
 ```text
-http://localhost:4200
+VELORA_DB_HOST=localhost
+VELORA_DB_PORT=55432
+VELORA_DB_NAME=velora_db
+VELORA_DB_USER=velora
+DATABASE_URL=postgresql://velora:<password>@127.0.0.1:55432/velora_db
+PORT=8080
 ```
 
-## 7. AI / FastAPI
+Los secretos reales no se versionan.
 
-Crear el entorno virtual:
+## 5. Levantar PostgreSQL local
 
 ```powershell
-python -m venv ai_velora\.venv
+docker compose up -d postgres
+docker compose ps
 ```
 
-Instalar runtime:
+El servicio utiliza PostgreSQL 17.
 
-```powershell
-.\ai_velora\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\ai_velora\.venv\Scripts\python.exe -m pip install -r ai_velora\requirements.txt
-```
+## 6. Aplicar V1-V25 en orden
 
-Instalar dependencias de pruebas:
-
-```powershell
-.\ai_velora\.venv\Scripts\python.exe -m pip install -r ai_velora\requirements-dev.txt
-```
-
-Validar:
-
-```powershell
-cd ai_velora
-.\.venv\Scripts\python.exe -m compileall -q app
-.\.venv\Scripts\python.exe -m pytest -q
-```
-
-Arranque desde la raíz:
-
-```powershell
-.\scripts\start-ai.ps1
-```
-
-El adaptador LOCAL es solo para desarrollo. El objetivo de producción del Probador Virtual es Replicate.
-
-## 8. Android
-
-Abre `mobile_velora` en Android Studio y deja que Gradle sincronice.
-
-Validación por consola:
-
-```powershell
-cd mobile_velora
-.\gradlew.bat --no-daemon :app:compileDebugKotlin
-.\gradlew.bat --no-daemon :app:testDebugUnitTest
-```
-
-## 9. Orden recomendado de arranque local
-
-1. PostgreSQL.
-2. Backend.
-3. AI.
-4. Frontend.
-5. Android si se va a probar mobile.
-
-## 10. Producción Google Cloud
-
-No copies la configuración local directamente a producción.
-
-Producción debe usar configuración de runtime/Secret Manager.
-
-Objetivo del Probador Virtual:
-
-```env
-VELORA_TRYON_PROVIDER=replicate
-VELORA_CATALOG_ASSET_PROVIDER=gcs
-VELORA_TRYON_RESULT_PROVIDER=gcs
-```
-
-Además configura:
-
-- `VELORA_AI_BASE_URL`
-- `VELORA_AI_INTERNAL_TOKEN`
-- `VELORA_CORS_ALLOWED_ORIGINS`
-- `VELORA_CATALOG_GCS_BUCKET`
-- `VELORA_CATALOG_GCS_PREFIX`
-- `VELORA_TRYON_RESULT_GCS_BUCKET`
-- `VELORA_TRYON_RESULT_GCS_PREFIX`
-- `REPLICATE_API_TOKEN`
-- `VELORA_TRYON_REPLICATE_MODEL`
-
-GCS debe autenticarse mediante Application Default Credentials/service account de runtime. No guardes service-account JSON dentro del repositorio.
-
-## 11. Checklist de fresh clone
-
-Valida:
+Las migraciones están en:
 
 ```text
-Backend package     PASS
-Backend tests       PASS
-Frontend build      PASS
-Mobile compile      PASS
-Mobile unit tests   PASS
-AI compileall       PASS
-AI tests            PASS
+back_velora/src/main/resources/db/migration/
 ```
 
-También confirma:
-
-- `.env` ignorado por Git;
-- PostgreSQL accesible;
-- Flyway sin migraciones fallidas;
-- ningún secreto privado versionado;
-- CORS configurado para el host correcto.
-
-## 12. Problemas comunes
-
-### Java incorrecto
+Desde PowerShell:
 
 ```powershell
-java -version
-javac -version
+$migrationDir = "back_velora/src/main/resources/db/migration"
+$migrations = Get-ChildItem -LiteralPath $migrationDir -Filter "V*.sql" | Sort-Object {
+    if ($_.Name -match '^V(\d+)__') { [int]$Matches[1] } else { [int]::MaxValue }
+}
+
+foreach ($migration in $migrations) {
+    Write-Host "Applying $($migration.Name)"
+    Get-Content -Raw -LiteralPath $migration.FullName |
+        docker compose exec -T postgres sh -lc 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+    if ($LASTEXITCODE -ne 0) { throw "Migration failed: $($migration.Name)" }
+}
 ```
 
-Debe usarse JDK 21.
+Debe haber exactamente V1-V25. No modifiques V1-V24.
+
+## 7. Compilar paquetes compartidos
+
+```powershell
+pnpm build:packages
+```
+
+Esto compila `@velora/config`, `@velora/contracts` y `@velora/database` antes del API.
+
+## 8. Ejecutar API
+
+```powershell
+pnpm dev:api
+```
+
+Por defecto:
+
+```text
+http://127.0.0.1:8080
+```
+
+Health:
+
+```text
+GET http://127.0.0.1:8080/api/health
+```
+
+## 9. Ejecutar Web
+
+En otra terminal:
+
+```powershell
+pnpm dev:web
+```
+
+Vite utiliza normalmente:
+
+```text
+http://localhost:5173
+```
+
+## 10. Ejecutar Mobile
+
+En otra terminal:
+
+```powershell
+pnpm dev:mobile
+```
+
+Android Emulator usa el valor local de `EXPO_PUBLIC_API_BASE_URL` mostrado en `.env.example` (`10.0.2.2` para alcanzar el host).
+
+## 11. Validación completa
+
+API:
+
+```powershell
+pnpm build:azure:api
+pnpm --filter @velora/api typecheck
+pnpm --filter @velora/api lint
+pnpm --filter @velora/api test
+```
+
+Web:
+
+```powershell
+pnpm build:azure:web
+pnpm --filter @velora/web typecheck
+pnpm --filter @velora/web lint
+pnpm --filter @velora/web test
+```
+
+Mobile:
+
+```powershell
+pnpm --filter @velora/mobile typecheck
+pnpm --filter @velora/mobile test
+pnpm --filter @velora/mobile validate:bundle
+```
+
+El checkpoint de cierre validó 76 tests API, 9 tests Web y 6 tests Mobile, además del export Android.
+
+## 12. Admin Bootstrap
+
+Está deshabilitado por defecto. Para aprovisionar un ADMIN inicial en un entorno nuevo:
+
+```text
+BOOTSTRAP_ADMIN_ENABLED=true
+BOOTSTRAP_ADMIN_EMAIL=<email>
+BOOTSTRAP_ADMIN_PASSWORD=<secret>
+BOOTSTRAP_ADMIN_FIRST_NAME=Admin
+BOOTSTRAP_ADMIN_LAST_NAME=Velora
+```
+
+El proceso es idempotente. El ADMIN nace activo, sin `storeId` y sin `customerType`.
+
+Después del aprovisionamiento inicial puedes volver a establecer:
+
+```text
+BOOTSTRAP_ADMIN_ENABLED=false
+```
+
+## 13. Push
+
+El proveedor Firebase está deshabilitado por defecto hasta configurar credenciales backend:
+
+```text
+VELORA_PUSH_FIREBASE_ENABLED=true
+FIREBASE_PROJECT_ID=<project-id>
+FIREBASE_CLIENT_EMAIL=<service-account-client-email>
+FIREBASE_PRIVATE_KEY=<private-key>
+```
+
+La Web usa Firebase Installation ID y Android utiliza token FCM nativo mediante Expo Notifications.
+
+## 14. Azure local-to-production
+
+Antes de desplegar revisa:
+
+- `apps/web/.env.production.example`
+- `apps/mobile/.env.production.example`
+- la sección Azure de `.env.example`
+- `docs/AZURE_DEPLOYMENT.md`
+
+La URI PostgreSQL de Azure debe mantener TLS, por ejemplo:
+
+```text
+postgresql://<user>:<password>@<server>.postgres.database.azure.com:5432/velora_db?sslmode=verify-full
+```
+
+## 15. Fresh-clone checklist
+
+```text
+pnpm install --frozen-lockfile       PASS
+PostgreSQL 17                        UP
+V1-V25                               PASS
+build:azure:api                      PASS
+API typecheck/lint/tests             PASS
+build:azure:web                      PASS
+Web typecheck/lint/tests             PASS
+Mobile typecheck/tests               PASS
+Expo Android export                  PASS
+GET /api/health                      UP
+```
+
+## 16. Problemas comunes
+
+### API no encuentra packages del workspace
+
+Ejecuta primero:
+
+```powershell
+pnpm build:packages
+```
 
 ### PostgreSQL no conecta
 
-Revisa host, puerto, base, usuario y password en `.env`.
-
-### Frontend no llega al backend
-
-Revisa backend, proxy local y `VELORA_CORS_ALLOWED_ORIGINS`.
-
-### AI no encuentra pytest
+Comprueba:
 
 ```powershell
-.\ai_velora\.venv\Scripts\python.exe -m pip install -r ai_velora\requirements-dev.txt
+docker compose ps
 ```
 
-### Replicate/GCS
+y confirma `DATABASE_URL`, puerto, usuario y base.
 
-No son necesarios para validar el flujo LOCAL. Para producción, configura sus variables y credenciales únicamente en runtime.
+### Web no llega al API
+
+Comprueba `VITE_API_BASE_URL` y `VELORA_CORS_ALLOWED_ORIGINS`.
+
+### Android Emulator no llega al API local
+
+Usa:
+
+```text
+EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8080
+```
+
+### Rutas Web dan 404 en producción
+
+El build debe contener `staticwebapp.config.json` en la raíz de `apps/web/dist`. El script `build:azure:web` ya valida el build utilizado por el proyecto.

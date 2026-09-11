@@ -19,10 +19,13 @@ import { ReportsModule } from "./reports/reports.module.js";
 import { StorageModule } from "./storage/storage.module.js";
 import { StoresModule } from "./stores/stores.module.js";
 import { TryOnModule } from "./try-on/try-on.module.js";
+import { PushModule } from "./push/push.module.js";
+import { BootstrapModule } from "./bootstrap/bootstrap.module.js";
 
 @Module({
   imports: [
     RuntimeConfigModule,
+    BootstrapModule,
     HealthModule,
     AuthModule,
     AuthorizationModule,
@@ -39,6 +42,7 @@ import { TryOnModule } from "./try-on/try-on.module.js";
     PaymentsModule,
     PosModule,
     TryOnModule,
+    PushModule,
     AiModule,
     ReportsModule,
     AuditModule,

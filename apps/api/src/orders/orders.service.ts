@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import {
   Injectable,
 } from "@nestjs/common";
@@ -27,6 +29,8 @@ import {
   type OrderMutationResult,
 } from "./orders.repository.js";
 
+import { CustomerPushService } from "../push/customer-push.service.js";
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -35,6 +39,9 @@ export class OrdersService {
 
     private readonly access:
       AccessContextService,
+
+    private readonly push?:
+      CustomerPushService,
   ) {}
 
   async create(
@@ -42,10 +49,18 @@ export class OrdersService {
       AuthPrincipal,
     request:
       CreateOrderRequest,
+    idempotencyKey:
+      string |
+      undefined,
   ): Promise<OrderResponse> {
     const customerId =
       await this.requireCustomer(
         principal,
+      );
+
+    const idempotencyKeyHash =
+      this.idempotencyHash(
+        idempotencyKey,
       );
 
     const result =
@@ -53,13 +68,21 @@ export class OrdersService {
         .createOnline(
           customerId,
           request,
+          idempotencyKeyHash,
         );
 
-    return this.requireMutationOrder(
+    const shouldNotify =
+      result.kind === "OK" &&
+      result.idempotent !== true;
+
+    const order = await this.requireMutationOrder(
       customerId,
       result,
       false,
     );
+
+    if (shouldNotify) this.push?.orderConfirmed(customerId, order.id, order.orderNumber);
+    return order;
   }
 
   async syncOffline(
@@ -93,11 +116,18 @@ export class OrdersService {
           normalizedItems,
         );
 
-    return this.requireMutationOrder(
+    const shouldNotify =
+      result.kind === "OK" &&
+      result.idempotent !== true;
+
+    const order = await this.requireMutationOrder(
       customerId,
       result,
       true,
     );
+
+    if (shouldNotify) this.push?.orderConfirmed(customerId, order.id, order.orderNumber);
+    return order;
   }
 
   async list(
@@ -161,11 +191,14 @@ export class OrdersService {
           orderId,
         );
 
-    return this.requireMutationOrder(
+    const order = await this.requireMutationOrder(
       customerId,
       result,
       false,
     );
+
+    this.push?.orderCancelled(customerId, order.id, order.orderNumber);
+    return order;
   }
 
   private async requireMutationOrder(
@@ -241,6 +274,18 @@ export class OrdersService {
         throw new ApiHttpError(
           409,
           "El retiro en tienda solo puede abastecerse desde el almacén principal de una sucursal activa.",
+        );
+
+      case "STORE_WAREHOUSE_INVALID":
+        throw new ApiHttpError(
+          409,
+          "La sucursal debe seleccionarse mediante su almacén principal activo.",
+        );
+
+      case "CART_STORE_MISMATCH":
+        throw new ApiHttpError(
+          409,
+          "La bolsa está ligada a otra sucursal.",
         );
 
       case "DELIVERY_ADDRESS_REQUIRED":
@@ -425,6 +470,30 @@ export class OrdersService {
     }
 
     return context.userId;
+  }
+
+  private idempotencyHash(
+    value:
+      string |
+      undefined,
+  ): string {
+    const normalized =
+      value?.trim() ??
+      "";
+
+    if (
+      normalized.length < 8 ||
+      normalized.length > 128
+    ) {
+      throw new ApiHttpError(
+        400,
+        "Idempotency-Key es obligatorio y debe tener entre 8 y 128 caracteres.",
+      );
+    }
+
+    return createHash("sha256")
+      .update(normalized, "utf8")
+      .digest("hex");
   }
 
   private trimToNull(

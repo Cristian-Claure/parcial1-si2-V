@@ -96,6 +96,25 @@ function optionalStringFromEnv() {
   );
 }
 
+function optionalSecretFromEnv() {
+  return z.preprocess(
+    (value) => {
+      if (
+        typeof value === "string" &&
+        value.trim() === ""
+      ) {
+        return undefined;
+      }
+
+      return value;
+    },
+    z
+      .string()
+      .min(1)
+      .optional(),
+  );
+}
+
 function optionalHttpUrlFromEnv() {
   return z.preprocess(
     (value) => {
@@ -323,6 +342,67 @@ export const serverRuntimeConfigSchema =
 
     AZURE_STORAGE_CONNECTION_STRING:
       optionalStringFromEnv(),
+
+    VELORA_PUSH_FIREBASE_ENABLED:
+      booleanFromEnv(false),
+
+    FIREBASE_PROJECT_ID:
+      optionalStringFromEnv(),
+
+    FIREBASE_CLIENT_EMAIL:
+      optionalStringFromEnv(),
+
+    FIREBASE_PRIVATE_KEY:
+      optionalStringFromEnv(),
+
+    BOOTSTRAP_ADMIN_ENABLED:
+      booleanFromEnv(
+        false,
+      ),
+
+    BOOTSTRAP_ADMIN_EMAIL:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() === ""
+            ? undefined
+            : value,
+        z
+          .string()
+          .trim()
+          .email()
+          .max(180)
+          .optional(),
+      ),
+
+    BOOTSTRAP_ADMIN_PASSWORD:
+      optionalSecretFromEnv(),
+
+    BOOTSTRAP_ADMIN_FIRST_NAME:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() !== ""
+            ? value.trim()
+            : "Admin",
+        z
+          .string()
+          .min(1)
+          .max(80),
+      ),
+
+    BOOTSTRAP_ADMIN_LAST_NAME:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() !== ""
+            ? value.trim()
+            : "Velora",
+        z
+          .string()
+          .min(1)
+          .max(100),
+      ),
 
     VELORA_AZURE_BLOB_CONTAINER:
       z.preprocess(

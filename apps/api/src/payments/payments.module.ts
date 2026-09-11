@@ -14,6 +14,8 @@ import {
   DatabaseModule,
 } from "../database/database.module.js";
 
+import { PushModule } from "../push/push.module.js";
+
 import {
   CustomerPaymentsController,
 } from "./customer-payments.controller.js";
@@ -51,6 +53,7 @@ import {
     DatabaseModule,
     AuthModule,
     AuthorizationModule,
+    PushModule,
   ],
   controllers: [
     CustomerPaymentsController,

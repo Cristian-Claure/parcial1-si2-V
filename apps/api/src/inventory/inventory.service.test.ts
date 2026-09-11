@@ -177,6 +177,255 @@ describe(
     );
 
     it(
+      "forbids manual TRANSFER_OUT movements",
+      async () => {
+        const service =
+          new InventoryService(
+            repository(),
+            access(
+              "20000000-0000-4000-8000-000000000001",
+            ),
+          );
+
+        await expect(
+          service.registerMovement(
+            principal,
+            {
+              warehouseId:
+                "70000000-0000-4000-8000-000000000001",
+
+              variantId:
+                "60000000-0000-4000-8000-000000000001",
+
+              movementType:
+                "TRANSFER_OUT",
+
+              quantity:
+                1,
+
+              reason:
+                "Debe usar transferencia atómica.",
+            },
+          ),
+        ).rejects.toMatchObject({
+          status:
+            400,
+        });
+      },
+    );
+
+    it(
+      "rejects transfers across stores",
+      async () => {
+        const inventory =
+          repository({
+            findWarehouse:
+              vi.fn()
+                .mockImplementation(
+                  async (
+                    id:
+                      string,
+                  ) => ({
+                    id,
+                    storeId:
+                      id.endsWith("1")
+                        ? "20000000-0000-4000-8000-000000000001"
+                        : "20000000-0000-4000-8000-000000000002",
+                    storeName:
+                      "Store",
+                    storeCompanyId:
+                      "10000000-0000-0000-0000-000000000001",
+                    code:
+                      "WH",
+                    name:
+                      "Warehouse",
+                    description:
+                      null,
+                    active:
+                      true,
+                    defaultWarehouse:
+                      false,
+                  }),
+                ),
+          });
+
+        const service =
+          new InventoryService(
+            inventory,
+            access(
+              "20000000-0000-4000-8000-000000000001",
+            ),
+          );
+
+        await expect(
+          service.transfer(
+            principal,
+            {
+              sourceWarehouseId:
+                "70000000-0000-4000-8000-000000000001",
+
+              destinationWarehouseId:
+                "70000000-0000-4000-8000-000000000002",
+
+              variantId:
+                "60000000-0000-4000-8000-000000000001",
+
+              quantity:
+                2,
+
+              reason:
+                "Cruce de sucursal no permitido.",
+            },
+          ),
+        ).rejects.toMatchObject({
+          status:
+            403,
+        });
+      },
+    );
+
+    it(
+      "returns both stocks for an atomic same-store transfer",
+      async () => {
+        const sourceId =
+          "70000000-0000-4000-8000-000000000001";
+
+        const destinationId =
+          "70000000-0000-4000-8000-000000000002";
+
+        const inventory =
+          repository({
+            findWarehouse:
+              vi.fn()
+                .mockImplementation(
+                  async (
+                    id:
+                      string,
+                  ) => ({
+                    id,
+                    storeId:
+                      "20000000-0000-4000-8000-000000000001",
+                    storeName:
+                      "Equipetrol",
+                    storeCompanyId:
+                      "10000000-0000-0000-0000-000000000001",
+                    code:
+                      "WH",
+                    name:
+                      "Warehouse",
+                    description:
+                      null,
+                    active:
+                      true,
+                    defaultWarehouse:
+                      id === sourceId,
+                  }),
+                ),
+
+            transfer:
+              vi.fn()
+                .mockResolvedValue({
+                  kind:
+                    "OK",
+                  transferId:
+                    "90000000-0000-4000-8000-000000000001",
+                  source: {
+                    id:
+                      "91000000-0000-4000-8000-000000000001",
+                    warehouseId:
+                      sourceId,
+                    variantId:
+                      "60000000-0000-4000-8000-000000000001",
+                    productName:
+                      "Chaqueta",
+                    sku:
+                      "SKU-1",
+                    size:
+                      "M",
+                    color:
+                      "Negro",
+                    physicalQuantity:
+                      8,
+                    committedQuantity:
+                      0,
+                    availableQuantity:
+                      8,
+                    version:
+                      2,
+                  },
+                  destination: {
+                    id:
+                      "91000000-0000-4000-8000-000000000002",
+                    warehouseId:
+                      destinationId,
+                    variantId:
+                      "60000000-0000-4000-8000-000000000001",
+                    productName:
+                      "Chaqueta",
+                    sku:
+                      "SKU-1",
+                    size:
+                      "M",
+                    color:
+                      "Negro",
+                    physicalQuantity:
+                      2,
+                    committedQuantity:
+                      0,
+                    availableQuantity:
+                      2,
+                    version:
+                      1,
+                  },
+                }),
+          });
+
+        const service =
+          new InventoryService(
+            inventory,
+            access(
+              "20000000-0000-4000-8000-000000000001",
+            ),
+          );
+
+        const result =
+          await service.transfer(
+            principal,
+            {
+              sourceWarehouseId:
+                sourceId,
+
+              destinationWarehouseId:
+                destinationId,
+
+              variantId:
+                "60000000-0000-4000-8000-000000000001",
+
+              quantity:
+                2,
+
+              reason:
+                "Redistribución interna.",
+            },
+          );
+
+        expect(
+          result.transferId,
+        ).toBe(
+          "90000000-0000-4000-8000-000000000001",
+        );
+
+        expect(
+          result.source.physicalQuantity,
+        ).toBe(8);
+
+        expect(
+          result.destination.physicalQuantity,
+        ).toBe(2);
+      },
+    );
+
+    it(
       "rejects cross-company variants",
       async () => {
         const service =

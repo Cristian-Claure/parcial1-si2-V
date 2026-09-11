@@ -16,7 +16,10 @@
     "build:packages": "pnpm --filter @velora/config build && pnpm --filter @velora/contracts build && pnpm --filter @velora/database build",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm --filter @velora/api lint && pnpm --filter @velora/web lint",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "build:azure:api": "pnpm build:packages && pnpm --filter @velora/api build",
+    "start:azure:api": "pnpm --filter @velora/api start",
+    "build:azure:web": "pnpm --filter @velora/contracts build && pnpm --filter @velora/web build"
   },
   "devDependencies": {
     "prettier": "3.8.1",

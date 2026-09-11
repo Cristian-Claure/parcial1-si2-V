@@ -7,6 +7,8 @@ import type {
   InventoryMovementResponse,
   InventoryMovementType,
   InventoryStock,
+  InventoryTransferRequest,
+  InventoryTransferResponse,
   WarehouseRequest,
   WarehouseResponse,
 } from "@velora/contracts";
@@ -276,6 +278,143 @@ export class InventoryService {
     );
   }
 
+  async transfer(
+    principal:
+      AuthPrincipal,
+    request:
+      InventoryTransferRequest,
+  ): Promise<InventoryTransferResponse> {
+    const context =
+      await this.access
+        .resolve(
+          principal,
+        );
+
+    if (
+      request.sourceWarehouseId ===
+      request.destinationWarehouseId
+    ) {
+      throw new ApiHttpError(
+        400,
+        "El almacén de origen y destino deben ser diferentes.",
+      );
+    }
+
+    const source =
+      await this.requireWarehouse(
+        request.sourceWarehouseId,
+      );
+
+    const destination =
+      await this.requireWarehouse(
+        request.destinationWarehouseId,
+      );
+
+    this.requireStoreAccess(
+      context,
+      source.storeId,
+    );
+
+    this.requireStoreAccess(
+      context,
+      destination.storeId,
+    );
+
+    if (
+      source.storeId !==
+      destination.storeId
+    ) {
+      throw new ApiHttpError(
+        400,
+        "Las transferencias solo pueden realizarse entre almacenes de la misma sucursal.",
+      );
+    }
+
+    if (
+      !source.active ||
+      !destination.active
+    ) {
+      throw new ApiHttpError(
+        400,
+        "Los almacenes de origen y destino deben estar activos.",
+      );
+    }
+
+    const variant =
+      await this.inventory
+        .findVariant(
+          request.variantId,
+        );
+
+    if (!variant) {
+      throw new ApiHttpError(
+        404,
+        "Variante no encontrada.",
+      );
+    }
+
+    if (!variant.active) {
+      throw new ApiHttpError(
+        400,
+        "La variante está inactiva.",
+      );
+    }
+
+    if (
+      variant.companyId !==
+      source.storeCompanyId ||
+      variant.companyId !==
+      destination.storeCompanyId
+    ) {
+      throw new ApiHttpError(
+        400,
+        "La variante no pertenece a la compañía de la sucursal.",
+      );
+    }
+
+    const result =
+      await this.inventory
+        .transfer(
+          request,
+          context.userId,
+        );
+
+    if (
+      result.kind ===
+      "INSUFFICIENT_PHYSICAL"
+    ) {
+      throw new ApiHttpError(
+        409,
+        "Stock físico insuficiente en el almacén de origen.",
+      );
+    }
+
+    if (
+      result.kind ===
+      "COMMITTED_EXCEEDS_PHYSICAL"
+    ) {
+      throw new ApiHttpError(
+        409,
+        "No puede transferirse stock comprometido por pedidos.",
+      );
+    }
+
+    return {
+      transferId:
+        result.transferId,
+
+      source:
+        this.stockResponse(
+          result.source,
+        ),
+
+      destination:
+        this.stockResponse(
+          result.destination,
+        ),
+    };
+  }
+
   async history(
     principal:
       AuthPrincipal,
@@ -372,11 +511,15 @@ export class InventoryService {
       movementType ===
         "RELEASE" ||
       movementType ===
-        "SALE"
+        "SALE" ||
+      movementType ===
+        "TRANSFER_IN" ||
+      movementType ===
+        "TRANSFER_OUT"
     ) {
       throw new ApiHttpError(
         400,
-        "RESERVE, RELEASE y SALE son movimientos internos y serán gestionados por pedidos/ventas.",
+        "RESERVE, RELEASE, SALE y TRANSFER_* son movimientos internos. Las transferencias deben usar la operación atómica de transferencia.",
       );
     }
   }

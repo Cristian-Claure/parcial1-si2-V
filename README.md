@@ -1,233 +1,239 @@
 # VÉLORA
 
-VÉLORA es una plataforma omnicanal para una boutique de moda femenina de Santa Cruz de la Sierra, Bolivia. El proyecto integra comercio electrónico, operación por sucursal, inventario por almacén, pagos, experiencia CUSTOMER web/móvil, reportes con IA, notificaciones y un Probador Virtual preparado para producción en Google Cloud.
+VÉLORA es una plataforma omnicanal para comercio de moda con operación por empresa, sucursal y almacén. La migración vigente utiliza un monorepo TypeScript con API NestJS, Web React/Vite PWA, aplicación móvil React Native/Expo y PostgreSQL.
 
-## Estado del proyecto
+## Estado técnico validado
 
-El desarrollo funcional y el hardening técnico previo al despliegue están cerrados en la rama `test/cycle7-integrated-tests`.
+La rama autoritativa de la migración es `migration/nest-react-rn-azure`.
 
-Validación integrada final aprobada el 7 de septiembre de 2026:
+El cierre técnico previo al despliegue fue validado el **11 de septiembre de 2026** con los siguientes resultados:
 
-- Backend Java/Spring Boot: PASS.
-- PostgreSQL + Flyway: PASS, 23 migraciones validadas.
-- Frontend Angular production build: PASS.
-- Android/Kotlin compile + unit tests: PASS.
-- Servicio AI Python/FastAPI: PASS, 6 tests.
-- Seguridad/performance: PASS.
-- Bitácora/auditoría: PASS.
-- Cloud Try-On + GCS hardening: PASS.
-- Git/secret scan/production boundary: PASS.
+- PostgreSQL 17 limpio con migraciones **V1 → V25** ejecutadas consecutivamente: PASS.
+- API NestJS: build, typecheck y lint: PASS.
+- API: **24 archivos de prueba / 76 tests**: PASS.
+- Web React/Vite/PWA: production build, typecheck y lint: PASS.
+- Web: **5 archivos de prueba / 9 tests**: PASS.
+- Mobile React Native/Expo: typecheck y **6 tests**: PASS.
+- Expo Android export: PASS, bundle validado con 1554 módulos.
+- Smoke runtime contra base vacía: Health, Admin Bootstrap, autenticación ADMIN/CUSTOMER, Companies, Catalog, Cart, Orders y Push: PASS.
+- Azure readiness: App Service, Static Web Apps, PostgreSQL TLS y Azure Blob: PASS.
 
-El despliegue real a Google Cloud todavía no se ejecuta en este checkpoint.
+El despliegue público en Azure se realiza después de este checkpoint Git.
 
-## Arquitectura
+## Arquitectura actual
 
-El repositorio es un monorepo formado por aplicaciones independientes:
+```text
+React + Vite PWA ───────┐
+                        ├──> NestJS API ───> PostgreSQL 17
+React Native + Expo ────┘         │
+                                  ├──> Azure Blob Storage
+                                  ├──> Stripe
+                                  ├──> Firebase Cloud Messaging
+                                  ├──> OpenAI
+                                  └──> Replicate
+```
 
-- `back_velora`: API REST, autenticación, negocio, inventario, pedidos, pagos, auditoría y orquestación del Probador Virtual.
-- `front_velora`: aplicación Angular/PWA para CUSTOMER, ADMIN y STORE_MANAGER.
-- `mobile_velora`: aplicación Android nativa con Kotlin y Jetpack Compose.
-- `ai_velora`: servicio FastAPI para funciones de IA y Virtual Try-On.
-- `scripts`: automatización de entorno y arranque local.
-- `docs`: documentación técnica y académica del proyecto.
+Producción objetivo:
 
-Flujo principal:
+- **API:** Azure App Service, Linux/Node.js.
+- **Web:** Azure Static Web Apps.
+- **Base de datos:** Azure Database for PostgreSQL Flexible Server.
+- **Assets administrados:** Azure Blob Storage.
+- **Mobile:** Expo/EAS para Android.
 
-`Web / Android -> Backend Spring Boot -> PostgreSQL`
+El API ya toma `PORT` desde el entorno y escucha en `0.0.0.0`. La Web incluye `staticwebapp.config.json` con fallback SPA. La referencia de producción usa PostgreSQL con TLS mediante `sslmode=verify-full`.
 
-Para IA:
+## Stack
 
-`Web / Android -> Backend -> AI FastAPI`
-
-En producción del Probador Virtual:
-
-`Backend / AI -> Replicate`
-
-Persistencia de imágenes de catálogo y resultados de Try-On en producción:
-
-`Backend -> Google Cloud Storage`
-
-## Stack validado
-
-### Backend
-
-- Java 21.
-- Spring Boot 4.1.1.
-- Spring Security.
-- Spring Data JPA.
+- Node.js `>=22.13.0`.
+- pnpm `11.24.0`.
+- NestJS 12.
+- React 19 + Vite 8 + PWA.
+- React Native + Expo SDK 57 + Expo Router.
 - PostgreSQL 17.
-- Flyway.
-- Maven Wrapper.
-
-### Frontend
-
-- Angular.
-- TypeScript.
-- SCSS.
-- PWA.
-- IndexedDB.
-- pnpm.
-- Build validado con Node.js 24.16.0.
-
-### Android
-
-- Kotlin.
-- Jetpack Compose.
-- Gradle Wrapper 9.5.0.
+- Drizzle ORM.
+- Zod.
+- Stripe.
 - Firebase Cloud Messaging.
+- Azure Blob Storage SDK.
+- OpenAI para funciones de IA.
+- Replicate para Virtual Try-On cloud.
 
-### AI
+## Estructura del repositorio
 
-- Python 3.13.
-- FastAPI.
-- Replicate como proveedor cloud del Probador Virtual.
-- pytest para pruebas del servicio.
+```text
+apps/
+  api/       API NestJS
+  web/       React + Vite PWA
+  mobile/    React Native + Expo
+packages/
+  config/    configuración runtime compartida
+  contracts/ contratos, tipos y validaciones
+  database/  Drizzle schema y cliente PostgreSQL
+back_velora/src/main/resources/db/migration/
+             migraciones SQL autoritativas V1-V25
+docs/        documentación técnica y de despliegue
+```
+
+Los directorios legacy se conservan como referencia histórica durante el cierre de migración. **No forman parte del runtime actual**. Las migraciones SQL V1-V25 permanecen en `back_velora/src/main/resources/db/migration` y son autoritativas.
 
 ## Roles
 
-- `ADMIN`: administración global y creación de encargados.
-- `STORE_MANAGER`: operación de su sucursal según permisos.
-- `CUSTOMER`: navegación, carrito, checkout, pedidos y experiencia de compra.
+- `ADMIN`: alcance administrativo global.
+- `STORE_MANAGER`: opera con la `Store` asignada directamente al usuario.
+- `CUSTOMER`: catálogo, carrito, checkout, pedidos, pagos, notificaciones y experiencia Web/Mobile.
 
-## Inventario y PICKUP
+No existe `StoreMembership` en la arquitectura vigente.
 
-El stock comercial se obtiene directamente del inventario de `Warehouse`; `Store` no mantiene una segunda capa duplicada de stock.
+## Reglas comerciales críticas
 
-Para `PICKUP`:
+### Company, Store y Warehouse
 
-- se usa únicamente el Warehouse principal/default de la tienda seleccionada;
-- la tienda debe poder cubrir el carrito completo;
-- no se agregan existencias de Warehouses secundarios;
-- no existe pickup multi-tienda;
-- el carrito normal no reserva stock de forma prolongada.
+- Una `Store` pertenece a una sola `Company`.
+- El catálogo se maneja a nivel `Company`.
+- Un `Warehouse` pertenece a una `Store` y puede ser interno o externo.
+- Cada `Store` dispone de un Warehouse principal/default para `PICKUP`.
 
-## Funcionalidades principales
+### PICKUP
 
-- autenticación y registro CUSTOMER;
-- administración de usuarios y encargados;
-- catálogo, categorías, productos y variantes;
-- inventario por Warehouse;
-- carrito y checkout;
-- pedidos y PICKUP;
-- pagos online;
-- POS y operación administrativa;
-- favoritos;
-- notificaciones;
-- PWA;
-- experiencia Android;
-- reportes y analítica con IA;
-- interacción por voz;
-- bitácora/auditoría administrativa;
-- Probador Virtual;
-- almacenamiento cloud preparado para GCS.
+- Usa exclusivamente el Warehouse principal/default de la Store seleccionada.
+- El Warehouse principal debe cubrir el carrito completo.
+- No se agregan Warehouses secundarios.
+- No existe pickup multi-Store.
 
-## Probador Virtual
+### DELIVERY
 
-El benchmark vigente contempla únicamente:
+- Puede resolver inventario entre varios Warehouses permitidos de la Store según las reglas implementadas.
 
-- `LOCAL`: adaptador de desarrollo;
-- `REPLICATE`: proveedor cloud y objetivo de producción.
+### Carrito e inventario
 
-FASHN no forma parte del alcance actual.
+- El carrito normal **no reserva stock a largo plazo**.
+- No existe `ProductReservation` ni un mecanismo de reserva prolongada de carrito.
+- Las reservas/allocations operativas nacen al crear el pedido.
 
-Reglas de producción:
+## Módulos principales
 
-- el cliente no selecciona el proveedor;
-- el proveedor se configura en servidor;
-- la foto de la persona es transitoria y VÉLORA no la persiste;
-- imágenes de catálogo y resultados se preparan para Google Cloud Storage;
-- autenticación GCS mediante ADC/service account de runtime;
-- no se deben versionar archivos JSON de service account;
-- tokens de Replicate y otros secretos se inyectan por entorno/Secret Manager.
-
-## Seguridad
-
-- autenticación JWT;
-- sesiones backend stateless;
-- rate limiting configurable;
-- soporte de proxy headers;
-- CORS configurable mediante `VELORA_CORS_ALLOWED_ORIGINS`;
-- localhost queda únicamente como default de desarrollo;
-- `.env` está ignorado por Git;
-- no se detectaron credenciales privadas rastreadas en el checkpoint final.
-
-## Bitácora y auditoría
-
-La bitácora incluye:
-
-- entidad y repositorio de eventos;
-- servicio paginado;
-- captura de mutaciones;
-- API administrativa de consulta;
-- interfaz web para ADMIN;
-- persistencia mediante migración Flyway.
+- Auth y RBAC.
+- Companies / Stores / Warehouses.
+- Catalog e Inventory.
+- Cart / Checkout.
+- Orders y allocations de inventario.
+- Payments y Stripe.
+- POS y caja.
+- Offline customer/POS.
+- Push Web + Android mediante Firebase.
+- Virtual Try-On.
+- Reports + AI.
+- Audit.
+- Admin Bootstrap.
+- Azure Blob managed assets.
 
 ## Configuración
 
-Copia `.env.example` a `.env` y completa los valores locales necesarios.
-
-Nunca subas `.env`, passwords, tokens, API keys, credenciales Stripe, credenciales de Firebase privadas, tokens de Replicate ni service-account JSON.
-
-Variables relevantes para producción cloud:
-
-- `VELORA_AI_BASE_URL`
-- `VELORA_AI_INTERNAL_TOKEN`
-- `VELORA_CORS_ALLOWED_ORIGINS`
-- `VELORA_CATALOG_ASSET_PROVIDER`
-- `VELORA_CATALOG_GCS_BUCKET`
-- `VELORA_CATALOG_GCS_PREFIX`
-- `VELORA_TRYON_PROVIDER`
-- `REPLICATE_API_TOKEN`
-- `VELORA_TRYON_REPLICATE_MODEL`
-- `VELORA_TRYON_RESULT_PROVIDER`
-- `VELORA_TRYON_RESULT_GCS_BUCKET`
-- `VELORA_TRYON_RESULT_GCS_PREFIX`
-- `VELORA_JWT_SECRET`
-
-## Ejecución local
-
-Consulta [INSTALLATION.md](INSTALLATION.md) para preparar una PC nueva, configurar PostgreSQL, instalar dependencias, arrancar cada módulo y ejecutar las pruebas.
-
-## Validaciones principales
-
-Backend:
+Copia el archivo de ejemplo:
 
 ```powershell
-cd back_velora
-.\mvnw.cmd test
+Copy-Item .env.example .env
 ```
 
-Frontend:
+Nunca versiones `.env`, passwords, tokens, claves privadas ni credenciales de proveedores.
+
+Variables especialmente relevantes para producción:
+
+```text
+DATABASE_URL
+VELORA_JWT_SECRET
+VELORA_CORS_ALLOWED_ORIGINS
+VELORA_RATE_LIMIT_TRUST_PROXY_HEADERS
+VELORA_PUBLIC_BACKEND_URL
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+VELORA_ASSET_STORAGE_PROVIDER
+AZURE_STORAGE_CONNECTION_STRING
+VELORA_AZURE_BLOB_CONTAINER
+VELORA_PUSH_FIREBASE_ENABLED
+FIREBASE_PROJECT_ID
+FIREBASE_CLIENT_EMAIL
+FIREBASE_PRIVATE_KEY
+BOOTSTRAP_ADMIN_ENABLED
+BOOTSTRAP_ADMIN_EMAIL
+BOOTSTRAP_ADMIN_PASSWORD
+VITE_API_BASE_URL
+EXPO_PUBLIC_API_BASE_URL
+```
+
+Los ejemplos específicos de Web y Mobile están en:
+
+- `apps/web/.env.production.example`
+- `apps/mobile/.env.production.example`
+
+## Comandos principales
+
+Instalación:
 
 ```powershell
-cd front_velora
-pnpm install
-pnpm run build
+pnpm install --frozen-lockfile
 ```
 
-Android:
+Build de paquetes compartidos:
 
 ```powershell
-cd mobile_velora
-.\gradlew.bat :app:compileDebugKotlin
-.\gradlew.bat :app:testDebugUnitTest
+pnpm build:packages
 ```
 
-AI:
+Desarrollo:
 
 ```powershell
-.\ai_velora\.venv\Scripts\python.exe -m pip install -r ai_velora\requirements.txt
-.\ai_velora\.venv\Scripts\python.exe -m pip install -r ai_velora\requirements-dev.txt
-cd ai_velora
-.\.venv\Scripts\python.exe -m pytest -q
+pnpm dev:api
+pnpm dev:web
+pnpm dev:mobile
 ```
 
-## Despliegue
+Build de Azure:
 
-Objetivo de producción: Google Cloud.
+```powershell
+pnpm build:azure:api
+pnpm build:azure:web
+```
 
-El despliegue se realizará después del cierre documental, checkpoint GitHub y tareas adicionales solicitadas antes de publicar producción.
+Validaciones:
 
-## Documentación
+```powershell
+pnpm --filter @velora/api typecheck
+pnpm --filter @velora/api lint
+pnpm --filter @velora/api test
 
-`Punto 14` corresponde al cierre documental y no se presenta como una fase de implementación del producto.
+pnpm --filter @velora/web typecheck
+pnpm --filter @velora/web lint
+pnpm --filter @velora/web test
+
+pnpm --filter @velora/mobile typecheck
+pnpm --filter @velora/mobile test
+pnpm --filter @velora/mobile validate:bundle
+```
+
+## Base de datos
+
+Las migraciones autoritativas son **V1-V25** y deben aplicarse en orden sobre una base nueva. V1-V24 son históricas e inmutables; V25 agrega la fundación de parity commerce utilizada por la migración actual.
+
+La secuencia V1→V25 fue validada desde una PostgreSQL 17 completamente vacía antes de este cierre.
+
+## Instalación y despliegue
+
+- Instalación reproducible: [INSTALLATION.md](INSTALLATION.md)
+- Despliegue Azure: [docs/AZURE_DEPLOYMENT.md](docs/AZURE_DEPLOYMENT.md)
+
+## Seguridad
+
+- JWT stateless.
+- Passwords con bcrypt.
+- Rate limiting configurable.
+- CORS por allow-list.
+- PostgreSQL de Azure mediante TLS.
+- Secretos únicamente por entorno/plataforma.
+- Push failure aislado de las transacciones comerciales.
+- Admin Bootstrap deshabilitado por defecto e idempotente.
+
+## Checkpoint
+
+Este README describe exclusivamente la arquitectura vigente de migración. Para cambios futuros se debe preservar el aislamiento por Company/Store, las reglas PICKUP/DELIVERY, V1-V24 inmutables y los contratos ya validados en la regresión integrada.

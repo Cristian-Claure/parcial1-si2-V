@@ -6,6 +6,7 @@ import type {
 } from "@velora/contracts";
 import { ApiClientError } from "../api/apiClient";
 import { veloraApi } from "../api/veloraApi";
+import { mobilePush } from "../push/mobilePush";
 import {
   clearSession,
   readSession,
@@ -59,6 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       requireCustomer(user);
       await saveSessionUser(user);
       set({ status: "authenticated", user });
+      void mobilePush.syncIfPermissionGranted();
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 0) {
         set({ status: "authenticated", user: stored.user });
@@ -75,6 +77,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     requireCustomer(response.user);
     await saveSession(response);
     set({ status: "authenticated", user: response.user });
+    void mobilePush.syncIfPermissionGranted();
     return response.user;
   },
 
@@ -83,12 +86,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     requireCustomer(response.user);
     await saveSession(response);
     set({ status: "authenticated", user: response.user });
+    void mobilePush.syncIfPermissionGranted();
     return response.user;
   },
 
   logout: async () => {
-    await clearSession();
-    set({ status: "anonymous", user: null });
+    try { await mobilePush.revokeForLogout(); } finally {
+      await clearSession();
+      set({ status: "anonymous", user: null });
+    }
   },
 
   replaceUser: async (user) => {

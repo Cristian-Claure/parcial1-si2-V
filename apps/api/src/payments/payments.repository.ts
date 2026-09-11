@@ -1165,8 +1165,8 @@ export class PaymentsRepository {
       string,
     reason:
       string,
-  ): Promise<void> {
-    await this.stripeTransition(
+  ): Promise<boolean> {
+    return this.stripeTransition(
       sessionId,
       "PAID",
       reason,
@@ -1178,8 +1178,8 @@ export class PaymentsRepository {
       string,
     reason:
       string,
-  ): Promise<void> {
-    await this.stripeTransition(
+  ): Promise<boolean> {
+    return this.stripeTransition(
       sessionId,
       "FAILED",
       reason,
@@ -1194,8 +1194,8 @@ export class PaymentsRepository {
       "FAILED",
     reason:
       string,
-  ): Promise<void> {
-    await this.database.db
+  ): Promise<boolean> {
+    return this.database.db
       .transaction(
         async (tx) => {
           await tx.execute(
@@ -1255,14 +1255,14 @@ export class PaymentsRepository {
             payment.status ===
               "PAID"
           ) {
-            return;
+            return false;
           }
 
           if (
             payment.status !==
             "PENDING"
           ) {
-            return;
+            return false;
           }
 
           const now =
@@ -1310,6 +1310,8 @@ export class PaymentsRepository {
             reason,
             now,
           );
+
+          return true;
         },
       );
   }

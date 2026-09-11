@@ -22,6 +22,7 @@ import type {
 } from "@velora/contracts";
 import { veloraApi } from "@/core/api/veloraApi";
 import { useAuthStore } from "@/core/auth/authStore";
+import { mobilePush } from "@/core/push/mobilePush";
 import { cachedFetch } from "@/core/offline/cachedFetch";
 import { saveCache } from "@/core/offline/mobileDb";
 import { colors, commonStyles } from "@/shared/theme";
@@ -72,6 +73,8 @@ export default function AccountScreen() {
   const [editing, setEditing] = useState<CustomerAddressResponse | null>(null);
   const [addressForm, setAddressForm] =
     useState<CustomerAddressRequest>(blankAddress);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMessage, setPushMessage] = useState<string | null>(null);
 
   const effectiveProfile: CustomerProfileUpdateRequest | null =
     profileForm ??
@@ -167,6 +170,12 @@ export default function AccountScreen() {
     <CustomerShell active="account">
       <Text style={commonStyles.eyebrow}>MI CUENTA</Text>
       <Text style={commonStyles.heading}>Datos y direcciones.</Text>
+      <View style={commonStyles.card}>
+        <Text style={commonStyles.subheading}>Notificaciones</Text>
+        <Text style={commonStyles.muted}>Reciba cambios de pedidos y pagos en este dispositivo.</Text>
+        {pushMessage ? <Notice kind="info">{pushMessage}</Notice> : null}
+        <Button title={pushBusy ? "ACTIVANDO…" : "ACTIVAR NOTIFICACIONES"} disabled={pushBusy} onPress={() => { void (async () => { setPushBusy(true); try { const result = await mobilePush.enableNotifications(); setPushMessage(result === "enabled" ? "Notificaciones activadas." : result === "denied" ? "Permiso de notificaciones denegado." : result === "unsupported" ? "Las notificaciones push requieren un dispositivo Android físico con un build de desarrollo/producción." : "No fue posible registrar este dispositivo."); } finally { setPushBusy(false); } })(); }} />
+      </View>
 
       {profile.isError ? (
         <Notice kind="warning">

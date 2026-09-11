@@ -10,6 +10,8 @@ import {
   StripeGatewayService,
 } from "./stripe-gateway.service.js";
 
+import { CustomerPushService } from "../push/customer-push.service.js";
+
 @Injectable()
 export class StripeWebhookService {
   constructor(
@@ -18,6 +20,9 @@ export class StripeWebhookService {
 
     private readonly payments:
       PaymentsRepository,
+
+    private readonly push?:
+      CustomerPushService,
   ) {}
 
   async handle(
@@ -51,31 +56,34 @@ export class StripeWebhookService {
             .toLowerCase() ===
           "paid"
         ) {
-          await this.payments
+          const completedTransitioned = await this.payments
             .stripePaid(
               session.id,
               "Pago confirmado por webhook firmado de Stripe.",
             );
+          if (completedTransitioned) this.push?.stripeConfirmed(session.id);
         }
 
         return;
 
       case "checkout.session.async_payment_succeeded":
-        await this.payments
+        const asyncPaidTransitioned = await this.payments
           .stripePaid(
             session.id,
             "Pago confirmado por webhook firmado de Stripe.",
           );
+        if (asyncPaidTransitioned) this.push?.stripeConfirmed(session.id);
 
         return;
 
       case "checkout.session.expired":
       case "checkout.session.async_payment_failed":
-        await this.payments
+        const failedTransitioned = await this.payments
           .stripeFailed(
             session.id,
             "Stripe informó que la sesión expiró o el pago asíncrono falló.",
           );
+        if (failedTransitioned) this.push?.stripeFailed(session.id);
 
         return;
 

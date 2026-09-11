@@ -12,6 +12,7 @@ import {
   integer,
   numeric,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -3143,6 +3144,20 @@ export const shoppingCarts =
               appUsers.id,
           ),
 
+      companyId:
+        uuid("company_id")
+          .references(
+            () =>
+              companies.id,
+          ),
+
+      storeId:
+        uuid("store_id")
+          .references(
+            () =>
+              stores.id,
+          ),
+
       status:
         varchar(
           "status",
@@ -3204,7 +3219,25 @@ export const shoppingCarts =
       ),
 
       uniqueIndex(
-        "uq_shopping_carts_active_user",
+        "uq_shopping_carts_active_user_company",
+      )
+        .on(
+          table.userId,
+          table.companyId,
+        )
+        .where(
+          sql`
+            ${table.status}
+            =
+            'ACTIVE'
+            and
+            ${table.companyId}
+            is not null
+          `,
+        ),
+
+      uniqueIndex(
+        "uq_shopping_carts_active_user_unscoped",
       )
         .on(
           table.userId,
@@ -3214,6 +3247,9 @@ export const shoppingCarts =
             ${table.status}
             =
             'ACTIVE'
+            and
+            ${table.companyId}
+            is null
           `,
         ),
     ],
@@ -3700,6 +3736,15 @@ export const orders =
           {
             length:
               500,
+          },
+        ),
+
+      idempotencyKeyHash:
+        varchar(
+          "idempotency_key_hash",
+          {
+            length:
+              64,
           },
         ),
 
@@ -4242,6 +4287,87 @@ export type DatabasePaymentStatus =
   | "CANCELLED"
   | "REFUNDED";
 
+export const orderInventoryAllocations =
+  pgTable(
+    "order_inventory_allocations",
+    {
+      orderId:
+        uuid("order_id")
+          .notNull()
+          .references(
+            () =>
+              orders.id,
+            {
+              onDelete:
+                "cascade",
+            },
+          ),
+
+      orderItemId:
+        uuid("order_item_id")
+          .notNull()
+          .references(
+            () =>
+              orderItems.id,
+            {
+              onDelete:
+                "cascade",
+            },
+          ),
+
+      warehouseId:
+        uuid("warehouse_id")
+          .notNull()
+          .references(
+            () =>
+              warehouses.id,
+          ),
+
+      quantity:
+        integer("quantity")
+          .notNull(),
+
+      createdAt:
+        timestamp(
+          "created_at",
+          {
+            withTimezone:
+              true,
+
+            mode:
+              "date",
+          },
+        )
+          .notNull()
+          .defaultNow(),
+    },
+    (table) => [
+      primaryKey({
+        columns: [
+          table.orderItemId,
+          table.warehouseId,
+        ],
+        name:
+          "pk_order_inventory_allocations",
+      }),
+
+      index(
+        "idx_order_inventory_allocations_order",
+      ).on(
+        table.orderId,
+      ),
+
+      index(
+        "idx_order_inventory_allocations_warehouse",
+      ).on(
+        table.warehouseId,
+      ),
+    ],
+  );
+
+export type OrderInventoryAllocationRow =
+  typeof orderInventoryAllocations.$inferSelect;
+
 export const payments =
   pgTable(
     "payments",
@@ -4724,3 +4850,29 @@ export type PaymentRow =
 
 export type PaymentStatusHistoryRow =
   typeof paymentStatusHistory.$inferSelect;
+
+export type DatabasePushPlatform = "ANDROID" | "WEB";
+
+export const pushInstallations = pgTable(
+  "push_installations",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id").notNull().references(() => appUsers.id, { onDelete: "cascade" }),
+    installationId: varchar("installation_id", { length: 255 }).notNull(),
+    platform: varchar("platform", { length: 20 }).$type<DatabasePushPlatform>().notNull(),
+    deviceLabel: varchar("device_label", { length: 160 }),
+    active: boolean("active").notNull().default(true),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true, mode: "date" }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true, mode: "date" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    unique("uq_push_installations_platform_fid").on(table.platform, table.installationId),
+    index("idx_push_installations_user_active").on(table.userId, table.active),
+    index("idx_push_installations_last_seen").on(table.lastSeenAt),
+    check("ck_push_installations_platform", sql`${table.platform} in ('ANDROID', 'WEB')`),
+  ],
+);
+
+export type PushInstallationRow = typeof pushInstallations.$inferSelect;

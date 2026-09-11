@@ -11,10 +11,13 @@ import {
 
 import {
   inventoryMovementRequestSchema,
+  inventoryTransferRequestSchema,
   warehouseRequestSchema,
   type InventoryMovementRequest,
   type InventoryMovementResponse,
   type InventoryStock,
+  type InventoryTransferRequest,
+  type InventoryTransferResponse,
   type WarehouseRequest,
   type WarehouseResponse,
 } from "@velora/contracts";
@@ -140,6 +143,29 @@ export class InventoryController {
   ): Promise<InventoryStock> {
     return this.inventory
       .registerMovement(
+        this.principal(
+          request,
+        ),
+        body,
+      );
+  }
+
+  @Post("transfers")
+  transfer(
+    @Req()
+    request:
+      AuthenticatedRequest,
+
+    @Body(
+      new ZodValidationPipe(
+        inventoryTransferRequestSchema,
+      ),
+    )
+    body:
+      InventoryTransferRequest,
+  ): Promise<InventoryTransferResponse> {
+    return this.inventory
+      .transfer(
         this.principal(
           request,
         ),

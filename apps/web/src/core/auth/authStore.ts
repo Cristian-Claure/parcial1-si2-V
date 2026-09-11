@@ -2,13 +2,14 @@ import { create } from "zustand";
 import type { AuthResponse, LoginRequest, RegisterRequest, UserProfile } from "@velora/contracts";
 import { AUTH_STORAGE_KEY } from "../api/apiClient";
 import { veloraApi } from "../api/veloraApi";
+import { webPush } from "../push/webPush";
 
 type AuthStatus = "checking" | "anonymous" | "authenticated";
 interface StoredAuth { accessToken: string; user: UserProfile; }
 interface AuthState {
   status: AuthStatus; accessToken: string | null; user: UserProfile | null;
   restore: () => Promise<void>; login: (request: LoginRequest) => Promise<UserProfile>;
-  register: (request: RegisterRequest) => Promise<UserProfile>; logout: () => void;
+  register: (request: RegisterRequest) => Promise<UserProfile>; logout: () => Promise<void>;
   replaceUser: (user: UserProfile) => void;
 }
 
@@ -35,6 +36,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const user = await veloraApi.me();
         persist({ accessToken: current.accessToken, user });
         set({ status: "authenticated", accessToken: current.accessToken, user });
+        if (user.role === "CUSTOMER") void webPush.syncIfPermissionGranted();
       } catch {
         localStorage.removeItem(AUTH_STORAGE_KEY);
         set({ status: "anonymous", accessToken: null, user: null });
@@ -42,13 +44,13 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
     login: async (request) => {
       const response = await veloraApi.login(request); persist(response);
-      set({ status: "authenticated", accessToken: response.accessToken, user: response.user }); return response.user;
+      set({ status: "authenticated", accessToken: response.accessToken, user: response.user }); if (response.user.role === "CUSTOMER") void webPush.syncIfPermissionGranted(); return response.user;
     },
     register: async (request) => {
       const response = await veloraApi.register(request); persist(response);
-      set({ status: "authenticated", accessToken: response.accessToken, user: response.user }); return response.user;
+      set({ status: "authenticated", accessToken: response.accessToken, user: response.user }); if (response.user.role === "CUSTOMER") void webPush.syncIfPermissionGranted(); return response.user;
     },
-    logout: () => { localStorage.removeItem(AUTH_STORAGE_KEY); set({ status: "anonymous", accessToken: null, user: null }); },
+    logout: async () => { try { await webPush.revokeForLogout(); } finally { localStorage.removeItem(AUTH_STORAGE_KEY); set({ status: "anonymous", accessToken: null, user: null }); } },
     replaceUser: (user) => {
       const token = get().accessToken;
       if (token) persist({ accessToken: token, user });

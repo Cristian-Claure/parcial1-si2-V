@@ -8,6 +8,7 @@ import {
 import type { CartResponse } from "@velora/contracts";
 import { veloraApi } from "@/core/api/veloraApi";
 import { useAuthStore } from "@/core/auth/authStore";
+import { useCompanyStore } from "@/core/company/companyStore";
 import { cachedFetch } from "@/core/offline/cachedFetch";
 import { saveCache } from "@/core/offline/mobileDb";
 import { colors, commonStyles } from "@/shared/theme";
@@ -21,17 +22,19 @@ import {
 
 export default function CartScreen() {
   const user = useAuthStore((state) => state.user)!;
+  const companyId = useCompanyStore((state) => state.selectedCompanyId);
   const client = useQueryClient();
+  const cartCacheKey = `${user.id}:${companyId ?? "none"}`;
 
   const cart = useQuery({
-    queryKey: ["cart", user.id],
-    queryFn: () =>
-      cachedFetch<CartResponse>("cart", user.id, veloraApi.cart),
+    queryKey: ["cart", user.id, companyId],
+    enabled: Boolean(companyId),
+    queryFn: () => cachedFetch<CartResponse>("cart", cartCacheKey, () => veloraApi.cart(companyId!)),
   });
 
   const applyCart = async (value: CartResponse) => {
-    await saveCache("cart", user.id, value);
-    client.setQueryData(["cart", user.id], value);
+    await saveCache("cart", cartCacheKey, value);
+    client.setQueryData(["cart", user.id, companyId], value);
   };
 
   const update = useMutation({
@@ -51,7 +54,7 @@ export default function CartScreen() {
   });
 
   const clear = useMutation({
-    mutationFn: veloraApi.clearCart,
+    mutationFn: () => veloraApi.clearCart(companyId!),
     onSuccess: async () => {
       const empty: CartResponse = {
         id: null,
@@ -66,6 +69,8 @@ export default function CartScreen() {
   });
 
   const error = update.error ?? remove.error ?? clear.error;
+
+  if (!companyId) return <CustomerShell active="cart"><Notice kind="error">Seleccione una compañía antes de abrir su bolsa.</Notice></CustomerShell>;
 
   return (
     <CustomerShell active="cart">

@@ -31,6 +31,8 @@ import {
   StripeGatewayService,
 } from "./stripe-gateway.service.js";
 
+import { CustomerPushService } from "../push/customer-push.service.js";
+
 @Injectable()
 export class PaymentsService {
   constructor(
@@ -42,6 +44,9 @@ export class PaymentsService {
 
     private readonly stripe:
       StripeGatewayService,
+
+    private readonly push?:
+      CustomerPushService,
   ) {}
 
   async create(
@@ -160,10 +165,13 @@ export class PaymentsService {
               ),
         );
 
-    return this.requireCustomerPayment(
+    const payment = await this.requireCustomerPayment(
       customerId,
       id,
     );
+
+    this.push?.paymentCancelled(payment.orderId);
+    return payment;
   }
 
   async confirm(
@@ -190,9 +198,12 @@ export class PaymentsService {
           ),
         );
 
-    return this.requirePayment(
+    const payment = await this.requirePayment(
       id,
     );
+
+    this.push?.paymentConfirmed(payment.orderId);
+    return payment;
   }
 
   async fail(
@@ -219,9 +230,12 @@ export class PaymentsService {
           ),
         );
 
-    return this.requirePayment(
+    const payment = await this.requirePayment(
       id,
     );
+
+    this.push?.paymentFailed(payment.orderId);
+    return payment;
   }
 
   async refund(
@@ -253,9 +267,12 @@ export class PaymentsService {
               ),
         );
 
-    return this.requirePayment(
+    const payment = await this.requirePayment(
       id,
     );
+
+    this.push?.paymentRefunded(payment.orderId);
+    return payment;
   }
 
   async stripeCheckout(

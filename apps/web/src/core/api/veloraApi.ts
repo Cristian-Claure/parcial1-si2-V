@@ -245,9 +245,9 @@ export const veloraApi = {
       },
     ),
 
-  cart: () =>
+  cart: (companyId: string) =>
     apiRequest<CartResponse>(
-      "/api/customer/cart",
+      `/api/customer/cart?companyId=${q(companyId)}`,
     ),
 
   addCartItem: (
@@ -283,12 +283,10 @@ export const veloraApi = {
       },
     ),
 
-  clearCart: () =>
+  clearCart: (companyId: string) =>
     apiRequest<void>(
-      "/api/customer/cart",
-      {
-        method: "DELETE",
-      },
+      `/api/customer/cart?companyId=${q(companyId)}`,
+      { method: "DELETE" },
     ),
 
   customerProfile: () =>
@@ -370,20 +368,15 @@ export const veloraApi = {
       },
     ),
 
-  checkoutWarehouses: () =>
+  checkoutWarehouses: (companyId: string) =>
     apiRequest<CheckoutWarehouseResponse[]>(
-      "/api/customer/checkout/warehouses",
+      `/api/customer/checkout/warehouses?companyId=${q(companyId)}`,
     ),
 
-  createOrder: (
-    body: CreateOrderRequest,
-  ) =>
+  createOrder: (body: CreateOrderRequest, idempotencyKey: string) =>
     apiRequest<OrderResponse>(
       "/api/customer/orders",
-      {
-        method: "POST",
-        body: jsonBody(body),
-      },
+      { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: jsonBody(body) },
     ),
 
   syncOfflineOrder: (

@@ -102,3 +102,5 @@ apps/mobile/.expo-export-check/
 apps/mobile/dist/
 packages/*/dist/
 *.tsbuildinfo
+!apps/web/.env.production.example
+!apps/mobile/.env.production.example

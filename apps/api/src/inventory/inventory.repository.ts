@@ -16,6 +16,7 @@ import {
 
 import type {
   InventoryMovementRequest,
+  InventoryTransferRequest,
   WarehouseRequest,
   WarehouseResponse,
 } from "@velora/contracts";
@@ -174,6 +175,29 @@ export type ApplyMovementResult =
         "OK";
 
       stock:
+        StockRecord;
+    }
+  | {
+      kind:
+        "INSUFFICIENT_PHYSICAL";
+    }
+  | {
+      kind:
+        "COMMITTED_EXCEEDS_PHYSICAL";
+    };
+
+export type InventoryTransferResult =
+  | {
+      kind:
+        "OK";
+
+      transferId:
+        string;
+
+      source:
+        StockRecord;
+
+      destination:
         StockRecord;
     }
   | {
@@ -902,6 +926,439 @@ export class InventoryRepository {
                 "OK" as const,
 
               stock,
+            };
+          },
+        );
+    }
+    catch (error) {
+      if (
+        error instanceof
+        InventoryMovementAbortError
+      ) {
+        return {
+          kind:
+            error.kind,
+        };
+      }
+
+      throw error;
+    }
+  }
+
+  async transfer(
+    request:
+      InventoryTransferRequest,
+    actorId:
+      string,
+  ): Promise<InventoryTransferResult> {
+    try {
+      return await this.database.db
+        .transaction(
+          async (tx) => {
+            const now =
+              new Date();
+
+            await tx
+              .insert(
+                inventoryStocks,
+              )
+              .values({
+                id:
+                  randomUUID(),
+
+                warehouseId:
+                  request.destinationWarehouseId,
+
+                variantId:
+                  request.variantId,
+
+                physicalQuantity:
+                  0,
+
+                committedQuantity:
+                  0,
+
+                version:
+                  0,
+
+                createdAt:
+                  now,
+
+                updatedAt:
+                  now,
+              })
+              .onConflictDoNothing({
+                target: [
+                  inventoryStocks.warehouseId,
+                  inventoryStocks.variantId,
+                ],
+              });
+
+            const orderedWarehouseIds =
+              [
+                request.sourceWarehouseId,
+                request.destinationWarehouseId,
+              ]
+                .sort();
+
+            for (
+              const warehouseId of
+              orderedWarehouseIds
+            ) {
+              await tx.execute(
+                sql`
+                  select id
+                  from inventory_stocks
+                  where warehouse_id =
+                    ${warehouseId}::uuid
+                    and variant_id =
+                      ${request.variantId}::uuid
+                  for update
+                `,
+              );
+            }
+
+            const sourceRows =
+              await tx
+                .select({
+                  id:
+                    inventoryStocks.id,
+
+                  physicalQuantity:
+                    inventoryStocks.physicalQuantity,
+
+                  committedQuantity:
+                    inventoryStocks.committedQuantity,
+                })
+                .from(
+                  inventoryStocks,
+                )
+                .where(
+                  and(
+                    eq(
+                      inventoryStocks.warehouseId,
+                      request.sourceWarehouseId,
+                    ),
+                    eq(
+                      inventoryStocks.variantId,
+                      request.variantId,
+                    ),
+                  ),
+                )
+                .limit(1);
+
+            const destinationRows =
+              await tx
+                .select({
+                  id:
+                    inventoryStocks.id,
+
+                  physicalQuantity:
+                    inventoryStocks.physicalQuantity,
+
+                  committedQuantity:
+                    inventoryStocks.committedQuantity,
+                })
+                .from(
+                  inventoryStocks,
+                )
+                .where(
+                  and(
+                    eq(
+                      inventoryStocks.warehouseId,
+                      request.destinationWarehouseId,
+                    ),
+                    eq(
+                      inventoryStocks.variantId,
+                      request.variantId,
+                    ),
+                  ),
+                )
+                .limit(1);
+
+            const source =
+              sourceRows[0];
+
+            const destination =
+              destinationRows[0];
+
+            if (
+              !source ||
+              source.physicalQuantity <
+                request.quantity
+            ) {
+              throw new InventoryMovementAbortError(
+                "INSUFFICIENT_PHYSICAL",
+              );
+            }
+
+            if (!destination) {
+              throw new Error(
+                "No se pudo crear el stock del almacén de destino.",
+              );
+            }
+
+            const sourcePhysicalAfter =
+              source.physicalQuantity -
+              request.quantity;
+
+            if (
+              source.committedQuantity >
+              sourcePhysicalAfter
+            ) {
+              throw new InventoryMovementAbortError(
+                "COMMITTED_EXCEEDS_PHYSICAL",
+              );
+            }
+
+            const destinationPhysicalAfter =
+              destination.physicalQuantity +
+              request.quantity;
+
+            const transferId =
+              randomUUID();
+
+            await tx
+              .update(
+                inventoryStocks,
+              )
+              .set({
+                physicalQuantity:
+                  sourcePhysicalAfter,
+
+                version:
+                  sql<number>`
+                    ${inventoryStocks.version}
+                    +
+                    1
+                  `,
+
+                updatedAt:
+                  now,
+              })
+              .where(
+                eq(
+                  inventoryStocks.id,
+                  source.id,
+                ),
+              );
+
+            await tx
+              .update(
+                inventoryStocks,
+              )
+              .set({
+                physicalQuantity:
+                  destinationPhysicalAfter,
+
+                version:
+                  sql<number>`
+                    ${inventoryStocks.version}
+                    +
+                    1
+                  `,
+
+                updatedAt:
+                  now,
+              })
+              .where(
+                eq(
+                  inventoryStocks.id,
+                  destination.id,
+                ),
+              );
+
+            await tx
+              .insert(
+                inventoryMovements,
+              )
+              .values([
+                {
+                  id:
+                    randomUUID(),
+
+                  warehouseId:
+                    request.sourceWarehouseId,
+
+                  variantId:
+                    request.variantId,
+
+                  movementType:
+                    "TRANSFER_OUT",
+
+                  quantity:
+                    request.quantity,
+
+                  physicalDelta:
+                    -request.quantity,
+
+                  committedDelta:
+                    0,
+
+                  physicalBefore:
+                    source.physicalQuantity,
+
+                  physicalAfter:
+                    sourcePhysicalAfter,
+
+                  committedBefore:
+                    source.committedQuantity,
+
+                  committedAfter:
+                    source.committedQuantity,
+
+                  referenceType:
+                    "TRANSFER",
+
+                  referenceId:
+                    transferId,
+
+                  reason:
+                    request.reason.trim(),
+
+                  performedBy:
+                    actorId,
+
+                  createdAt:
+                    now,
+                },
+                {
+                  id:
+                    randomUUID(),
+
+                  warehouseId:
+                    request.destinationWarehouseId,
+
+                  variantId:
+                    request.variantId,
+
+                  movementType:
+                    "TRANSFER_IN",
+
+                  quantity:
+                    request.quantity,
+
+                  physicalDelta:
+                    request.quantity,
+
+                  committedDelta:
+                    0,
+
+                  physicalBefore:
+                    destination.physicalQuantity,
+
+                  physicalAfter:
+                    destinationPhysicalAfter,
+
+                  committedBefore:
+                    destination.committedQuantity,
+
+                  committedAfter:
+                    destination.committedQuantity,
+
+                  referenceType:
+                    "TRANSFER",
+
+                  referenceId:
+                    transferId,
+
+                  reason:
+                    request.reason.trim(),
+
+                  performedBy:
+                    actorId,
+
+                  createdAt:
+                    now,
+                },
+              ]);
+
+            const sourceStockRows =
+              await tx
+                .select(
+                  stockSelection,
+                )
+                .from(
+                  inventoryStocks,
+                )
+                .innerJoin(
+                  productVariants,
+                  eq(
+                    inventoryStocks.variantId,
+                    productVariants.id,
+                  ),
+                )
+                .innerJoin(
+                  products,
+                  eq(
+                    productVariants.productId,
+                    products.id,
+                  ),
+                )
+                .where(
+                  eq(
+                    inventoryStocks.id,
+                    source.id,
+                  ),
+                )
+                .limit(1);
+
+            const destinationStockRows =
+              await tx
+                .select(
+                  stockSelection,
+                )
+                .from(
+                  inventoryStocks,
+                )
+                .innerJoin(
+                  productVariants,
+                  eq(
+                    inventoryStocks.variantId,
+                    productVariants.id,
+                  ),
+                )
+                .innerJoin(
+                  products,
+                  eq(
+                    productVariants.productId,
+                    products.id,
+                  ),
+                )
+                .where(
+                  eq(
+                    inventoryStocks.id,
+                    destination.id,
+                  ),
+                )
+                .limit(1);
+
+            const sourceStock =
+              sourceStockRows[0];
+
+            const destinationStock =
+              destinationStockRows[0];
+
+            if (
+              !sourceStock ||
+              !destinationStock
+            ) {
+              throw new Error(
+                "No se pudo recuperar el stock de la transferencia.",
+              );
+            }
+
+            return {
+              kind:
+                "OK" as const,
+
+              transferId,
+
+              source:
+                sourceStock,
+
+              destination:
+                destinationStock,
             };
           },
         );

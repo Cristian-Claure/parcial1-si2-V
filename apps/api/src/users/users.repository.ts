@@ -327,6 +327,73 @@ export class UsersRepository {
     };
   }
 
+  async createAdmin(
+    input: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      passwordHash: string;
+    },
+  ): Promise<void> {
+    const now =
+      new Date();
+
+    await this.database.db
+      .insert(
+        appUsers,
+      )
+      .values({
+        id:
+          randomUUID(),
+
+        firstName:
+          input
+            .firstName
+            .trim(),
+
+        lastName:
+          input
+            .lastName
+            .trim(),
+
+        email:
+          input
+            .email
+            .trim()
+            .toLowerCase(),
+
+        passwordHash:
+          input.passwordHash,
+
+        role:
+          "ADMIN",
+
+        customerType:
+          null,
+
+        phone:
+          null,
+
+        businessName:
+          null,
+
+        taxId:
+          null,
+
+        status:
+          "ACTIVE",
+
+        storeId:
+          null,
+
+        createdAt:
+          now,
+
+        updatedAt:
+          now,
+      });
+  }
+
   toProfile(
     user: UserRecord,
   ): UserProfile {

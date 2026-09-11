@@ -22,6 +22,8 @@ import {
   OrderOperationsRepository,
 } from "./order-operations.repository.js";
 
+import { CustomerPushService } from "../push/customer-push.service.js";
+
 @Injectable()
 export class OrderOperationsService {
   constructor(
@@ -30,6 +32,9 @@ export class OrderOperationsService {
 
     private readonly access:
       AccessContextService,
+
+    private readonly push?:
+      CustomerPushService,
   ) {}
 
   async fulfill(
@@ -74,6 +79,8 @@ export class OrderOperationsService {
         "El pedido fue completado pero no pudo recuperarse.",
       );
     }
+
+    this.push?.orderFulfilled(order.id);
 
     return order;
   }

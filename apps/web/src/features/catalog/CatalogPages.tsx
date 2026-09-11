@@ -40,7 +40,7 @@ export function ProductDetailPage() {
   const favorites = useQuery({ queryKey: ["favorites"], queryFn: veloraApi.favorites, enabled: user?.role === "CUSTOMER" });
   const selected = product?.variants.find((variant) => variant.id === selectedVariantId) ?? product?.variants[0] ?? null;
   const favorite = Boolean(product && favorites.data?.some((item) => item.productId === product.id));
-  const cartMutation = useMutation({ mutationFn: (variant: VariantResponse) => veloraApi.addCartItem({ variantId: variant.id, quantity: 1 }), onSuccess: async () => { setMessage("Producto agregado a su bolsa."); await client.invalidateQueries({ queryKey: ["cart"] }); } });
+  const cartMutation = useMutation({ mutationFn: (variant: VariantResponse) => veloraApi.addCartItem({ companyId: companyId!, variantId: variant.id, quantity: 1 }), onSuccess: async () => { setMessage("Producto agregado a su bolsa."); await client.invalidateQueries({ queryKey: ["cart"] }); } });
   const favoriteMutation = useMutation({ mutationFn: async () => { if (!product) return; if (favorite) await veloraApi.removeFavorite(product.id); else await veloraApi.addFavorite(product.id); }, onSuccess: () => client.invalidateQueries({ queryKey: ["favorites"] }) });
   if (!companyId) return <main className="section"><Notice kind="error">Seleccione una compañía desde el catálogo.</Notice></main>;
   if (products.isLoading) return <main className="section">Cargando producto…</main>;

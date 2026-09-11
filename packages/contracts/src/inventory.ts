@@ -219,6 +219,74 @@ export type InventoryMovementRequest =
     typeof inventoryMovementRequestSchema
   >;
 
+export const inventoryTransferRequestSchema =
+  z.object({
+    sourceWarehouseId:
+      z.string().uuid(),
+
+    destinationWarehouseId:
+      z.string().uuid(),
+
+    variantId:
+      z.string().uuid(),
+
+    quantity:
+      z.number()
+        .int()
+        .min(1),
+
+    reason:
+      z.string()
+        .trim()
+        .min(1)
+        .max(500),
+  })
+    .superRefine(
+      (
+        value,
+        context,
+      ) => {
+        if (
+          value.sourceWarehouseId ===
+          value.destinationWarehouseId
+        ) {
+          context.addIssue({
+            code:
+              "custom",
+
+            path: [
+              "destinationWarehouseId",
+            ],
+
+            message:
+              "El almacén de destino debe ser diferente al almacén de origen.",
+          });
+        }
+      },
+    );
+
+export type InventoryTransferRequest =
+  z.infer<
+    typeof inventoryTransferRequestSchema
+  >;
+
+export const inventoryTransferResponseSchema =
+  z.object({
+    transferId:
+      z.string().uuid(),
+
+    source:
+      inventoryStockSchema,
+
+    destination:
+      inventoryStockSchema,
+  });
+
+export type InventoryTransferResponse =
+  z.infer<
+    typeof inventoryTransferResponseSchema
+  >;
+
 export const inventoryMovementResponseSchema =
   z.object({
     id:
