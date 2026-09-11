@@ -1,125 +1,73 @@
-# Instalación reproducible de VÉLORA
-
-Esta guía levanta el stack vigente de VÉLORA desde un clon limpio.
+# Instalación de VÉLORA desde un clon limpio
 
 ## 1. Requisitos
 
-Obligatorios:
+Instala:
 
 - Git.
-- Node.js `>=22.13.0`.
-- pnpm `11.24.0`.
-- Docker Desktop con Docker Engine operativo.
+- Node.js 22.13 o superior.
+- pnpm 11.24.0.
+- Docker Desktop o PostgreSQL 17.
+- Android Studio/Android SDK si vas a compilar la app Android.
+- PowerShell 5.1+ o PowerShell 7 en Windows.
 
-Para desarrollo Mobile con emulador también se recomienda Android Studio. Para el bundle de validación se utiliza Expo CLI a través del workspace.
+No se requiere Java/Spring, Angular CLI, Kotlin como aplicación independiente ni Python/FastAPI para ejecutar el stack vigente.
 
-Comprueba:
-
-```powershell
-git --version
-node --version
-pnpm --version
-docker version
-```
-
-## 2. Clonar y seleccionar la rama
+## 2. Clonar
 
 ```powershell
 git clone <URL_DEL_REPOSITORIO>
-Set-Location PARCIAL_SI2_V
-git switch migration/nest-react-rn-azure
+cd PARCIAL_SI2_V
+git status
 ```
 
-## 3. Instalar dependencias
+El árbol fuente vigente debe contener `apps/`, `packages/`, `scripts/` y `docs/`.
 
-Desde la raíz:
+## 3. Dependencias
 
 ```powershell
+corepack enable
+corepack prepare pnpm@11.24.0 --activate
 pnpm install --frozen-lockfile
 ```
 
-El repositorio es un workspace pnpm. No instales dependencias por separado dentro de cada aplicación.
-
-## 4. Configuración local
+## 4. Entorno
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Edita `.env` y cambia, como mínimo:
+Completa `.env` con valores locales. Nunca publiques ese archivo.
 
-```text
-VELORA_DB_PASSWORD
-DATABASE_URL
-VELORA_JWT_SECRET
+Carga las variables en la sesión de PowerShell:
+
+```powershell
+.\scripts\load-env.ps1
 ```
 
-Para el entorno Docker incluido, los valores locales habituales son:
+## 5. PostgreSQL nuevo
 
-```text
-VELORA_DB_HOST=localhost
-VELORA_DB_PORT=55432
-VELORA_DB_NAME=velora_db
-VELORA_DB_USER=velora
-DATABASE_URL=postgresql://velora:<password>@127.0.0.1:55432/velora_db
-PORT=8080
-```
-
-Los secretos reales no se versionan.
-
-## 5. Levantar PostgreSQL local
+Con Docker:
 
 ```powershell
 docker compose up -d postgres
-docker compose ps
+.\scripts\load-env.ps1
+pnpm db:migrate:fresh
 ```
 
-El servicio utiliza PostgreSQL 17.
+Las migraciones viven en `packages/database/migrations` y deben existir exactamente V1-V25. V1-V24 son históricas e inmutables.
 
-## 6. Aplicar V1-V25 en orden
+`db:migrate:fresh` está diseñado solo para una base nueva: si detecta tablas existentes en `public`, se detiene sin borrar nada.
 
-Las migraciones están en:
-
-```text
-back_velora/src/main/resources/db/migration/
-```
-
-Desde PowerShell:
-
-```powershell
-$migrationDir = "back_velora/src/main/resources/db/migration"
-$migrations = Get-ChildItem -LiteralPath $migrationDir -Filter "V*.sql" | Sort-Object {
-    if ($_.Name -match '^V(\d+)__') { [int]$Matches[1] } else { [int]::MaxValue }
-}
-
-foreach ($migration in $migrations) {
-    Write-Host "Applying $($migration.Name)"
-    Get-Content -Raw -LiteralPath $migration.FullName |
-        docker compose exec -T postgres sh -lc 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-    if ($LASTEXITCODE -ne 0) { throw "Migration failed: $($migration.Name)" }
-}
-```
-
-Debe haber exactamente V1-V25. No modifiques V1-V24.
-
-## 7. Compilar paquetes compartidos
+## 6. API
 
 ```powershell
 pnpm build:packages
-```
-
-Esto compila `@velora/config`, `@velora/contracts` y `@velora/database` antes del API.
-
-## 8. Ejecutar API
-
-```powershell
+pnpm --filter @velora/api build
+pnpm --filter @velora/api typecheck
+pnpm --filter @velora/api lint
+pnpm --filter @velora/api test
 pnpm dev:api
-```
-
-Por defecto:
-
-```text
-http://127.0.0.1:8080
 ```
 
 Health:
@@ -128,155 +76,66 @@ Health:
 GET http://127.0.0.1:8080/api/health
 ```
 
-## 9. Ejecutar Web
-
-En otra terminal:
+## 7. Web
 
 ```powershell
-pnpm dev:web
-```
-
-Vite utiliza normalmente:
-
-```text
-http://localhost:5173
-```
-
-## 10. Ejecutar Mobile
-
-En otra terminal:
-
-```powershell
-pnpm dev:mobile
-```
-
-Android Emulator usa el valor local de `EXPO_PUBLIC_API_BASE_URL` mostrado en `.env.example` (`10.0.2.2` para alcanzar el host).
-
-## 11. Validación completa
-
-API:
-
-```powershell
-pnpm build:azure:api
-pnpm --filter @velora/api typecheck
-pnpm --filter @velora/api lint
-pnpm --filter @velora/api test
-```
-
-Web:
-
-```powershell
-pnpm build:azure:web
+pnpm --filter @velora/contracts build
+pnpm --filter @velora/web build
 pnpm --filter @velora/web typecheck
 pnpm --filter @velora/web lint
 pnpm --filter @velora/web test
+pnpm dev:web
 ```
 
-Mobile:
+Default local: `http://localhost:5173`.
+
+## 8. Mobile
 
 ```powershell
 pnpm --filter @velora/mobile typecheck
 pnpm --filter @velora/mobile test
 pnpm --filter @velora/mobile validate:bundle
+pnpm dev:mobile
 ```
 
-El checkpoint de cierre validó 76 tests API, 9 tests Web y 6 tests Mobile, además del export Android.
+Android Emulator usa normalmente `EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8080`.
 
-## 12. Admin Bootstrap
+## 9. Variables importantes
 
-Está deshabilitado por defecto. Para aprovisionar un ADMIN inicial en un entorno nuevo:
+Backend:
+
+- `DATABASE_URL`
+- `VELORA_JWT_SECRET`
+- `VELORA_CORS_ALLOWED_ORIGINS`
+- Stripe
+- OpenAI/Replicate cuando corresponda
+- Azure Blob
+- Firebase backend
+- Admin Bootstrap
+
+Web:
+
+- `VITE_API_BASE_URL`
+- `VITE_STOREFRONT_COMPANY_ID`
+
+Mobile:
+
+- `EXPO_PUBLIC_API_BASE_URL`
+- `EXPO_PUBLIC_STOREFRONT_COMPANY_ID`
+
+Consulta `.env.example` para el contrato completo.
+
+## 10. Fresh-clone checklist
 
 ```text
-BOOTSTRAP_ADMIN_ENABLED=true
-BOOTSTRAP_ADMIN_EMAIL=<email>
-BOOTSTRAP_ADMIN_PASSWORD=<secret>
-BOOTSTRAP_ADMIN_FIRST_NAME=Admin
-BOOTSTRAP_ADMIN_LAST_NAME=Velora
+pnpm install --frozen-lockfile         PASS
+V1-V25 sobre PostgreSQL vacío          PASS
+API build/typecheck/lint/tests         PASS
+Web build/typecheck/lint/tests         PASS
+Mobile typecheck/tests/export Android PASS
+GET /api/health                       PASS
 ```
 
-El proceso es idempotente. El ADMIN nace activo, sin `storeId` y sin `customerType`.
+## 11. Azure
 
-Después del aprovisionamiento inicial puedes volver a establecer:
-
-```text
-BOOTSTRAP_ADMIN_ENABLED=false
-```
-
-## 13. Push
-
-El proveedor Firebase está deshabilitado por defecto hasta configurar credenciales backend:
-
-```text
-VELORA_PUSH_FIREBASE_ENABLED=true
-FIREBASE_PROJECT_ID=<project-id>
-FIREBASE_CLIENT_EMAIL=<service-account-client-email>
-FIREBASE_PRIVATE_KEY=<private-key>
-```
-
-La Web usa Firebase Installation ID y Android utiliza token FCM nativo mediante Expo Notifications.
-
-## 14. Azure local-to-production
-
-Antes de desplegar revisa:
-
-- `apps/web/.env.production.example`
-- `apps/mobile/.env.production.example`
-- la sección Azure de `.env.example`
-- `docs/AZURE_DEPLOYMENT.md`
-
-La URI PostgreSQL de Azure debe mantener TLS, por ejemplo:
-
-```text
-postgresql://<user>:<password>@<server>.postgres.database.azure.com:5432/velora_db?sslmode=verify-full
-```
-
-## 15. Fresh-clone checklist
-
-```text
-pnpm install --frozen-lockfile       PASS
-PostgreSQL 17                        UP
-V1-V25                               PASS
-build:azure:api                      PASS
-API typecheck/lint/tests             PASS
-build:azure:web                      PASS
-Web typecheck/lint/tests             PASS
-Mobile typecheck/tests               PASS
-Expo Android export                  PASS
-GET /api/health                      UP
-```
-
-## 16. Problemas comunes
-
-### API no encuentra packages del workspace
-
-Ejecuta primero:
-
-```powershell
-pnpm build:packages
-```
-
-### PostgreSQL no conecta
-
-Comprueba:
-
-```powershell
-docker compose ps
-```
-
-y confirma `DATABASE_URL`, puerto, usuario y base.
-
-### Web no llega al API
-
-Comprueba `VITE_API_BASE_URL` y `VELORA_CORS_ALLOWED_ORIGINS`.
-
-### Android Emulator no llega al API local
-
-Usa:
-
-```text
-EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8080
-```
-
-### Rutas Web dan 404 en producción
-
-El build debe contener `staticwebapp.config.json` en la raíz de `apps/web/dist`. El script `build:azure:web` ya valida el build utilizado por el proyecto.
+Consulta `docs/AZURE_DEPLOYMENT.md`. En producción usa PostgreSQL con TLS, Azure Blob y URLs HTTPS para Web/API/Mobile.

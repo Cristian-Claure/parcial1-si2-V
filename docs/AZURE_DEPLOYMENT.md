@@ -1,73 +1,34 @@
-# Despliegue de VÉLORA en Azure
+# Despliegue VÉLORA en Azure
 
-Esta guía corresponde al stack vigente validado el 11 de septiembre de 2026.
+## Topología objetivo
 
-## Arquitectura de producción
+- API: Azure App Service Linux / Node.js.
+- Web: Azure Static Web Apps.
+- Base de datos: Azure Database for PostgreSQL Flexible Server.
+- Assets administrados: Azure Blob Storage.
+- Mobile: Expo/Android apuntando al API HTTPS.
+- Push: Firebase Cloud Messaging HTTP v1.
 
-```text
-Azure Static Web Apps (React/Vite)
-              │
-              ▼
-Azure App Service (NestJS API)
-      │        │         │
-      │        │         ├── Firebase Cloud Messaging
-      │        │         ├── Stripe
-      │        │         ├── OpenAI / Replicate
-      │        │
-      │        └──────────── Azure Blob Storage
-      │
-      └───────────────────── Azure Database for PostgreSQL Flexible Server
+## 1. PostgreSQL Flexible Server
 
-Expo/EAS Android ───────────> Azure App Service
-```
-
-## 1. Prerrequisitos
-
-- Rama `migration/nest-react-rn-azure` publicada en GitHub.
-- Azure CLI autenticado o acceso equivalente al portal.
-- Suscripción Azure activa.
-- PostgreSQL 17 compatible.
-- Secretos de producción disponibles fuera de Git.
-
-No reutilices secretos de desarrollo.
-
-## 2. PostgreSQL Flexible Server
-
-Crea Azure Database for PostgreSQL Flexible Server y una base para VÉLORA.
-
-La conexión del API se entrega mediante `DATABASE_URL`.
-
-Ejemplo:
+Crea un servidor PostgreSQL y una base nueva para VÉLORA. Usa una cadena con TLS, por ejemplo:
 
 ```text
 postgresql://<user>:<password>@<server>.postgres.database.azure.com:5432/velora_db?sslmode=verify-full
 ```
 
-Azure exige TLS; el proyecto conserva la cadena de conexión completa y `node-postgres` la consume directamente.
-
-Antes de publicar tráfico aplica **V1-V25 en orden**. Nunca edites V1-V24.
-
-Con `psql` disponible:
+Desde un entorno con acceso de red al servidor:
 
 ```powershell
-$migrations = Get-ChildItem "back_velora/src/main/resources/db/migration/V*.sql" | Sort-Object {
-    if ($_.Name -match '^V(\d+)__') { [int]$Matches[1] } else { [int]::MaxValue }
-}
-foreach ($migration in $migrations) {
-    psql "$env:DATABASE_URL" -X -v ON_ERROR_STOP=1 -f $migration.FullName
-    if ($LASTEXITCODE -ne 0) { throw "Migration failed: $($migration.Name)" }
-}
+$env:DATABASE_URL="<cadena-Azure>"
+pnpm db:migrate:fresh
 ```
 
-## 3. Azure Blob Storage
+El runner usa `packages/database/migrations/V1-V25` y se niega a ejecutarse si el schema `public` ya contiene tablas.
 
-Crea una Storage Account y un contenedor privado, por ejemplo:
+## 2. Azure Blob Storage
 
-```text
-velora-assets
-```
-
-Configura en App Service:
+Crea un Storage Account y el contenedor `velora-assets`. Configura en App Service:
 
 ```text
 VELORA_ASSET_STORAGE_PROVIDER=AZURE_BLOB
@@ -75,32 +36,35 @@ AZURE_STORAGE_CONNECTION_STRING=<secret>
 VELORA_AZURE_BLOB_CONTAINER=velora-assets
 ```
 
-El backend crea el contenedor si no existe, pero es preferible aprovisionarlo explícitamente y aplicar las políticas de acceso en Azure.
+## 3. API en App Service
 
-## 4. API en Azure App Service
-
-Usa App Service Linux con runtime Node.js compatible con el `engines.node` del repositorio.
-
-Build desde la raíz:
+Build:
 
 ```powershell
 pnpm install --frozen-lockfile
 pnpm build:azure:api
 ```
 
-El API generado está en `apps/api/dist` y escucha `PORT` en `0.0.0.0`.
-
-Startup disponible desde la raíz:
+Startup command:
 
 ```text
 pnpm start:azure:api
 ```
 
-Si el entorno de hosting arranca directamente Node después de instalar el workspace:
+Nest consume `PORT` y escucha en `0.0.0.0`.
 
-```text
-node apps/api/dist/main.js
-```
+App Settings mínimos:
+
+- `DATABASE_URL`
+- `VELORA_JWT_SECRET`
+- `VELORA_CORS_ALLOWED_ORIGINS`
+- `VELORA_RATE_LIMIT_TRUST_PROXY_HEADERS=true`
+- `VELORA_PUBLIC_BACKEND_URL`
+- variables Stripe requeridas
+- variables Azure Blob
+- Firebase backend si Push queda habilitado
+- OpenAI/Replicate si esas funciones estarán activas
+- Bootstrap ADMIN solo durante el aprovisionamiento inicial si se necesita
 
 Health check:
 
@@ -108,70 +72,11 @@ Health check:
 /api/health
 ```
 
-### Variables mínimas del API
-
-```text
-DATABASE_URL
-VELORA_JWT_SECRET
-VELORA_CORS_ALLOWED_ORIGINS
-VELORA_RATE_LIMIT_TRUST_PROXY_HEADERS=true
-VELORA_PUBLIC_BACKEND_URL
-VELORA_ASSET_STORAGE_PROVIDER=AZURE_BLOB
-AZURE_STORAGE_CONNECTION_STRING
-VELORA_AZURE_BLOB_CONTAINER
-```
-
-Según las funcionalidades habilitadas, agrega:
-
-```text
-STRIPE_SECRET_KEY
-STRIPE_WEBHOOK_SECRET
-STRIPE_SUCCESS_URL
-STRIPE_CANCEL_URL
-OPENAI_API_KEY
-REPLICATE_API_TOKEN
-VELORA_PUSH_FIREBASE_ENABLED
-FIREBASE_PROJECT_ID
-FIREBASE_CLIENT_EMAIL
-FIREBASE_PRIVATE_KEY
-BOOTSTRAP_ADMIN_ENABLED
-BOOTSTRAP_ADMIN_EMAIL
-BOOTSTRAP_ADMIN_PASSWORD
-```
-
-`FIREBASE_PRIVATE_KEY`, passwords, tokens y connection strings son secretos de App Service. No deben guardarse en archivos versionados.
-
-## 5. Admin inicial
-
-En el primer arranque puedes habilitar temporalmente:
-
-```text
-BOOTSTRAP_ADMIN_ENABLED=true
-BOOTSTRAP_ADMIN_EMAIL=<admin-email>
-BOOTSTRAP_ADMIN_PASSWORD=<secret>
-```
-
-El bootstrap es idempotente y no asigna Store arbitraria al ADMIN.
-
-Después de verificar el acceso puedes deshabilitarlo:
-
-```text
-BOOTSTRAP_ADMIN_ENABLED=false
-```
-
-## 6. Web en Azure Static Web Apps
-
-Variables de build:
-
-```text
-VITE_API_BASE_URL=https://<your-api>.azurewebsites.net
-VITE_STOREFRONT_COMPANY_ID=
-```
+## 4. Web en Static Web Apps
 
 Build:
 
 ```powershell
-pnpm install --frozen-lockfile
 pnpm build:azure:web
 ```
 
@@ -181,97 +86,71 @@ Output:
 apps/web/dist
 ```
 
-`apps/web/public/staticwebapp.config.json` se copia al root del output y proporciona `navigationFallback` hacia `/index.html`, necesario para React Router.
-
-Después de obtener el dominio real de Static Web Apps, configura en el API:
+Build-time variables:
 
 ```text
-VELORA_CORS_ALLOWED_ORIGINS=https://<your-web>.azurestaticapps.net
-STRIPE_SUCCESS_URL=https://<your-web>.azurestaticapps.net/pago/stripe/retorno
-STRIPE_CANCEL_URL=https://<your-web>.azurestaticapps.net/mis-pedidos
+VITE_API_BASE_URL=https://<api>.azurewebsites.net
+VITE_STOREFRONT_COMPANY_ID=
 ```
 
-## 7. Mobile Expo/EAS
+`apps/web/public/staticwebapp.config.json` provee el fallback SPA para React Router y debe quedar dentro de `dist`.
 
-Para build de producción parte de:
+Actualiza CORS del API con el hostname HTTPS real de Static Web Apps.
 
-```text
-apps/mobile/.env.production.example
-```
+## 5. Mobile
 
-Configura:
+Configura antes del build:
 
 ```text
-EXPO_PUBLIC_API_BASE_URL=https://<your-api>.azurewebsites.net
+EXPO_PUBLIC_API_BASE_URL=https://<api>.azurewebsites.net
 EXPO_PUBLIC_STOREFRONT_COMPANY_ID=
 ```
 
-Antes de EAS:
+Mantén `google-services.json` como configuración cliente Firebase; las credenciales privadas de servicio FCM pertenecen únicamente al backend.
 
-```powershell
-pnpm --filter @velora/mobile typecheck
-pnpm --filter @velora/mobile test
-pnpm --filter @velora/mobile validate:bundle
-```
+## 6. Admin Bootstrap
 
-Android mantiene `google-services.json` público de configuración Firebase y el backend conserva las credenciales privadas únicamente en App Service.
-
-## 8. Stripe
-
-Configura el webhook público contra el API desplegado y guarda el signing secret en:
+Para el aprovisionamiento inicial:
 
 ```text
-STRIPE_WEBHOOK_SECRET
+BOOTSTRAP_ADMIN_ENABLED=true
+BOOTSTRAP_ADMIN_EMAIL=<email>
+BOOTSTRAP_ADMIN_PASSWORD=<secret>
+BOOTSTRAP_ADMIN_FIRST_NAME=Admin
+BOOTSTRAP_ADMIN_LAST_NAME=Velora
 ```
 
-Las URLs de retorno deben apuntar al dominio final de Static Web Apps.
+Después de confirmar la cuenta, puede deshabilitarse `BOOTSTRAP_ADMIN_ENABLED`.
 
-## 9. Push Firebase
+## 7. Smoke público
 
-Para habilitar entrega real:
+Valida:
 
-```text
-VELORA_PUSH_FIREBASE_ENABLED=true
-FIREBASE_PROJECT_ID=<project-id>
-FIREBASE_CLIENT_EMAIL=<service-account-client-email>
-FIREBASE_PRIVATE_KEY=<secret>
-```
+1. `GET /api/health`.
+2. Login ADMIN.
+3. Registro/login CUSTOMER.
+4. Companies y catálogo.
+5. carrito y checkout.
+6. PICKUP con Warehouse default.
+7. DELIVERY.
+8. pedidos y pagos.
+9. POS.
+10. Push Web/Android.
+11. Try-On y Azure Blob.
+12. rutas Web al refrescar directamente.
 
-No publiques la clave privada en GitHub, Static Web Apps ni variables `VITE_*`/`EXPO_PUBLIC_*`.
+## 8. Secretos
 
-## 10. Smoke test de producción
+No guardes en Git:
 
-Después del despliegue verifica, en este orden:
+- passwords;
+- `DATABASE_URL` real;
+- `VELORA_JWT_SECRET`;
+- Stripe secrets;
+- `OPENAI_API_KEY`;
+- `REPLICATE_API_TOKEN`;
+- `AZURE_STORAGE_CONNECTION_STRING`;
+- `FIREBASE_PRIVATE_KEY`;
+- password del bootstrap.
 
-```text
-GET  /api/health                           200 / UP
-POST /api/auth/login                       ADMIN OK
-GET  /api/auth/me                          autenticado
-GET  /api/companies                        200
-GET  Web /                                 200
-REFRESH de rutas SPA                       sin 404
-Login CUSTOMER                             OK
-Catalog                                    OK
-Cart                                       OK
-Checkout                                   OK
-Orders                                     OK
-Push registration                          OK
-Azure Blob upload/read                     OK
-Stripe webhook                             según entorno configurado
-```
-
-## 11. Seguridad de producción
-
-- HTTPS únicamente.
-- PostgreSQL con TLS y validación de certificado/hostname.
-- CORS limitado al dominio Web real.
-- Secretos en App Service/servicio de secretos, nunca en Git.
-- `VELORA_RATE_LIMIT_TRUST_PROXY_HEADERS=true` detrás del proxy de Azure.
-- Bootstrap ADMIN deshabilitado después del aprovisionamiento cuando ya no sea necesario.
-- No exponer variables backend mediante `VITE_*` o `EXPO_PUBLIC_*`.
-
-## 12. Rollback operativo
-
-El rollback de aplicación debe hacerse desplegando un artefacto/commit previamente validado. **No** se revierte una migración histórica editando V1-V24.
-
-Antes de cualquier cambio posterior de esquema crea una nueva migración `V26+`.
+Usa App Settings/secretos de Azure y variables de build seguras.

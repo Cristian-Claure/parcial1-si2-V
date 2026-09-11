@@ -1,30 +1,22 @@
-# Automatic text detection
 * text=auto
 
-# Source code and configuration
-*.java text eol=lf
-*.kt text eol=lf
-*.kts text eol=lf
 *.ts text eol=lf
+*.tsx text eol=lf
 *.js text eol=lf
+*.mjs text eol=lf
 *.json text eol=lf
 *.html text eol=lf
 *.css text eol=lf
-*.scss text eol=lf
-*.xml text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
 *.md text eol=lf
-*.properties text eol=lf
 *.sql text eol=lf
 *.sh text eol=lf
 
-# Windows scripts
 *.ps1 text eol=crlf
 *.bat text eol=crlf
 *.cmd text eol=crlf
 
-# Binary files
 *.png binary
 *.jpg binary
 *.jpeg binary
@@ -33,5 +25,3 @@
 *.ico binary
 *.pdf binary
 *.zip binary
-*.jar binary
-*.apk binary
