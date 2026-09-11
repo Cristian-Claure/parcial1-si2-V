@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { companyIdSchema } from "./companies.js";
 
 export const customerFulfillmentTypeSchema = z.enum(["DELIVERY", "PICKUP"]);
 export type CustomerFulfillmentType = z.infer<typeof customerFulfillmentTypeSchema>;
@@ -11,7 +12,7 @@ export const checkoutWarehouseResponseSchema = z.object({
 export type CheckoutWarehouseResponse = z.infer<typeof checkoutWarehouseResponseSchema>;
 
 export const createOrderRequestSchema = z.object({
-  companyId: z.string().uuid(), warehouseId: z.string().uuid(), fulfillmentType: customerFulfillmentTypeSchema, addressId: z.string().uuid().nullable().optional(), notes: z.string().max(500, "Las observaciones son demasiado largas.").nullable().optional(),
+  companyId: companyIdSchema, warehouseId: z.string().uuid(), fulfillmentType: customerFulfillmentTypeSchema, addressId: z.string().uuid().nullable().optional(), notes: z.string().max(500, "Las observaciones son demasiado largas.").nullable().optional(),
 });
 export type CreateOrderRequest = z.infer<typeof createOrderRequestSchema>;
 

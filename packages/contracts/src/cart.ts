@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { companyIdSchema } from "./companies.js";
 
 export const cartStatusSchema = z.enum(["ACTIVE", "CONVERTED", "ABANDONED"]);
 export type CartStatus = z.infer<typeof cartStatusSchema>;
 
 export const addCartItemRequestSchema = z.object({
-  companyId: z.string().uuid(),
+  companyId: companyIdSchema,
   variantId: z.string().uuid(),
   quantity: z.number().int().min(1, "La cantidad mínima es 1.").max(99, "La cantidad máxima por producto es 99."),
 });
