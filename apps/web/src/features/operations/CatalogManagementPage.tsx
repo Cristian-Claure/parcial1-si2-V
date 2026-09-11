@@ -1,0 +1,1103 @@
+import {
+  useState,
+  type FormEvent,
+} from "react";
+
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+
+import type {
+  ImageResponse,
+  ProductImagePurpose,
+  TryOnCategory,
+} from "@velora/contracts";
+
+import {
+  apiRequest,
+} from "../../core/api/apiClient";
+
+import {
+  veloraApi,
+} from "../../core/api/veloraApi";
+
+import {
+  useOperationalCompanyId,
+} from "../../core/company/useOperationalCompany";
+
+import {
+  Notice,
+} from "../../shared/feedback/Notice";
+
+export function CatalogManagementPage() {
+  const companyId =
+    useOperationalCompanyId();
+  const client =
+    useQueryClient();
+
+  const [
+    message,
+    setMessage,
+  ] =
+    useState<
+      string | null
+    >(
+      null,
+    );
+
+  const [
+    error,
+    setError,
+  ] =
+    useState<
+      string | null
+    >(
+      null,
+    );
+
+  const categories =
+    useQuery({
+      queryKey: [
+        "managed-categories",
+        companyId,
+      ],
+      queryFn:
+        () =>
+          veloraApi
+            .managedCategories(
+              companyId!,
+            ),
+      enabled:
+        Boolean(
+          companyId,
+        ),
+    });
+
+  const products =
+    useQuery({
+      queryKey: [
+        "managed-products",
+        companyId,
+      ],
+      queryFn:
+        () =>
+          veloraApi
+            .managedProducts(
+              companyId!,
+            ),
+      enabled:
+        Boolean(
+          companyId,
+        ),
+    });
+
+  const finish =
+    async (
+      text: string,
+    ) => {
+      setMessage(
+        text,
+      );
+      setError(
+        null,
+      );
+
+      await client
+        .invalidateQueries({
+          queryKey: [
+            "managed-categories",
+          ],
+        });
+      await client
+        .invalidateQueries({
+          queryKey: [
+            "managed-products",
+          ],
+        });
+      await client
+        .invalidateQueries({
+          queryKey: [
+            "public-products",
+          ],
+        });
+    };
+
+  const fail =
+    (
+      reason: unknown,
+    ) => {
+      setMessage(
+        null,
+      );
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "No se pudo completar la operación.",
+      );
+    };
+
+  const categoryMutation =
+    useMutation({
+      mutationFn:
+        veloraApi.createCategory,
+      onSuccess:
+        () =>
+          finish(
+            "Categoría creada.",
+          ),
+      onError:
+        fail,
+    });
+
+  const productMutation =
+    useMutation({
+      mutationFn:
+        veloraApi.createProduct,
+      onSuccess:
+        () =>
+          finish(
+            "Producto creado.",
+          ),
+      onError:
+        fail,
+    });
+
+  const variantMutation =
+    useMutation({
+      mutationFn:
+        ({
+          productId,
+          body,
+        }: {
+          productId: string;
+          body:
+            Parameters<
+              typeof veloraApi.createVariant
+            >[1];
+        }) =>
+          veloraApi
+            .createVariant(
+              productId,
+              body,
+            ),
+      onSuccess:
+        () =>
+          finish(
+            "Variante creada.",
+          ),
+      onError:
+        fail,
+    });
+
+  const imageMutation =
+    useMutation({
+      mutationFn:
+        ({
+          productId,
+          body,
+        }: {
+          productId: string;
+          body:
+            Parameters<
+              typeof veloraApi.createImage
+            >[1];
+        }) =>
+          veloraApi
+            .createImage(
+              productId,
+              body,
+            ),
+      onSuccess:
+        () =>
+          finish(
+            "Imagen registrada.",
+          ),
+      onError:
+        fail,
+    });
+
+  const managedAssetMutation =
+    useMutation({
+      mutationFn:
+        ({
+          productId,
+          body,
+        }: {
+          productId: string;
+          body: FormData;
+        }) =>
+          apiRequest<
+            ImageResponse
+          >(
+            `/api/catalog/manage/products/${productId}/assets`,
+            {
+              method:
+                "POST",
+              body,
+            },
+          ),
+      onSuccess:
+        () =>
+          finish(
+            "Asset administrado subido correctamente.",
+          ),
+      onError:
+        fail,
+    });
+
+  if (
+    !companyId
+  ) {
+    return (
+      <section className="page">
+        <Notice>
+          Seleccione una compañía o espere a que se derive desde la sucursal asignada.
+        </Notice>
+      </section>
+    );
+  }
+
+  const categorySubmit =
+    async (
+      event:
+        FormEvent<HTMLFormElement>,
+    ) => {
+      event.preventDefault();
+
+      const data =
+        new FormData(
+          event.currentTarget,
+        );
+
+      await categoryMutation
+        .mutateAsync({
+          companyId,
+          name:
+            String(
+              data.get(
+                "name",
+              ) ??
+              "",
+            ),
+          slug:
+            String(
+              data.get(
+                "slug",
+              ) ??
+              "",
+            ),
+          description:
+            String(
+              data.get(
+                "description",
+              ) ??
+              "",
+            ) ||
+            null,
+          parentId:
+            String(
+              data.get(
+                "parentId",
+              ) ??
+              "",
+            ) ||
+            null,
+          active:
+            true,
+        });
+
+      event.currentTarget
+        .reset();
+    };
+
+  const productSubmit =
+    async (
+      event:
+        FormEvent<HTMLFormElement>,
+    ) => {
+      event.preventDefault();
+
+      const data =
+        new FormData(
+          event.currentTarget,
+        );
+      const tryOnEnabled =
+        data.get(
+          "tryOnEnabled",
+        ) === "on";
+
+      await productMutation
+        .mutateAsync({
+          companyId,
+          categoryId:
+            String(
+              data.get(
+                "categoryId",
+              ) ??
+              "",
+            ),
+          name:
+            String(
+              data.get(
+                "name",
+              ) ??
+              "",
+            ),
+          slug:
+            String(
+              data.get(
+                "slug",
+              ) ??
+              "",
+            ),
+          description:
+            String(
+              data.get(
+                "description",
+              ) ??
+              "",
+            ) ||
+            null,
+          brand:
+            String(
+              data.get(
+                "brand",
+              ) ??
+              "VÉLORA",
+            ) ||
+            "VÉLORA",
+          composition:
+            String(
+              data.get(
+                "composition",
+              ) ??
+              "",
+            ) ||
+            null,
+          careInstructions:
+            String(
+              data.get(
+                "careInstructions",
+              ) ??
+              "",
+            ) ||
+            null,
+          fitNotes:
+            String(
+              data.get(
+                "fitNotes",
+              ) ??
+              "",
+            ) ||
+            null,
+          status:
+            "ACTIVE",
+          tryOnEnabled,
+          tryOnCategory:
+            tryOnEnabled
+              ? String(
+                  data.get(
+                    "tryOnCategory",
+                  ),
+                ) as TryOnCategory
+              : null,
+        });
+
+      event.currentTarget
+        .reset();
+    };
+
+  const variantSubmit =
+    async (
+      event:
+        FormEvent<HTMLFormElement>,
+    ) => {
+      event.preventDefault();
+
+      const data =
+        new FormData(
+          event.currentTarget,
+        );
+
+      await variantMutation
+        .mutateAsync({
+          productId:
+            String(
+              data.get(
+                "productId",
+              ) ??
+              "",
+            ),
+          body: {
+            sku:
+              String(
+                data.get(
+                  "sku",
+                ) ??
+                "",
+              ),
+            barcode:
+              String(
+                data.get(
+                  "barcode",
+                ) ??
+                "",
+              ) ||
+              null,
+            size:
+              String(
+                data.get(
+                  "size",
+                ) ??
+                "",
+              ),
+            color:
+              String(
+                data.get(
+                  "color",
+                ) ??
+                "",
+              ),
+            colorHex:
+              String(
+                data.get(
+                  "colorHex",
+                ) ??
+                "",
+              ) ||
+              null,
+            price:
+              Number(
+                data.get(
+                  "price",
+                ) ??
+                0,
+              ),
+            compareAtPrice:
+              Number(
+                data.get(
+                  "compareAtPrice",
+                ) ??
+                0,
+              ) ||
+              null,
+            currency:
+              "BOB",
+            active:
+              true,
+          },
+        });
+
+      event.currentTarget
+        .reset();
+    };
+
+  const imageSubmit =
+    async (
+      event:
+        FormEvent<HTMLFormElement>,
+    ) => {
+      event.preventDefault();
+
+      const data =
+        new FormData(
+          event.currentTarget,
+        );
+
+      await imageMutation
+        .mutateAsync({
+          productId:
+            String(
+              data.get(
+                "productId",
+              ) ??
+              "",
+            ),
+          body: {
+            variantId:
+              String(
+                data.get(
+                  "variantId",
+                ) ??
+                "",
+              ) ||
+              null,
+            imageUrl:
+              String(
+                data.get(
+                  "imageUrl",
+                ) ??
+                "",
+              ),
+            altText:
+              String(
+                data.get(
+                  "altText",
+                ) ??
+                "",
+              ) ||
+              null,
+            purpose:
+              String(
+                data.get(
+                  "purpose",
+                ),
+              ) as ProductImagePurpose,
+            sortOrder:
+              Number(
+                data.get(
+                  "sortOrder",
+                ) ??
+                0,
+              ),
+            primary:
+              data.get(
+                "primary",
+              ) === "on",
+          },
+        });
+
+      event.currentTarget
+        .reset();
+    };
+
+  const managedAssetSubmit =
+    async (
+      event:
+        FormEvent<HTMLFormElement>,
+    ) => {
+      event.preventDefault();
+
+      const data =
+        new FormData(
+          event.currentTarget,
+        );
+      const file =
+        data.get(
+          "file",
+        );
+
+      if (
+        !(file instanceof File) ||
+        file.size === 0
+      ) {
+        fail(
+          new Error(
+            "Seleccione una imagen.",
+          ),
+        );
+
+        return;
+      }
+
+      const body =
+        new FormData();
+      const variantId =
+        String(
+          data.get(
+            "variantId",
+          ) ??
+          "",
+        );
+
+      body.append(
+        "file",
+        file,
+        file.name,
+      );
+
+      if (
+        variantId
+      ) {
+        body.append(
+          "variantId",
+          variantId,
+        );
+      }
+
+      body.append(
+        "altText",
+        String(
+          data.get(
+            "altText",
+          ) ??
+          "",
+        ),
+      );
+      body.append(
+        "purpose",
+        String(
+          data.get(
+            "purpose",
+          ) ??
+          "GALLERY",
+        ),
+      );
+      body.append(
+        "sortOrder",
+        String(
+          data.get(
+            "sortOrder",
+          ) ??
+          "0",
+        ),
+      );
+      body.append(
+        "primary",
+        data.get(
+          "primary",
+        ) === "on"
+          ? "true"
+          : "false",
+      );
+
+      await managedAssetMutation
+        .mutateAsync({
+          productId:
+            String(
+              data.get(
+                "productId",
+              ) ??
+              "",
+            ),
+          body,
+        });
+
+      event.currentTarget
+        .reset();
+    };
+
+  return (
+    <section className="page">
+      <div className="page-heading">
+        <span className="eyebrow">CATÁLOGO</span>
+        <h1>Gestión de catálogo</h1>
+        <p>
+          Catálogo compartido a nivel Company. N9 incorpora assets binarios administrados con almacenamiento LOCAL o Azure Blob.
+        </p>
+      </div>
+
+      {
+        message
+          ? (
+              <Notice kind="success">
+                {message}
+              </Notice>
+            )
+          : null
+      }
+      {
+        error
+          ? (
+              <Notice kind="error">
+                {error}
+              </Notice>
+            )
+          : null
+      }
+
+      <div className="two-columns">
+        <form
+          className="panel"
+          onSubmit={
+            (
+              event,
+            ) => void categorySubmit(
+              event,
+            )
+          }
+        >
+          <h2>Nueva categoría</h2>
+          <label>
+            Nombre
+            <input name="name" required />
+          </label>
+          <label>
+            Slug
+            <input name="slug" required />
+          </label>
+          <label>
+            Descripción
+            <textarea name="description" />
+          </label>
+          <label>
+            Padre
+            <select name="parentId">
+              <option value="">Sin padre</option>
+              {
+                categories.data?.map(
+                  (
+                    category,
+                  ) => (
+                    <option
+                      key={category.id}
+                      value={category.id}
+                    >
+                      {category.name}
+                    </option>
+                  ),
+                )
+              }
+            </select>
+          </label>
+          <button className="button primary">
+            Crear categoría
+          </button>
+        </form>
+
+        <form
+          className="panel"
+          onSubmit={
+            (
+              event,
+            ) => void productSubmit(
+              event,
+            )
+          }
+        >
+          <h2>Nuevo producto</h2>
+          <label>
+            Categoría
+            <select name="categoryId" required>
+              <option value="">Seleccione</option>
+              {
+                categories.data?.map(
+                  (
+                    category,
+                  ) => (
+                    <option
+                      key={category.id}
+                      value={category.id}
+                    >
+                      {category.name}
+                    </option>
+                  ),
+                )
+              }
+            </select>
+          </label>
+          <label>
+            Nombre
+            <input name="name" required />
+          </label>
+          <label>
+            Slug
+            <input name="slug" required />
+          </label>
+          <label>
+            Marca
+            <input name="brand" defaultValue="VÉLORA" />
+          </label>
+          <label>
+            Descripción
+            <textarea name="description" />
+          </label>
+          <label>
+            Composición
+            <input name="composition" />
+          </label>
+          <label>
+            Cuidado
+            <input name="careInstructions" />
+          </label>
+          <label>
+            Notas de fit
+            <input name="fitNotes" />
+          </label>
+          <label className="checkbox">
+            <input name="tryOnEnabled" type="checkbox" />
+            Habilitar Try-On
+          </label>
+          <label>
+            Categoría Try-On
+            <select name="tryOnCategory">
+              <option value="TOP">Parte superior</option>
+              <option value="BOTTOM">Parte inferior</option>
+              <option value="DRESS">Vestido</option>
+              <option value="OUTERWEAR">Abrigo</option>
+              <option value="SHOES">Calzado</option>
+              <option value="ACCESSORY">Accesorio</option>
+            </select>
+          </label>
+          <button className="button primary">
+            Crear producto
+          </button>
+        </form>
+      </div>
+
+      <div className="two-columns">
+        <form
+          className="panel"
+          onSubmit={
+            (
+              event,
+            ) => void variantSubmit(
+              event,
+            )
+          }
+        >
+          <h2>Nueva variante</h2>
+          <label>
+            Producto
+            <select name="productId" required>
+              <option value="">Seleccione</option>
+              {
+                products.data?.map(
+                  (
+                    product,
+                  ) => (
+                    <option
+                      key={product.id}
+                      value={product.id}
+                    >
+                      {product.name}
+                    </option>
+                  ),
+                )
+              }
+            </select>
+          </label>
+          <div className="form-grid">
+            <label>
+              SKU
+              <input name="sku" required />
+            </label>
+            <label>
+              Barcode
+              <input name="barcode" />
+            </label>
+            <label>
+              Talla
+              <input name="size" required />
+            </label>
+            <label>
+              Color
+              <input name="color" required />
+            </label>
+            <label>
+              Color HEX
+              <input name="colorHex" placeholder="#000000" />
+            </label>
+            <label>
+              Precio
+              <input name="price" type="number" step="0.01" min="0.01" required />
+            </label>
+            <label>
+              Precio comparativo
+              <input name="compareAtPrice" type="number" step="0.01" min="0" />
+            </label>
+          </div>
+          <button className="button primary">
+            Crear variante
+          </button>
+        </form>
+
+        <form
+          className="panel"
+          onSubmit={
+            (
+              event,
+            ) => void managedAssetSubmit(
+              event,
+            )
+          }
+        >
+          <h2>Subir asset administrado</h2>
+          <label>
+            Producto
+            <select name="productId" required>
+              <option value="">Seleccione</option>
+              {
+                products.data?.map(
+                  (
+                    product,
+                  ) => (
+                    <option
+                      key={product.id}
+                      value={product.id}
+                    >
+                      {product.name}
+                    </option>
+                  ),
+                )
+              }
+            </select>
+          </label>
+          <label>
+            Variante
+            <select name="variantId">
+              <option value="">Sin variante</option>
+              {
+                products.data?.flatMap(
+                  (
+                    product,
+                  ) =>
+                    product.variants.map(
+                      (
+                        variant,
+                      ) => (
+                        <option
+                          key={variant.id}
+                          value={variant.id}
+                        >
+                          {product.name} · {variant.size} · {variant.color}
+                        </option>
+                      ),
+                    ),
+                )
+              }
+            </select>
+          </label>
+          <label>
+            Archivo PNG/JPEG/WEBP
+            <input
+              name="file"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              required
+            />
+          </label>
+          <label>
+            Alt text
+            <input name="altText" />
+          </label>
+          <label>
+            Propósito
+            <select name="purpose">
+              <option value="GALLERY">Galería</option>
+              <option value="TRY_ON_GARMENT">Prenda Try-On</option>
+            </select>
+          </label>
+          <label>
+            Orden
+            <input name="sortOrder" type="number" min="0" defaultValue="0" />
+          </label>
+          <label className="checkbox">
+            <input name="primary" type="checkbox" />
+            Imagen principal
+          </label>
+          <button
+            className="button primary"
+            disabled={managedAssetMutation.isPending}
+          >
+            {
+              managedAssetMutation.isPending
+                ? "Subiendo…"
+                : "Subir asset"
+            }
+          </button>
+        </form>
+      </div>
+
+      <div className="two-columns">
+        <form
+          className="panel"
+          onSubmit={
+            (
+              event,
+            ) => void imageSubmit(
+              event,
+            )
+          }
+        >
+          <h2>Registrar imagen externa</h2>
+          <label>
+            Producto
+            <select name="productId" required>
+              <option value="">Seleccione</option>
+              {
+                products.data?.map(
+                  (
+                    product,
+                  ) => (
+                    <option
+                      key={product.id}
+                      value={product.id}
+                    >
+                      {product.name}
+                    </option>
+                  ),
+                )
+              }
+            </select>
+          </label>
+          <label>
+            URL
+            <input name="imageUrl" type="url" required />
+          </label>
+          <label>
+            Alt text
+            <input name="altText" />
+          </label>
+          <label>
+            Propósito
+            <select name="purpose">
+              <option value="GALLERY">Galería</option>
+              <option value="TRY_ON_GARMENT">Prenda Try-On</option>
+            </select>
+          </label>
+          <label>
+            Orden
+            <input name="sortOrder" type="number" min="0" defaultValue="0" />
+          </label>
+          <label className="checkbox">
+            <input name="primary" type="checkbox" />
+            Imagen principal
+          </label>
+          <button className="button secondary">
+            Registrar URL
+          </button>
+        </form>
+
+        <div className="panel">
+          <h2>Regla Try-On</h2>
+          <p>
+            Un producto solo aparece listo para el probador cuando está habilitado y posee una imagen TRY_ON_GARMENT administrada con storage_key.
+          </p>
+        </div>
+      </div>
+
+      <div className="panel">
+        <h2>Productos actuales</h2>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Variantes</th>
+                <th>Try-On</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                products.data?.map(
+                  (
+                    product,
+                  ) => (
+                    <tr key={product.id}>
+                      <td>{product.name}</td>
+                      <td>{product.categoryName}</td>
+                      <td>{product.variants.length}</td>
+                      <td>
+                        {
+                          product.tryOnReady
+                            ? "Listo"
+                            : product.tryOnEnabled
+                              ? `${product.tryOnCategory ?? "Sin categoría"} · falta asset administrado`
+                              : "No"
+                        }
+                      </td>
+                    </tr>
+                  ),
+                )
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}

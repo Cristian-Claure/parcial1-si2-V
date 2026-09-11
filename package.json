@@ -1,0 +1,29 @@
+{
+  "name": "velora",
+  "version": "2.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=22.13.0",
+    "pnpm": "11.24.0"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @velora/api dev",
+    "dev:web": "pnpm --filter @velora/web dev",
+    "dev:mobile": "pnpm --filter @velora/mobile start",
+    "build:api": "pnpm --filter @velora/api build",
+    "build:web": "pnpm --filter @velora/web build",
+    "build:packages": "pnpm --filter @velora/config build && pnpm --filter @velora/contracts build && pnpm --filter @velora/database build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm --filter @velora/api lint && pnpm --filter @velora/web lint",
+    "test": "pnpm -r --if-present test",
+    "build:azure:api": "pnpm build:packages && pnpm --filter @velora/api build",
+    "start:azure:api": "pnpm --filter @velora/api start",
+    "build:azure:web": "pnpm --filter @velora/contracts build && pnpm --filter @velora/web build",
+    "db:migrate:fresh": "pnpm --filter @velora/database migrate:fresh"
+  },
+  "devDependencies": {
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  }
+}

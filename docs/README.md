@@ -1,3 +1,5 @@
-# VÉLORA Documentation
+# Documentación VÉLORA
 
-Documentación PUDS, UML 2.5, requisitos, arquitectura y base de datos.
+- `../README.md`: visión técnica y operación del repositorio.
+- `../INSTALLATION.md`: instalación desde un clon limpio.
+- `AZURE_DEPLOYMENT.md`: despliegue del stack vigente en Azure.

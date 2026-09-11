@@ -1,90 +1,45 @@
-# ==========================================
-# VELORA - Global Git Ignore
-# ==========================================
-
 # Environment / secrets
 .env
 .env.*
 !.env.example
+!apps/web/.env.production.example
+!apps/mobile/.env.production.example
 
-# Operating System
-.DS_Store
-Thumbs.db
-desktop.ini
+# Dependencies
+node_modules/
+.pnpm-store/
 
-# Editors
-.idea/
-*.iml
+# Builds / coverage
+apps/api/coverage/
+apps/web/dist/
+apps/web/coverage/
+apps/mobile/.expo/
+apps/mobile/.expo-export-check/
+apps/mobile/dist/
+packages/*/dist/
+*.tsbuildinfo
 
-# VS Code local configuration
-.vscode/
+# Runtime managed assets
+storage/
+apps/api/storage/
 
-# Logs
+# Logs / temporary
 *.log
 logs/
-
-# ==========================================
-# BACKEND - Spring Boot / Java
-# ==========================================
-back_velora/target/
-back_velora/.classpath
-back_velora/.project
-back_velora/.settings/
-
-# ==========================================
-# FRONTEND - Angular
-# ==========================================
-front_velora/node_modules/
-front_velora/dist/
-front_velora/.angular/
-front_velora/coverage/
-front_velora/.cache/
-
-# ==========================================
-# MOBILE - Android / Kotlin
-# ==========================================
-mobile_velora/.gradle/
-mobile_velora/.idea/
-mobile_velora/build/
-mobile_velora/app/build/
-mobile_velora/local.properties
-mobile_velora/captures/
-mobile_velora/*.jks
-mobile_velora/*.keystore
-
-# ==========================================
-# AI - Python
-# ==========================================
-ai_velora/.venv/
-ai_velora/venv/
-ai_velora/__pycache__/
-ai_velora/.pytest_cache/
-ai_velora/.mypy_cache/
-ai_velora/*.pyc
-ai_velora/*.pyo
-
-# ==========================================
-# Temporary files
-# ==========================================
 *.tmp
 *.temp
 *.bak
 *.swp
-# Local environment
-# Project backups
+
+# Local project backups (never versioned)
 .project-backups/
-front_velora/angular.json.backup
-front_velora/backup-angular-*/
-front_velora/src/app/app.ts.backup-route-fix
-# Build output
-# IDE
-mobile_velora/app/google-services.json
-ai_velora/**/__pycache__/
-ai_velora/**/*.pyc
-ai_velora/**/*.pyo
 
-# Local catalog assets (runtime only; production uses object storage)
-back_velora/storage/
+# Editors
+.vscode/
+.idea/
+*.iml
 
-# Local virtual try-on results (runtime only; GCS in production)
-back_velora/storage/try-on-results/
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
