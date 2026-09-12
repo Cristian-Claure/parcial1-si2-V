@@ -1,4 +1,4 @@
-import {
+﻿import {
   describe,
   expect,
   it,
@@ -109,7 +109,6 @@ describe(
             repository as never,
             storage as never,
             access as never,
-            config as never,
           );
 
         const result =
@@ -129,6 +128,8 @@ describe(
                 "false",
             },
             {
+              originalname:
+                "image.png",
               buffer:
                 Buffer.from([
                   0x89,

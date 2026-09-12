@@ -1,4 +1,4 @@
-import {
+﻿import {
   describe,
   expect,
   it,
@@ -82,6 +82,15 @@ function access(
     AccessContextService;
 }
 
+function config() {
+  return {
+    value: {
+      VELORA_PUBLIC_BACKEND_URL:
+        "http://localhost:8080",
+    },
+  } as never;
+}
+
 describe(
   "CatalogService company scope",
   () => {
@@ -94,6 +103,7 @@ describe(
             access(
               "10000000-0000-0000-0000-000000000001",
             ),
+            config(),
           );
 
         await expect(
@@ -123,6 +133,7 @@ describe(
             access(
               "10000000-0000-0000-0000-000000000001",
             ),
+            config(),
           );
 
         await expect(
@@ -150,3 +161,4 @@ describe(
     );
   },
 );
+
