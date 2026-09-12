@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
 } from "@nestjs/common";
 
@@ -22,6 +22,10 @@ import {
 } from "../common/authz/access-context.service.js";
 
 import {
+  RuntimeConfigService,
+} from "../common/config/runtime-config.service.js";
+
+import {
   ApiHttpError,
 } from "../common/http/api-http.error.js";
 
@@ -41,6 +45,9 @@ export class CatalogService {
 
     private readonly access:
       AccessContextService,
+
+    private readonly config:
+      RuntimeConfigService,
   ) {}
 
   async listPublicCategories(
@@ -109,7 +116,7 @@ export class CatalogService {
     ) {
       throw new ApiHttpError(
         409,
-        "Ya existe una categoría con ese slug.",
+        "Ya existe una categorÃ­a con ese slug.",
       );
     }
 
@@ -125,7 +132,7 @@ export class CatalogService {
     ) {
       throw new ApiHttpError(
         400,
-        "La categoría padre no pertenece a la compañía seleccionada.",
+        "La categorÃ­a padre no pertenece a la compaÃ±Ã­a seleccionada.",
       );
     }
 
@@ -151,7 +158,7 @@ export class CatalogService {
       ) {
         throw new ApiHttpError(
           409,
-          "Ya existe una categoría con ese slug.",
+          "Ya existe una categorÃ­a con ese slug.",
         );
       }
 
@@ -192,7 +199,7 @@ export class CatalogService {
     ) {
       throw new ApiHttpError(
         409,
-        "Ya existe una categoría con ese slug.",
+        "Ya existe una categorÃ­a con ese slug.",
       );
     }
 
@@ -208,7 +215,7 @@ export class CatalogService {
     ) {
       throw new ApiHttpError(
         400,
-        "La categoría padre no pertenece a la compañía seleccionada.",
+        "La categorÃ­a padre no pertenece a la compaÃ±Ã­a seleccionada.",
       );
     }
 
@@ -240,7 +247,7 @@ export class CatalogService {
       ) {
         throw new ApiHttpError(
           409,
-          "Ya existe una categoría con ese slug.",
+          "Ya existe una categorÃ­a con ese slug.",
         );
       }
 
@@ -430,14 +437,14 @@ export class CatalogService {
     if (!category) {
       throw new ApiHttpError(
         400,
-        "La categoría seleccionada no pertenece a la compañía.",
+        "La categorÃ­a seleccionada no pertenece a la compaÃ±Ã­a.",
       );
     }
 
     if (!category.active) {
       throw new ApiHttpError(
         400,
-        "La categoría seleccionada está inactiva.",
+        "La categorÃ­a seleccionada estÃ¡ inactiva.",
       );
     }
 
@@ -520,7 +527,7 @@ export class CatalogService {
     if (!category) {
       throw new ApiHttpError(
         400,
-        "La categoría seleccionada no pertenece a la compañía.",
+        "La categorÃ­a seleccionada no pertenece a la compaÃ±Ã­a.",
       );
     }
 
@@ -543,7 +550,7 @@ export class CatalogService {
     ) {
       throw new ApiHttpError(
         400,
-        "Seleccione una categoría de probador virtual antes de habilitar el producto.",
+        "Seleccione una categorÃ­a de probador virtual antes de habilitar el producto.",
       );
     }
 
@@ -633,7 +640,7 @@ export class CatalogService {
       ) {
         throw new ApiHttpError(
           409,
-          "Ya existe una variante con ese SKU o código de barras.",
+          "Ya existe una variante con ese SKU o cÃ³digo de barras.",
         );
       }
 
@@ -702,7 +709,7 @@ export class CatalogService {
       ) {
         throw new ApiHttpError(
           409,
-          "Ya existe una variante con ese SKU o código de barras.",
+          "Ya existe una variante con ese SKU o cÃ³digo de barras.",
         );
       }
 
@@ -778,7 +785,7 @@ export class CatalogService {
     ) {
       throw new ApiHttpError(
         404,
-        "Catálogo no encontrado.",
+        "CatÃ¡logo no encontrado.",
       );
     }
   }
@@ -806,7 +813,7 @@ export class CatalogService {
     ) {
       throw new ApiHttpError(
         403,
-        "No tiene permisos para administrar esta compañía.",
+        "No tiene permisos para administrar esta compaÃ±Ã­a.",
       );
     }
 
@@ -827,7 +834,7 @@ export class CatalogService {
     if (!category) {
       throw new ApiHttpError(
         404,
-        "Categoría no encontrada.",
+        "CategorÃ­a no encontrada.",
       );
     }
 
@@ -869,7 +876,7 @@ export class CatalogService {
       ) {
         throw new ApiHttpError(
           400,
-          "Una categoría no puede ser descendiente de sí misma.",
+          "Una categorÃ­a no puede ser descendiente de sÃ­ misma.",
         );
       }
 
@@ -1161,7 +1168,9 @@ export class CatalogService {
         image.variantId,
 
       imageUrl:
-        image.imageUrl,
+        this.resolveImageUrl(
+          image,
+        ),
 
       altText:
         image.altText,
@@ -1177,6 +1186,26 @@ export class CatalogService {
     };
   }
 
+  private resolveImageUrl(
+    image:
+      ImageRecord,
+  ): string {
+    if (
+      image.storageKey
+    ) {
+      const baseUrl =
+        this.config.value
+          .VELORA_PUBLIC_BACKEND_URL
+          .replace(
+            /\/$/,
+            "",
+          );
+
+      return `${baseUrl}/api/catalog/assets/${image.storageKey}`;
+    }
+
+    return image.imageUrl;
+  }
   private normalizeSlug(
     slug: string,
   ): string {
@@ -1185,3 +1214,4 @@ export class CatalogService {
       .toLowerCase();
   }
 }
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
 } from "@nestjs/common";
 
@@ -27,9 +27,6 @@ import {
   validateImageBuffer,
 } from "../common/media/image-validation.js";
 
-import {
-  RuntimeConfigService,
-} from "../common/config/runtime-config.service.js";
 
 import {
   ManagedAssetStorageService,
@@ -126,8 +123,7 @@ export class CatalogAssetsService {
       ManagedAssetStorageService,
     private readonly access:
       AccessContextService,
-    private readonly config:
-      RuntimeConfigService,
+
   ) {}
 
   async upload(
@@ -151,7 +147,7 @@ export class CatalogAssetsService {
     ) {
       throw new ApiHttpError(
         403,
-        "No tiene permisos para administrar assets del catálogo.",
+        "No tiene permisos para administrar assets del catÃ¡logo.",
       );
     }
 
@@ -176,7 +172,7 @@ export class CatalogAssetsService {
     ) {
       throw new ApiHttpError(
         403,
-        "No tiene permisos para administrar esta compañía.",
+        "No tiene permisos para administrar esta compaÃ±Ã­a.",
       );
     }
 
@@ -192,7 +188,7 @@ export class CatalogAssetsService {
       throw new ApiHttpError(
         400,
         parsed.error.issues[0]?.message ??
-          "Metadata de asset inválida.",
+          "Metadata de asset invÃ¡lida.",
       );
     }
 
@@ -226,7 +222,7 @@ export class CatalogAssetsService {
     ) {
       throw new ApiHttpError(
         400,
-        "Seleccione una imagen para el catálogo.",
+        "Seleccione una imagen para el catÃ¡logo.",
       );
     }
 
@@ -249,7 +245,7 @@ export class CatalogAssetsService {
     ) {
       throw new ApiHttpError(
         409,
-        "Ya existe una prenda TRY_ON_GARMENT administrada para esta selección.",
+        "Ya existe una prenda TRY_ON_GARMENT administrada para esta selecciÃ³n.",
       );
     }
 
@@ -261,19 +257,11 @@ export class CatalogAssetsService {
         );
 
     try {
-      const baseUrl =
-        this.config.value
-          .VELORA_PUBLIC_BACKEND_URL
-          .replace(
-            /\/$/,
-            "",
-          );
-
       return await this.repository
         .createManagedImage(
           productId,
           metadata.variantId ?? null,
-          `${baseUrl}/api/catalog/assets/${stored.storageKey}`,
+          `/api/catalog/assets/${stored.storageKey}`,
           metadata.altText ?? null,
           metadata.purpose,
           metadata.sortOrder,
@@ -325,3 +313,4 @@ export class CatalogAssetsService {
     }
   }
 }
+
