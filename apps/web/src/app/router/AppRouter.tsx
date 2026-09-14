@@ -1,28 +1,38 @@
+﻿import { lazy, Suspense } from "react";
+
 import { Route, Routes } from "react-router-dom";
+import { PageLoader } from "../../shared/ui/PageLoader";
+function lazyNamed(
+  importer: () => Promise<any>,
+  name: string
+) {
+  return lazy(() => importer().then((module) => ({ default: module[name] })));
+}
 import { RequireRole, GuestOnly } from "../../shared/auth/RouteGuards";
 import { CustomerShell, OperationsShell, PublicShell } from "../../shared/layout/Shells";
-import { HomePage } from "../../features/home/HomePage";
+const HomePage = lazy(() => import("../../features/home/HomePage").then((module) => ({ default: module.HomePage })));
 import { LoginPage, RegisterPage } from "../../features/auth/AuthPages";
-import { CatalogPage, ProductDetailPage } from "../../features/catalog/CatalogPages";
-import { FavoritesPage } from "../../features/favorites/FavoritesPage";
-import { CartPage } from "../../features/cart/CartPage";
-import { CheckoutPage } from "../../features/checkout/CheckoutPage";
-import { OrdersPage } from "../../features/orders/OrdersPage";
-import { AccountPage } from "../../features/account/AccountPage";
+const CatalogPage = lazyNamed(() => import("../../features/catalog/CatalogPages"), "CatalogPage");
+const ProductDetailPage = lazyNamed(() => import("../../features/catalog/CatalogPages"), "ProductDetailPage");
+const FavoritesPage = lazyNamed(() => import("../../features/favorites/FavoritesPage"), "FavoritesPage");
+const CartPage = lazyNamed(() => import("../../features/cart/CartPage"), "CartPage");
+const CheckoutPage = lazyNamed(() => import("../../features/checkout/CheckoutPage"), "CheckoutPage");
+const OrdersPage = lazyNamed(() => import("../../features/orders/OrdersPage"), "OrdersPage");
+const AccountPage = lazyNamed(() => import("../../features/account/AccountPage"), "AccountPage");
 import { StripeReturnPage } from "../../features/payments/StripeReturnPage";
-import { TryOnPage } from "../../features/try-on/TryOnPage";
+const TryOnPage = lazyNamed(() => import("../../features/try-on/TryOnPage"), "TryOnPage");
 import { AdminDashboard, ManagerDashboard } from "../../features/operations/Dashboards";
 import { CatalogManagementPage } from "../../features/operations/CatalogManagementPage";
 import { InventoryPage } from "../../features/operations/InventoryPage";
 import { OperationalOrdersPage } from "../../features/operations/OperationalOrdersPage";
-import { PosPage } from "../../features/operations/PosPage";
-import { ReportsPage } from "../../features/reports/ReportsPage";
+const PosPage = lazy(() => import("../../features/operations/PosPage").then((module) => ({ default: module.PosPage })));
+const ReportsPage = lazy(() => import("../../features/reports/ReportsPage").then((module) => ({ default: module.ReportsPage })));
 import { AuditPage } from "../../features/audit/AuditPage";
 
-function NotFound() { return <main className="page centered"><span className="eyebrow">404</span><h1>Ruta no encontrada</h1><p>La navegación React no reconoce esta dirección.</p></main>; }
+function NotFound() { return <main className="page centered"><span className="eyebrow">404</span><h1>Ruta no encontrada</h1><p>La navegaciÃ³n React no reconoce esta direcciÃ³n.</p></main>; }
 
 export function AppRouter() {
-  return <Routes>
+  return <Suspense fallback={<PageLoader />}><Routes>
     <Route element={<PublicShell />}>
       <Route index element={<HomePage />} />
       <Route path="catalogo" element={<CatalogPage />} />
@@ -57,5 +67,11 @@ export function AppRouter() {
       <Route path="sucursal/reportes" element={<ReportsPage />} />
     </Route>
     <Route path="*" element={<NotFound />} />
-  </Routes>;
+  </Routes></Suspense>;
 }
+
+
+
+
+
+

@@ -1,3 +1,6 @@
+﻿@import "./tokens.css";
+@import "./typography.css";
+@import "./animations.css";
 :root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #211c1a; background: #f4efe9; font-synthesis: none; text-rendering: optimizeLegibility;
@@ -197,7 +200,7 @@ th { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-s
   .public-footer { flex-direction: column; }
 }
 
-/* N8 · POS y cajas */
+/* N8 Â· POS y cajas */
 .pos-page {
   display: grid;
   gap: 1rem;
@@ -346,3 +349,4 @@ th { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-s
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
