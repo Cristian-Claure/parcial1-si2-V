@@ -42,13 +42,13 @@ Build:
 
 ```powershell
 pnpm install --frozen-lockfile
-pnpm build:azure:api
+pnpm build:azure:back
 ```
 
 Startup command:
 
 ```text
-pnpm start:azure:api
+pnpm start:azure:back
 ```
 
 Nest consume `PORT` y escucha en `0.0.0.0`.
@@ -77,13 +77,13 @@ Health check:
 Build:
 
 ```powershell
-pnpm build:azure:web
+pnpm build:azure:front
 ```
 
 Output:
 
 ```text
-apps/web/dist
+apps/front/dist
 ```
 
 Build-time variables:
@@ -93,7 +93,7 @@ VITE_API_BASE_URL=https://<api>.azurewebsites.net
 VITE_STOREFRONT_COMPANY_ID=
 ```
 
-`apps/web/public/staticwebapp.config.json` provee el fallback SPA para React Router y debe quedar dentro de `dist`.
+`apps/front/public/staticwebapp.config.json` provee el fallback SPA para React Router y debe quedar dentro de `dist`.
 
 Actualiza CORS del API con el hostname HTTPS real de Static Web Apps.
 

@@ -1,6 +1,7 @@
 import {
   z,
 } from "zod";
+import { dbIdSchema } from "./shared.js";
 
 export const userRoleSchema =
   z.enum([
@@ -40,7 +41,7 @@ export type CustomerType =
 export const userProfileSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     firstName:
       z.string(),
@@ -71,8 +72,7 @@ export const userProfileSchema =
       userStatusSchema,
 
     storeId:
-      z.string()
-        .uuid()
+      dbIdSchema
         .nullable(),
 
     storeName:

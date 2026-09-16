@@ -8,7 +8,11 @@ import {
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useAuthStore } from "@/core/auth/authStore";
 import { useCompanyStore } from "@/core/company/companyStore";
-import { useNetworkStore } from "@/core/network/networkStore";
+import {
+  deriveIsConnected,
+  networkReady,
+  useNetworkStore,
+} from "@/core/network/networkStore";
 import { initMobileDb } from "@/core/offline/mobileDb";
 import { syncOfflineOrders } from "@/core/offline/syncOfflineOrders";
 
@@ -68,16 +72,11 @@ function Bootstrap() {
           useCompanyStore.getState().load(),
         ]);
 
-        const network = await NetInfo.fetch();
-        const connected =
-          network.isConnected !== false &&
-          network.isInternetReachable !== false;
+        const connected = await networkReady;
 
         if (!active) {
           return;
         }
-
-        setConnected(connected);
 
         if (connected) {
           await syncCustomer().catch(() => undefined);
@@ -86,9 +85,7 @@ function Bootstrap() {
     }
 
     const unsubscribe = NetInfo.addEventListener((state) => {
-      const connected =
-        state.isConnected !== false &&
-        state.isInternetReachable !== false;
+      const connected = deriveIsConnected(state);
 
       setConnected(connected);
 

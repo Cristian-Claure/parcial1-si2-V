@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dbIdSchema } from "./shared.js";
 
 export const pushPlatformSchema = z.enum(["ANDROID", "WEB"]);
 export type PushPlatform = z.infer<typeof pushPlatformSchema>;
@@ -17,7 +18,7 @@ export const revokePushInstallationQuerySchema = z.object({
 export type RevokePushInstallationQuery = z.infer<typeof revokePushInstallationQuerySchema>;
 
 export const pushInstallationResponseSchema = z.object({
-  id: z.string().uuid(),
+  id: dbIdSchema,
   installationId: z.string(),
   platform: pushPlatformSchema,
   deviceLabel: z.string().nullable(),

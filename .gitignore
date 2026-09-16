@@ -2,7 +2,7 @@
 .env
 .env.*
 !.env.example
-!apps/web/.env.production.example
+!apps/front/.env.production.example
 !apps/mobile/.env.production.example
 
 # Dependencies
@@ -10,9 +10,9 @@ node_modules/
 .pnpm-store/
 
 # Builds / coverage
-apps/api/coverage/
-apps/web/dist/
-apps/web/coverage/
+apps/back/coverage/
+apps/front/dist/
+apps/front/coverage/
 apps/mobile/.expo/
 apps/mobile/.expo-export-check/
 apps/mobile/dist/
@@ -21,7 +21,7 @@ packages/*/dist/
 
 # Runtime managed assets
 storage/
-apps/api/storage/
+apps/back/storage/
 
 # Logs / temporary
 *.log

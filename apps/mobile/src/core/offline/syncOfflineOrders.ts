@@ -3,9 +3,12 @@ import { veloraApi } from "../api/veloraApi";
 import {
   deleteOfflineOrder,
   listOfflineOrders,
+  recordOfflineOrderFailure,
   recoverSyncingOrders,
   setOfflineOrderStatus,
 } from "./mobileDb";
+
+const MAX_SYNC_ATTEMPTS = 5;
 
 export interface OfflineSyncSummary {
   synced: number;
@@ -45,12 +48,16 @@ export async function syncOfflineOrders(
         continue;
       }
 
-      await setOfflineOrderStatus(entry.id, "PENDING", null);
-      pending += 1;
-
       if (error instanceof ApiClientError && error.status === 0) {
+        await setOfflineOrderStatus(entry.id, "PENDING", null);
+        pending += 1;
         break;
       }
+
+      const message =
+        error instanceof Error ? error.message : "No se pudo sincronizar.";
+      await recordOfflineOrderFailure(entry.id, message, MAX_SYNC_ATTEMPTS);
+      pending += 1;
 
       throw error;
     }

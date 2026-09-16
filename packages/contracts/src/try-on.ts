@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dbIdSchema } from "./shared.js";
 
 import { companyIdSchema } from "./companies.js";
 
@@ -24,9 +25,9 @@ export type TryOnJobStatus = z.infer<
 >;
 
 export const tryOnJobResponseSchema = z.object({
-  id: z.string().uuid(),
-  productId: z.string().uuid(),
-  variantId: z.string().uuid().nullable(),
+  id: dbIdSchema,
+  productId: dbIdSchema,
+  variantId: dbIdSchema.nullable(),
   provider: tryOnProviderSchema,
   status: tryOnJobStatusSchema,
   resultUrl: z.string().nullable(),
@@ -83,13 +84,13 @@ export type ProductAssistantRequest = z.infer<
 >;
 
 export const productAssistantRecommendationSchema = z.object({
-  productId: z.string().uuid(),
+  productId: dbIdSchema,
   reason: z.string()
     .trim()
     .min(1)
     .max(420),
   variantIds: z.array(
-    z.string().uuid(),
+    dbIdSchema,
   )
     .max(8),
 });

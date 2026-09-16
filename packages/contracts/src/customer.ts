@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dbIdSchema } from "./shared.js";
 import { customerTypeSchema, userProfileSchema } from "./auth.js";
 
 const nullableTrimmed = (max: number) =>
@@ -40,7 +41,7 @@ export const customerAddressRequestSchema = z.object({
 export type CustomerAddressRequest = z.infer<typeof customerAddressRequestSchema>;
 
 export const customerAddressResponseSchema = z.object({
-  id: z.string().uuid(),
+  id: dbIdSchema,
   label: z.string(),
   recipientName: z.string(),
   recipientPhone: z.string(),
@@ -54,8 +55,8 @@ export const customerAddressResponseSchema = z.object({
 export type CustomerAddressResponse = z.infer<typeof customerAddressResponseSchema>;
 
 export const customerFavoriteResponseSchema = z.object({
-  id: z.string().uuid(),
-  productId: z.string().uuid(),
+  id: dbIdSchema,
+  productId: dbIdSchema,
   createdAt: z.string().datetime(),
 });
 export type CustomerFavoriteResponse = z.infer<typeof customerFavoriteResponseSchema>;

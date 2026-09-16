@@ -1,0 +1,12 @@
+﻿:root {
+  --velora-ink: #211c1a;
+  --velora-cream: #fffaf6;
+  --velora-paper: #ffffff;
+  --velora-champagne: #c9a46a;
+  --velora-accent: #6c3f35;
+  --velora-muted: #756a64;
+  --velora-line: #ded3cb;
+  --velora-radius-sm: 12px;
+  --velora-radius-lg: 24px;
+  --velora-shadow-soft: 0 20px 60px rgba(33, 28, 26, .09);
+}
