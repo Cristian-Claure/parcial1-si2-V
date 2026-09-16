@@ -538,16 +538,6 @@ export function TryOnPage() {
         </p>
       </div>
 
-      {
-        error
-          ? (
-              <Notice kind="error">
-                {error}
-              </Notice>
-            )
-          : null
-      }
-
       <div className="two-columns">
         <div className="panel">
           <h2>1. Seleccione la prenda</h2>
@@ -695,6 +685,16 @@ export function TryOnPage() {
 
         <div className="panel">
           <h2>Resultado</h2>
+
+          {
+            error
+              ? (
+                  <Notice kind="error">
+                    {error}
+                  </Notice>
+                )
+              : null
+          }
 
           {
             job

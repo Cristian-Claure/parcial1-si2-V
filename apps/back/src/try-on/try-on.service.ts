@@ -6,8 +6,9 @@ import {
   z,
 } from "zod";
 
-import type {
-  TryOnJobResponse,
+import {
+  dbIdSchema,
+  type TryOnJobResponse,
 } from "@velora/contracts";
 
 import type {
@@ -55,9 +56,7 @@ export interface TryOnUploadedFile {
 const createFieldsSchema =
   z.object({
     productId:
-      z
-        .string()
-        .uuid(),
+      dbIdSchema,
     variantId:
       z.preprocess(
         (value) =>
@@ -66,9 +65,7 @@ const createFieldsSchema =
           value === ""
             ? undefined
             : value,
-        z
-          .string()
-          .uuid()
+        dbIdSchema
           .optional(),
       ),
   });
