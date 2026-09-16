@@ -175,6 +175,11 @@ th { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-s
 .modal-backdrop { position: fixed; inset: 0; background: rgba(23,18,17,.58); display: grid; place-items: center; padding: 1rem; z-index: 100; }
 .modal-card { width: min(480px, 100%); background: var(--paper); border-radius: 22px; padding: 1.5rem; box-shadow: 0 30px 100px rgba(0,0,0,.3); }
 
+.pwa-update-banner { position: fixed; left: 1rem; right: 1rem; bottom: 1rem; z-index: 90; margin-inline: auto; max-width: 420px; background: var(--ink); color: white; border-radius: var(--radius); padding: 1rem 1.25rem; box-shadow: var(--shadow); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+.pwa-update-banner p { margin: 0; font-weight: 650; }
+.pwa-update-actions { display: flex; gap: .5rem; }
+.pwa-update-actions .button.secondary { border-color: rgba(255,255,255,.4); color: white; }
+
 @media (max-width: 1000px) {
   .hero-section, .product-detail, .checkout-grid { grid-template-columns: 1fr; }
   .hero-art { display: none; }
