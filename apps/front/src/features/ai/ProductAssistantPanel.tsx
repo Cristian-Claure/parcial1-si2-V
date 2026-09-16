@@ -1,22 +1,18 @@
 import {
-  useState,
   type FormEvent,
 } from "react";
 
 import type {
-  ProductAssistantHistoryItem,
-  ProductAssistantResponse,
   ProductResponse,
 } from "@velora/contracts";
 
 import {
-  apiRequest,
-  jsonBody,
-} from "../../core/api/apiClient";
-
-import {
   Notice,
 } from "../../shared/feedback/Notice";
+
+import {
+  useProductAssistant,
+} from "./useProductAssistant";
 
 export function ProductAssistantPanel({
   companyId,
@@ -25,50 +21,16 @@ export function ProductAssistantPanel({
   companyId: string;
   products: ProductResponse[];
 }) {
-  const [
+  const {
     message,
     setMessage,
-  ] =
-    useState(
-      "",
-    );
-
-  const [
-    history,
-    setHistory,
-  ] =
-    useState<
-      ProductAssistantHistoryItem[]
-    >(
-      [],
-    );
-
-  const [
     result,
-    setResult,
-  ] =
-    useState<
-      ProductAssistantResponse | null
-    >(
-      null,
-    );
-
-  const [
     error,
-    setError,
-  ] =
-    useState<
-      string | null
-    >(
-      null,
-    );
-
-  const [
     loading,
-    setLoading,
-  ] =
-    useState(
-      false,
+    submit,
+  } =
+    useProductAssistant(
+      companyId,
     );
 
   const productNames =
@@ -81,91 +43,16 @@ export function ProductAssistantPanel({
       ),
     );
 
-  const submit =
-    async (
+  const onSubmit =
+    (
       event:
         FormEvent<HTMLFormElement>,
     ) => {
       event.preventDefault();
 
-      const trimmed =
-        message.trim();
-
-      if (
-        trimmed.length < 2
-      ) {
-        return;
-      }
-
-      setLoading(
-        true,
+      void submit(
+        message.trim(),
       );
-      setError(
-        null,
-      );
-
-      try {
-        const response =
-          await apiRequest<
-            ProductAssistantResponse
-          >(
-            "/api/customer/assistant/products",
-            {
-              method:
-                "POST",
-              body:
-                jsonBody({
-                  companyId,
-                  message:
-                    trimmed,
-                  history:
-                    history.slice(
-                      -8,
-                    ),
-                }),
-            },
-          );
-
-        setResult(
-          response,
-        );
-        setHistory(
-          (
-            current,
-          ) => [
-            ...current,
-            {
-              role:
-                "user" as const,
-              content:
-                trimmed,
-            },
-            {
-              role:
-                "assistant" as const,
-              content:
-                response.reply,
-            },
-          ].slice(
-            -8,
-          ),
-        );
-        setMessage(
-          "",
-        );
-      }
-      catch (cause) {
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : "No se pudo consultar el asistente.",
-        );
-      }
-      finally {
-        setLoading(
-          false,
-        );
-      }
     };
 
   return (
@@ -178,11 +65,7 @@ export function ProductAssistantPanel({
 
       <form
         onSubmit={
-          (
-            event,
-          ) => void submit(
-            event,
-          )
+          onSubmit
         }
       >
         <label>

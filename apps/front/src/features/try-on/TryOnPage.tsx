@@ -28,10 +28,6 @@ import {
 } from "../../core/company/companyStore";
 
 import {
-  ProductAssistantPanel,
-} from "../ai/ProductAssistantPanel";
-
-import {
   Notice,
 } from "../../shared/feedback/Notice";
 
@@ -532,10 +528,6 @@ export function TryOnPage() {
     );
   }
 
-  const products =
-    productsQuery.data ??
-    [];
-
   return (
     <section className="page">
       <div className="page-heading">
@@ -823,11 +815,6 @@ export function TryOnPage() {
               )
         }
       </div>
-
-      <ProductAssistantPanel
-        companyId={companyId}
-        products={products}
-      />
     </section>
   );
 }
