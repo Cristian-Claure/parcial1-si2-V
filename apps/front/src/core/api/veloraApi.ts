@@ -413,6 +413,13 @@ export const veloraApi = {
       `/api/customer/orders/${orderId}/payments`,
     ),
 
+  payment: (
+    id: string,
+  ) =>
+    apiRequest<PaymentResponse>(
+      `/api/customer/payments/${id}`,
+    ),
+
   createPayment: (
     orderId: string,
     body: CreatePaymentRequest,
