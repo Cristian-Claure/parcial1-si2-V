@@ -97,13 +97,6 @@ describe(
               }),
         };
 
-        const config = {
-          value: {
-            VELORA_PUBLIC_BACKEND_URL:
-              "http://localhost:8080",
-          },
-        };
-
         const service =
           new CatalogAssetsService(
             repository as never,
