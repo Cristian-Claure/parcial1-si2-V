@@ -2223,7 +2223,7 @@ function OfflineSalesPanel(
           <table>
             <thead><tr><th>Operación</th><th>Estado</th><th>Total</th><th>Fecha</th><th>Detalle</th><th /></tr></thead>
             <tbody>
-              {entries.map((entry) => <tr key={entry.id}><td><code>{entry.id.slice(0, 8)}…</code></td><td>{entry.status}</td><td>{money(entry.total, entry.currency)}</td><td>{new Date(entry.createdAt).toLocaleString("es-BO")}</td><td>{entry.errorMessage ?? `${entry.items.length} línea(s)`}</td><td><div className="actions compact">{entry.status === "CONFLICT" ? <button type="button" className="button small secondary" onClick={() => void onRetry(entry.id)}>Reintentar</button> : null}<button type="button" className="button small danger" onClick={() => onDiscard(entry)}>Descartar</button></div></td></tr>)}
+              {entries.map((entry) => <tr key={entry.id}><td><code>{entry.id.slice(0, 8)}…</code></td><td>{entry.status}</td><td>{money(entry.total, entry.currency)}</td><td>{new Date(entry.createdAt).toLocaleString("es-BO")}</td><td>{entry.errorMessage ?? `${entry.items.length} línea(s)`}</td><td><div className="actions compact">{entry.status === "CONFLICT" || entry.status === "FAILED" ? <button type="button" className="button small secondary" onClick={() => void onRetry(entry.id)}>Reintentar</button> : null}<button type="button" className="button small danger" onClick={() => onDiscard(entry)}>Descartar</button></div></td></tr>)}
             </tbody>
           </table>
         </div>

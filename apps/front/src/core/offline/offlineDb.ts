@@ -12,7 +12,8 @@ import type {
 
 export type OfflineOrderStatus =
   | "PENDING"
-  | "CONFLICT";
+  | "CONFLICT"
+  | "FAILED";
 
 export interface OfflineOrderEntry {
   id: string;
@@ -21,6 +22,7 @@ export interface OfflineOrderEntry {
   request: SyncOfflineOrderRequest;
   createdAt: string;
   errorMessage: string | null;
+  attempts?: number;
 }
 
 export interface OfflinePosItemSnapshot {
@@ -47,6 +49,7 @@ export interface OfflinePosSaleEntry {
   currency: string;
   createdAt: string;
   errorMessage: string | null;
+  attempts?: number;
 }
 
 interface CartCache {
@@ -191,6 +194,7 @@ export const offlineCache = {
       {
         status: "PENDING",
         errorMessage: null,
+        attempts: 0,
       },
     ),
 
@@ -225,6 +229,7 @@ export const offlineCache = {
       {
         status: "PENDING",
         errorMessage: null,
+        attempts: 0,
       },
     ),
 };

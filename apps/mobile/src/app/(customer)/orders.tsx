@@ -157,7 +157,11 @@ function OfflineOrderCard({
     <View style={commonStyles.card}>
       <View style={commonStyles.rowBetween}>
         <Text style={commonStyles.subheading}>
-          {entry.status === "CONFLICT" ? "Requiere revisión" : "Pendiente"}
+          {entry.status === "CONFLICT"
+            ? "Requiere revisión"
+            : entry.status === "FAILED"
+              ? "No se pudo sincronizar"
+              : "Pendiente"}
         </Text>
         <Text style={styles.status}>{entry.status}</Text>
       </View>
@@ -170,7 +174,7 @@ function OfflineOrderCard({
         <Notice kind="error">{entry.errorMessage}</Notice>
       ) : null}
       <View style={{ gap: 8 }}>
-        {entry.status === "CONFLICT" ? (
+        {entry.status === "CONFLICT" || entry.status === "FAILED" ? (
           <Button
             title="REINTENTAR"
             variant="secondary"

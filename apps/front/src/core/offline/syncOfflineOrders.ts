@@ -2,6 +2,8 @@ import { ApiClientError } from "../api/apiClient";
 import { veloraApi } from "../api/veloraApi";
 import { offlineDb } from "./offlineDb";
 
+const MAX_SYNC_ATTEMPTS = 5;
+
 export async function syncOfflineOrders(userId: string): Promise<{ synced: number; conflicts: number }> {
   if (!navigator.onLine) return { synced: 0, conflicts: 0 };
   const pending = await offlineDb.offlineOrders.where("userId").equals(userId).filter((item) => item.status === "PENDING").toArray();
@@ -18,7 +20,13 @@ export async function syncOfflineOrders(userId: string): Promise<{ synced: numbe
       } else if (error instanceof ApiClientError && error.status === 0) {
         break;
       } else {
-        await offlineDb.offlineOrders.update(entry.id, { errorMessage: error instanceof Error ? error.message : "No se pudo sincronizar." });
+        const attempts = (entry.attempts ?? 0) + 1;
+        const errorMessage = error instanceof Error ? error.message : "No se pudo sincronizar.";
+        await offlineDb.offlineOrders.update(entry.id, {
+          attempts,
+          errorMessage,
+          status: attempts >= MAX_SYNC_ATTEMPTS ? "FAILED" : "PENDING",
+        });
       }
     }
   }

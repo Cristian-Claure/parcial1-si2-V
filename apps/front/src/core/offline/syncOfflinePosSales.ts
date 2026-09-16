@@ -14,6 +14,8 @@ import {
   offlineDb,
 } from "./offlineDb";
 
+const MAX_SYNC_ATTEMPTS = 5;
+
 export async function syncOfflinePosSales(
   userId: string,
   role: UserRole,
@@ -89,13 +91,21 @@ export async function syncOfflinePosSales(
         break;
       }
 
+      const attempts =
+        (entry.attempts ?? 0) + 1;
+
       await offlineDb.posSales.update(
         entry.id,
         {
+          attempts,
           errorMessage:
             error instanceof Error
               ? error.message
               : "No se pudo sincronizar la venta POS.",
+          status:
+            attempts >= MAX_SYNC_ATTEMPTS
+              ? "FAILED"
+              : "PENDING",
         },
       );
     }
