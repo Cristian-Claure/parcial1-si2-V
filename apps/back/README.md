@@ -20,7 +20,7 @@ La API mantiene separación Clean Code por responsabilidad:
 Desde la raíz del monorepo:
 
 ```powershell
-pnpm --filter @velora/api dev
+pnpm --filter @velora/back dev
 ```
 
 La API usa `PORT=3000` por defecto.
@@ -42,10 +42,10 @@ GET  /api/auth/me
 ## Validación
 
 ```powershell
-pnpm --filter @velora/api typecheck
-pnpm --filter @velora/api lint
-pnpm --filter @velora/api test
-pnpm --filter @velora/api build
+pnpm --filter @velora/back typecheck
+pnpm --filter @velora/back lint
+pnpm --filter @velora/back test
+pnpm --filter @velora/back build
 ```
 
 ## Persistencia

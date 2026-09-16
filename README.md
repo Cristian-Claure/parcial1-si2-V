@@ -4,8 +4,8 @@ VÉLORA es una plataforma omnicanal de comercio de moda. El repositorio actual u
 
 ## Arquitectura vigente
 
-- `apps/api`: API NestJS 12.
-- `apps/web`: React 19 + Vite + PWA.
+- `apps/back`: API NestJS 12.
+- `apps/front`: React 19 + Vite + PWA.
 - `apps/mobile`: React Native + Expo SDK 57.
 - `packages/config`: configuración runtime compartida.
 - `packages/contracts`: contratos y esquemas compartidos.
@@ -86,23 +86,23 @@ pnpm db:migrate:fresh
 Aplicaciones:
 
 ```powershell
-pnpm dev:api
-pnpm dev:web
+pnpm dev:back
+pnpm dev:front
 pnpm dev:mobile
 ```
 
 Validación:
 
 ```powershell
-pnpm build:azure:api
-pnpm --filter @velora/api typecheck
-pnpm --filter @velora/api lint
-pnpm --filter @velora/api test
+pnpm build:azure:back
+pnpm --filter @velora/back typecheck
+pnpm --filter @velora/back lint
+pnpm --filter @velora/back test
 
-pnpm build:azure:web
-pnpm --filter @velora/web typecheck
-pnpm --filter @velora/web lint
-pnpm --filter @velora/web test
+pnpm build:azure:front
+pnpm --filter @velora/front typecheck
+pnpm --filter @velora/front lint
+pnpm --filter @velora/front test
 
 pnpm --filter @velora/mobile typecheck
 pnpm --filter @velora/mobile test

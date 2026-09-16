@@ -63,11 +63,11 @@ Las migraciones viven en `packages/database/migrations` y deben existir exactame
 
 ```powershell
 pnpm build:packages
-pnpm --filter @velora/api build
-pnpm --filter @velora/api typecheck
-pnpm --filter @velora/api lint
-pnpm --filter @velora/api test
-pnpm dev:api
+pnpm --filter @velora/back build
+pnpm --filter @velora/back typecheck
+pnpm --filter @velora/back lint
+pnpm --filter @velora/back test
+pnpm dev:back
 ```
 
 Health:
@@ -80,11 +80,11 @@ GET http://127.0.0.1:8080/api/health
 
 ```powershell
 pnpm --filter @velora/contracts build
-pnpm --filter @velora/web build
-pnpm --filter @velora/web typecheck
-pnpm --filter @velora/web lint
-pnpm --filter @velora/web test
-pnpm dev:web
+pnpm --filter @velora/front build
+pnpm --filter @velora/front typecheck
+pnpm --filter @velora/front lint
+pnpm --filter @velora/front test
+pnpm dev:front
 ```
 
 Default local: `http://localhost:5173`.

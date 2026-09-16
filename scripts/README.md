@@ -4,9 +4,9 @@
 
 El stack vigente se ejecuta mediante los scripts pnpm definidos en `package.json`:
 
-- `pnpm dev:api`
-- `pnpm dev:web`
+- `pnpm dev:back`
+- `pnpm dev:front`
 - `pnpm dev:mobile`
 - `pnpm db:migrate:fresh`
-- `pnpm build:azure:api`
-- `pnpm build:azure:web`
+- `pnpm build:azure:back`
+- `pnpm build:azure:front`
