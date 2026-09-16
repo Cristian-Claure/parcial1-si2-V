@@ -2,15 +2,12 @@ import {
   z,
 } from "zod";
 
+import {
+  dbIdSchema,
+} from "./shared.js";
+
 export const companyIdSchema =
-  z.string()
-    .regex(
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
-      {
-        message:
-          "La compañía es inválida.",
-      },
-    );
+  dbIdSchema;
 
 export const companySchema =
   z.object({
