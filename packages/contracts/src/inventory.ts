@@ -2,6 +2,10 @@ import {
   z,
 } from "zod";
 
+import {
+  dbIdSchema,
+} from "./shared.js";
+
 export const inventoryMovementTypeSchema =
   z.enum([
     "ENTRY",
@@ -23,7 +27,7 @@ export type InventoryMovementType =
 export const warehouseRequestSchema =
   z.object({
     storeId:
-      z.string().uuid(),
+      dbIdSchema,
 
     code:
       z.string()
@@ -57,10 +61,10 @@ export type WarehouseRequest =
 export const warehouseResponseSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     storeId:
-      z.string().uuid(),
+      dbIdSchema,
 
     storeName:
       z.string(),
@@ -90,13 +94,13 @@ export type WarehouseResponse =
 export const inventoryStockSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     warehouseId:
-      z.string().uuid(),
+      dbIdSchema,
 
     variantId:
-      z.string().uuid(),
+      dbIdSchema,
 
     productName:
       z.string(),
@@ -182,10 +186,10 @@ export type InventoryStock =
 export const inventoryMovementRequestSchema =
   z.object({
     warehouseId:
-      z.string().uuid(),
+      dbIdSchema,
 
     variantId:
-      z.string().uuid(),
+      dbIdSchema,
 
     movementType:
       inventoryMovementTypeSchema,
@@ -208,8 +212,7 @@ export const inventoryMovementRequestSchema =
         .optional(),
 
     referenceId:
-      z.string()
-        .uuid()
+      dbIdSchema
         .nullable()
         .optional(),
   });
@@ -222,13 +225,13 @@ export type InventoryMovementRequest =
 export const inventoryTransferRequestSchema =
   z.object({
     sourceWarehouseId:
-      z.string().uuid(),
+      dbIdSchema,
 
     destinationWarehouseId:
-      z.string().uuid(),
+      dbIdSchema,
 
     variantId:
-      z.string().uuid(),
+      dbIdSchema,
 
     quantity:
       z.number()
@@ -290,13 +293,13 @@ export type InventoryTransferResponse =
 export const inventoryMovementResponseSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     warehouseId:
-      z.string().uuid(),
+      dbIdSchema,
 
     variantId:
-      z.string().uuid(),
+      dbIdSchema,
 
     sku:
       z.string(),

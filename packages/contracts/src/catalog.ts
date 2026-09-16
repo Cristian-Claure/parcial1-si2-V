@@ -1,6 +1,7 @@
 import {
   z,
 } from "zod";
+import { dbIdSchema } from "./shared.js";
 
 import {
   companyIdSchema,
@@ -79,8 +80,7 @@ export const categoryRequestSchema =
         .optional(),
 
     parentId:
-      z.string()
-        .uuid()
+      dbIdSchema
         .nullable()
         .optional(),
 
@@ -101,11 +101,10 @@ export const categoryResponseSchema =
       companyIdSchema,
 
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     parentId:
-      z.string()
-        .uuid()
+      dbIdSchema
         .nullable(),
 
     parentName:
@@ -224,7 +223,7 @@ export type VariantRequest =
 export const variantResponseSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     sku:
       z.string(),
@@ -265,8 +264,7 @@ export type VariantResponse =
 export const imageRequestSchema =
   z.object({
     variantId:
-      z.string()
-        .uuid()
+      dbIdSchema
         .nullable()
         .optional(),
 
@@ -308,11 +306,10 @@ export type ImageRequest =
 export const imageResponseSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     variantId:
-      z.string()
-        .uuid()
+      dbIdSchema
         .nullable(),
 
     imageUrl:
@@ -345,7 +342,7 @@ export const productRequestSchema =
       companyIdSchema,
 
     categoryId:
-      z.string().uuid(),
+      dbIdSchema,
 
     name:
       z.string()
@@ -444,10 +441,10 @@ export const productResponseSchema =
       companyIdSchema,
 
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     categoryId:
-      z.string().uuid(),
+      dbIdSchema,
 
     categoryName:
       z.string(),

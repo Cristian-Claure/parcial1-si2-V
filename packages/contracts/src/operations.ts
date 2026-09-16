@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dbIdSchema } from "./shared.js";
 import { companyIdSchema } from "./companies.js";
 import { fulfillmentTypeSchema, orderStatusSchema } from "./orders.js";
 import { paymentMethodSchema, paymentStatusSchema } from "./payments.js";
@@ -9,7 +10,7 @@ export const operationalOrdersQuerySchema = z.object({
 export type OperationalOrdersQuery = z.infer<typeof operationalOrdersQuerySchema>;
 
 export const operationalPaymentSummarySchema = z.object({
-  id: z.string().uuid(),
+  id: dbIdSchema,
   method: paymentMethodSchema,
   status: paymentStatusSchema,
   amount: z.number().positive(),
@@ -20,15 +21,15 @@ export const operationalPaymentSummarySchema = z.object({
 export type OperationalPaymentSummary = z.infer<typeof operationalPaymentSummarySchema>;
 
 export const operationalOrderListItemSchema = z.object({
-  id: z.string().uuid(),
+  id: dbIdSchema,
   orderNumber: z.string(),
-  customerId: z.string().uuid().nullable(),
+  customerId: dbIdSchema.nullable(),
   customerName: z.string(),
   customerEmail: z.string().nullable(),
   companyId: companyIdSchema,
-  storeId: z.string().uuid(),
+  storeId: dbIdSchema,
   storeName: z.string(),
-  warehouseId: z.string().uuid(),
+  warehouseId: dbIdSchema,
   warehouseName: z.string(),
   orderChannel: z.enum(["ECOMMERCE", "POS"]),
   fulfillmentType: fulfillmentTypeSchema,

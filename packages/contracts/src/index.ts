@@ -1,3 +1,4 @@
+export * from "./shared.js";
 export * from "./auth.js";
 export * from "./companies.js";
 export * from "./stores.js";

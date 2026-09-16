@@ -1,6 +1,7 @@
 import {
   z,
 } from "zod";
+import { dbIdSchema } from "./shared.js";
 
 export const paymentMethodSchema =
   z.enum([
@@ -70,16 +71,16 @@ export type PaymentActionRequest =
 export const paymentResponseSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     orderId:
-      z.string().uuid(),
+      dbIdSchema,
 
     orderNumber:
       z.string(),
 
     storeId:
-      z.string().uuid(),
+      dbIdSchema,
 
     storeName:
       z.string(),
@@ -110,8 +111,7 @@ export const paymentResponseSchema =
         .nullable(),
 
     processedById:
-      z.string()
-        .uuid()
+      dbIdSchema
         .nullable(),
 
     processedByName:
@@ -150,7 +150,7 @@ export type PaymentResponse =
 export const paymentHistoryResponseSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     fromStatus:
       paymentStatusSchema
@@ -160,7 +160,7 @@ export const paymentHistoryResponseSchema =
       paymentStatusSchema,
 
     changedById:
-      z.string().uuid(),
+      dbIdSchema,
 
     changedByName:
       z.string(),

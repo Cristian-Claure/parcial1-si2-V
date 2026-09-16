@@ -3,6 +3,10 @@ import {
 } from "zod";
 
 import {
+  dbIdSchema,
+} from "./shared.js";
+
+import {
   orderItemResponseSchema,
   orderStatusSchema,
 } from "./orders.js";
@@ -48,10 +52,10 @@ export type CashMovementType =
 export const createPointOfSaleRequestSchema =
   z.object({
     storeId:
-      z.string().uuid(),
+      dbIdSchema,
 
     warehouseId:
-      z.string().uuid(),
+      dbIdSchema,
 
     code:
       z.string()
@@ -86,7 +90,7 @@ export type CreatePointOfSaleRequest =
 export const updatePointOfSaleRequestSchema =
   z.object({
     warehouseId:
-      z.string().uuid(),
+      dbIdSchema,
 
     code:
       z.string()
@@ -124,16 +128,16 @@ export type UpdatePointOfSaleRequest =
 export const pointOfSaleResponseSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     storeId:
-      z.string().uuid(),
+      dbIdSchema,
 
     storeName:
       z.string(),
 
     warehouseId:
-      z.string().uuid(),
+      dbIdSchema,
 
     warehouseName:
       z.string(),
@@ -162,7 +166,7 @@ export type PointOfSaleResponse =
 export const openCashSessionRequestSchema =
   z.object({
     pointOfSaleId:
-      z.string().uuid(),
+      dbIdSchema,
 
     openingAmount:
       z.number()
@@ -211,13 +215,13 @@ export type CloseCashSessionRequest =
 export const cashSessionResponseSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     sessionNumber:
       z.string(),
 
     pointOfSaleId:
-      z.string().uuid(),
+      dbIdSchema,
 
     pointOfSaleCode:
       z.string(),
@@ -226,23 +230,22 @@ export const cashSessionResponseSchema =
       z.string(),
 
     storeId:
-      z.string().uuid(),
+      dbIdSchema,
 
     storeName:
       z.string(),
 
     warehouseId:
-      z.string().uuid(),
+      dbIdSchema,
 
     warehouseName:
       z.string(),
 
     openedBy:
-      z.string().uuid(),
+      dbIdSchema,
 
     closedBy:
-      z.string()
-        .uuid()
+      dbIdSchema
         .nullable(),
 
     status:
@@ -328,10 +331,10 @@ export type CashMovementRequest =
 export const cashMovementResponseSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     cashSessionId:
-      z.string().uuid(),
+      dbIdSchema,
 
     movementType:
       cashMovementTypeSchema,
@@ -344,7 +347,7 @@ export const cashMovementResponseSchema =
       z.string(),
 
     createdBy:
-      z.string().uuid(),
+      dbIdSchema,
 
     createdAt:
       z.string().datetime(),
@@ -358,7 +361,7 @@ export type CashMovementResponse =
 export const posSaleItemRequestSchema =
   z.object({
     variantId:
-      z.string().uuid(),
+      dbIdSchema,
 
     quantity:
       z.number()
@@ -393,11 +396,10 @@ export const createPosSaleRequestSchema =
         .optional(),
 
     cashSessionId:
-      z.string().uuid(),
+      dbIdSchema,
 
     customerId:
-      z.string()
-        .uuid()
+      dbIdSchema
         .nullable()
         .optional(),
 
@@ -435,7 +437,7 @@ export type CreatePosSaleRequest =
 export const posSaleResponseSchema =
   z.object({
     orderId:
-      z.string().uuid(),
+      dbIdSchema,
 
     orderNumber:
       z.string(),
@@ -458,27 +460,26 @@ export const posSaleResponseSchema =
       orderStatusSchema,
 
     pointOfSaleId:
-      z.string().uuid(),
+      dbIdSchema,
 
     pointOfSaleCode:
       z.string(),
 
     cashSessionId:
-      z.string().uuid(),
+      dbIdSchema,
 
     cashSessionNumber:
       z.string(),
 
     customerId:
-      z.string()
-        .uuid()
+      dbIdSchema
         .nullable(),
 
     paymentMethod:
       posPaymentMethodSchema,
 
     paymentId:
-      z.string().uuid(),
+      dbIdSchema,
 
     paymentStatus:
       paymentStatusSchema,
@@ -528,7 +529,7 @@ export type ConfirmPosPaymentRequest =
 export const posPaymentResolutionResponseSchema =
   z.object({
     orderId:
-      z.string().uuid(),
+      dbIdSchema,
 
     orderNumber:
       z.string(),
@@ -537,7 +538,7 @@ export const posPaymentResolutionResponseSchema =
       orderStatusSchema,
 
     paymentId:
-      z.string().uuid(),
+      dbIdSchema,
 
     paymentMethod:
       posPaymentMethodSchema,

@@ -1,6 +1,7 @@
 import {
   z,
 } from "zod";
+import { dbIdSchema } from "./shared.js";
 
 import {
   companyIdSchema,
@@ -12,7 +13,7 @@ const nullableText =
 export const storeSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     companyId:
       companyIdSchema,
@@ -121,7 +122,7 @@ export type CreateStoreRequest =
 export const storeResponseSchema =
   z.object({
     id:
-      z.string().uuid(),
+      dbIdSchema,
 
     companyId:
       companyIdSchema,
