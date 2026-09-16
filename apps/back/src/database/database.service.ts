@@ -34,6 +34,15 @@ export class DatabaseService
     return this.client.db;
   }
 
+  async ping():
+    Promise<void> {
+    await this.client
+      .pool
+      .query(
+        "SELECT 1",
+      );
+  }
+
   async onModuleDestroy():
     Promise<void> {
     await this.client
