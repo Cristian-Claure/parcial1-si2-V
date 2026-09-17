@@ -261,6 +261,7 @@ th { color: var(--ink-soft); font-size: .78rem; text-transform: uppercase; lette
 .status-paid, .status-succeeded, .status-fulfilled, .status-normal { background: color-mix(in srgb, var(--success) 16%, white); color: var(--success); }
 .status-pending, .status-queued, .status-processing, .status-reserved, .status-bajo { background: var(--accent-soft); color: var(--accent-deep); }
 .status-failed, .status-cancelled, .status-refunded, .status-agotado { background: color-mix(in srgb, var(--error) 16%, white); color: var(--error); }
+.status-neutral { background: var(--paper-raised); color: var(--ink-soft); }
 .account-sections { display: flex; flex-direction: column; gap: 2.25rem; }
 .account-sections .panel > h2:first-child { padding-bottom: .6rem; border-bottom: 1px solid var(--hairline); margin-bottom: 1.1rem; }
 .account-sections .section-heading.small { padding-bottom: .6rem; border-bottom: 1px solid var(--hairline); }
@@ -270,6 +271,11 @@ th { color: var(--ink-soft); font-size: .78rem; text-transform: uppercase; lette
 .address-card .eyebrow { margin-bottom: .1rem; }
 .address-card p { color: var(--ink-soft); margin-bottom: .35rem; }
 
+.try-on-product-picker { display: flex; gap: 1rem; align-items: flex-end; }
+.try-on-product-select { flex: 1; }
+.try-on-product-thumb { width: 72px; height: 72px; flex: 0 0 auto; border-radius: var(--radius-md); border: 1px solid var(--hairline); background: var(--paper-raised); overflow: hidden; display: grid; place-items: center; }
+.try-on-product-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.try-on-product-thumb .product-image-placeholder { width: 42%; height: 42%; }
 .try-on-page input[type="file"] { border: 1px dashed var(--hairline); border-radius: var(--radius-md); padding: .9rem; background: var(--paper-raised); cursor: pointer; }
 .try-on-page input[type="file"]::file-selector-button { border: none; border-radius: var(--radius-full); background: var(--ink); color: white; font-weight: 700; padding: .5rem 1rem; margin-right: .75rem; cursor: pointer; }
 .try-on-preview, .try-on-result-frame { border: 1px solid var(--hairline); border-radius: var(--radius-lg); overflow: hidden; background: var(--paper-raised); }

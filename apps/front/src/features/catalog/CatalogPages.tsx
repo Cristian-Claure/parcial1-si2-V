@@ -6,10 +6,10 @@ import { veloraApi } from "../../core/api/veloraApi";
 import { useAuthStore } from "../../core/auth/authStore";
 import { useCompanyStore } from "../../core/company/companyStore";
 import { Notice } from "../../shared/feedback/Notice";
+import { primaryImage } from "../../shared/lib/productImages";
 import { ProductImagePlaceholder } from "../../shared/ui/ProductImagePlaceholder";
 
 function price(product: ProductResponse): number { return product.variants.length ? Math.min(...product.variants.map((variant) => variant.price)) : 0; }
-function primaryImage(product: ProductResponse): string | null { return product.images.find((image) => image.primary)?.imageUrl ?? product.images[0]?.imageUrl ?? null; }
 function cheapestVariant(product: ProductResponse): VariantResponse | null { return product.variants.length ? product.variants.reduce((min, variant) => variant.price < min.price ? variant : min) : null; }
 
 const COLOR_SWATCHES: Record<string, string> = { Negro: "#1A1613", Marfil: "#F1E7D8", Champagne: "#E4CDA0", Terracota: "var(--terracotta)" };

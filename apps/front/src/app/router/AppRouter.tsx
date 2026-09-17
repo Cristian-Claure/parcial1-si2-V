@@ -1,7 +1,8 @@
 ﻿import { lazy, Suspense } from "react";
 
-import { Route, Routes } from "react-router-dom";
+import { Link, Route, Routes } from "react-router-dom";
 import { PageLoader } from "../../shared/ui/PageLoader";
+import { Brand } from "../../shared/brand/Brand";
 function lazyNamed(
   importer: () => Promise<any>,
   name: string
@@ -29,7 +30,7 @@ const PosPage = lazy(() => import("../../features/operations/PosPage").then((mod
 const ReportsPage = lazy(() => import("../../features/reports/ReportsPage").then((module) => ({ default: module.ReportsPage })));
 import { AuditPage } from "../../features/audit/AuditPage";
 
-function NotFound() { return <main className="page centered"><span className="eyebrow">404</span><h1>Ruta no encontrada</h1><p>La navegaciÃ³n React no reconoce esta direcciÃ³n.</p></main>; }
+function NotFound() { return <main className="page centered"><Brand variant="mark" /><span className="eyebrow">404</span><h1>Ruta no encontrada</h1><p>La navegación no reconoce esta dirección.</p><Link className="button primary" to="/">Volver al inicio</Link></main>; }
 
 export function AppRouter() {
   return <Suspense fallback={<PageLoader />}><Routes>

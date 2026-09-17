@@ -1084,10 +1084,10 @@ export function CatalogManagementPage() {
                       <td>
                         {
                           product.tryOnReady
-                            ? "Listo"
+                            ? <span className="status-pill status-normal">Listo</span>
                             : product.tryOnEnabled
-                              ? `${product.tryOnCategory ?? "Sin categoría"} · falta asset administrado`
-                              : "No"
+                              ? <span className="status-pill status-bajo">{product.tryOnCategory ?? "Sin categoría"} · falta asset administrado</span>
+                              : <span className="status-pill status-neutral">No</span>
                         }
                       </td>
                     </tr>
