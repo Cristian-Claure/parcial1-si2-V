@@ -7,6 +7,7 @@ import {
 } from "zod";
 
 import {
+  dbIdSchema,
   productImagePurposeSchema,
   type ImageResponse,
 } from "@velora/contracts";
@@ -54,9 +55,7 @@ const managedAssetFieldsSchema =
           value === null
             ? undefined
             : value,
-        z
-          .string()
-          .uuid()
+        dbIdSchema
           .optional(),
       ),
     altText:
