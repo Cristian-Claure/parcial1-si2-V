@@ -1,4 +1,6 @@
-﻿export interface ProductCardProduct {
+﻿import { ProductImagePlaceholder } from "../ProductImagePlaceholder";
+
+export interface ProductCardProduct {
   id?: string;
   name: string;
   price: string;
@@ -35,12 +37,16 @@ export function ProductCard({
 
   return (
     <article className="product-card">
-      {item.image ? (
-        <img
-          src={item.image}
-          alt={item.name}
-        />
-      ) : null}
+      <div className="product-image">
+        {item.image ? (
+          <img
+            src={item.image}
+            alt={item.name}
+          />
+        ) : (
+          <ProductImagePlaceholder />
+        )}
+      </div>
 
       {item.category ? (
         <small>{item.category}</small>

@@ -1,14 +1,22 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { ProductResponse, VariantResponse } from "@velora/contracts";
+import type { ImageResponse, ProductResponse, VariantResponse } from "@velora/contracts";
 import { veloraApi } from "../../core/api/veloraApi";
 import { useAuthStore } from "../../core/auth/authStore";
 import { useCompanyStore } from "../../core/company/companyStore";
 import { Notice } from "../../shared/feedback/Notice";
+import { ProductImagePlaceholder } from "../../shared/ui/ProductImagePlaceholder";
 
 function price(product: ProductResponse): number { return product.variants.length ? Math.min(...product.variants.map((variant) => variant.price)) : 0; }
 function primaryImage(product: ProductResponse): string | null { return product.images.find((image) => image.primary)?.imageUrl ?? product.images[0]?.imageUrl ?? null; }
+
+function displayImagesFor(product: ProductResponse, variantId: string | null): ImageResponse[] {
+  const variantImage = product.images.find((image) => image.variantId === variantId);
+  if (variantImage) return [variantImage];
+  return [...product.images.filter((image) => image.variantId === null)]
+    .sort((a, b) => Number(b.primary) - Number(a.primary) || a.sortOrder - b.sortOrder);
+}
 
 export function CatalogPage() {
   const companyId = useCompanyStore((state) => state.storefrontCompanyId); const companies = useCompanyStore((state) => state.companies); const selectCompany = useCompanyStore((state) => state.selectStorefront);
@@ -29,22 +37,24 @@ export function CatalogPage() {
 }
 
 function ProductCard({ product }: { product: ProductResponse }) {
-  const image = primaryImage(product); return <Link className="product-card" to={`/catalogo/${product.slug}`}><div className="product-image">{image ? <img src={image} alt={product.name} /> : <span>{product.name.slice(0, 1)}</span>}</div><div><small>{product.categoryName}</small><h3>{product.name}</h3><p>{product.brand}</p><strong>{price(product).toFixed(2)} BOB</strong></div></Link>;
+  const image = primaryImage(product); return <Link className="product-card" to={`/catalogo/${product.slug}`}><div className="product-image">{image ? <img src={image} alt={product.name} /> : <ProductImagePlaceholder />}</div><div><small>{product.categoryName}</small><h3>{product.name}</h3><p>{product.brand}</p><strong>{price(product).toFixed(2)} BOB</strong></div></Link>;
 }
 
 export function ProductDetailPage() {
   const { slug = "" } = useParams(); const navigate = useNavigate(); const client = useQueryClient(); const companyId = useCompanyStore((state) => state.storefrontCompanyId); const user = useAuthStore((state) => state.user);
   const [selectedVariantId, setSelectedVariantId] = useState(""); const [message, setMessage] = useState<string | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const products = useQuery({ queryKey: ["public-products", companyId], queryFn: () => veloraApi.publicProducts(companyId!), enabled: Boolean(companyId) });
   const product = products.data?.find((candidate) => candidate.slug === slug) ?? null;
   const favorites = useQuery({ queryKey: ["favorites"], queryFn: veloraApi.favorites, enabled: user?.role === "CUSTOMER" });
   const selected = product?.variants.find((variant) => variant.id === selectedVariantId) ?? product?.variants[0] ?? null;
+  const displayImages = useMemo(() => (product ? displayImagesFor(product, selected?.id ?? null) : []), [product, selected?.id]);
   const favorite = Boolean(product && favorites.data?.some((item) => item.productId === product.id));
   const cartMutation = useMutation({ mutationFn: (variant: VariantResponse) => veloraApi.addCartItem({ companyId: companyId!, variantId: variant.id, quantity: 1 }), onSuccess: async () => { setMessage("Producto agregado a su bolsa."); await client.invalidateQueries({ queryKey: ["cart"] }); } });
   const favoriteMutation = useMutation({ mutationFn: async () => { if (!product) return; if (favorite) await veloraApi.removeFavorite(product.id); else await veloraApi.addFavorite(product.id); }, onSuccess: () => client.invalidateQueries({ queryKey: ["favorites"] }) });
   if (!companyId) return <main className="section"><Notice kind="error">Seleccione una compañía desde el catálogo.</Notice></main>;
   if (products.isLoading) return <main className="section">Cargando producto…</main>;
   if (!product) return <main className="section"><Notice kind="error">Producto no encontrado.</Notice></main>;
-  const image = primaryImage(product);
-  return <main className="section product-detail"><div className="detail-image">{image ? <img src={image} alt={product.name} /> : <span>{product.name.slice(0, 1)}</span>}</div><div className="detail-copy"><span className="eyebrow">{product.categoryName}</span><h1>{product.name}</h1><p>{product.description ?? "Diseño VÉLORA seleccionado para esta colección."}</p><div className="price-line">{selected ? `${selected.price.toFixed(2)} ${selected.currency}` : "Sin variantes"}</div><label>Variante<select value={selected?.id ?? ""} onChange={(event) => setSelectedVariantId(event.target.value)}>{product.variants.map((variant) => <option key={variant.id} value={variant.id}>{variant.size} · {variant.color} · {variant.price.toFixed(2)} {variant.currency}</option>)}</select></label>{message ? <Notice kind="success">{message}</Notice> : null}<div className="actions"><button className="button primary" disabled={!selected || cartMutation.isPending} onClick={() => { if (!user) navigate("/login", { state: { from: `/catalogo/${slug}` } }); else if (user.role === "CUSTOMER" && selected) cartMutation.mutate(selected); }}>Agregar a mi bolsa</button><button className="button secondary" disabled={user?.role !== "CUSTOMER" || favoriteMutation.isPending} onClick={() => favoriteMutation.mutate()}>{favorite ? "Quitar de favoritos" : "Guardar favorito"}</button></div><dl className="product-meta"><div><dt>Marca</dt><dd>{product.brand}</dd></div><div><dt>Composición</dt><dd>{product.composition ?? "—"}</dd></div><div><dt>Cuidado</dt><dd>{product.careInstructions ?? "—"}</dd></div></dl></div></main>;
+  const activeImage = displayImages[activeImageIndex] ?? displayImages[0] ?? null;
+  return <main className="section product-detail" key={product.id}><div className="detail-media"><div className="detail-image">{activeImage ? <img src={activeImage.imageUrl} alt={product.name} /> : <ProductImagePlaceholder />}</div>{displayImages.length > 1 ? <div className="detail-thumbnails">{displayImages.map((img, index) => <button key={img.id} type="button" className={index === activeImageIndex ? "detail-thumbnail active" : "detail-thumbnail"} onClick={() => setActiveImageIndex(index)}><img src={img.imageUrl} alt="" /></button>)}</div> : null}</div><div className="detail-copy"><span className="eyebrow">{product.categoryName}</span><h1>{product.name}</h1><p>{product.description ?? "Diseño VÉLORA seleccionado para esta colección."}</p><div className="price-line">{selected ? `${selected.price.toFixed(2)} ${selected.currency}` : "Sin variantes"}</div><label>Variante<select value={selected?.id ?? ""} onChange={(event) => { setSelectedVariantId(event.target.value); setActiveImageIndex(0); }}>{product.variants.map((variant) => <option key={variant.id} value={variant.id}>{variant.size} · {variant.color} · {variant.price.toFixed(2)} {variant.currency}</option>)}</select></label>{message ? <Notice kind="success">{message}</Notice> : null}<div className="actions"><button className="button primary" disabled={!selected || cartMutation.isPending} onClick={() => { if (!user) navigate("/login", { state: { from: `/catalogo/${slug}` } }); else if (user.role === "CUSTOMER" && selected) cartMutation.mutate(selected); }}>Agregar a mi bolsa</button><button className="button secondary" disabled={user?.role !== "CUSTOMER" || favoriteMutation.isPending} onClick={() => favoriteMutation.mutate()}>{favorite ? "Quitar de favoritos" : "Guardar favorito"}</button></div><dl className="product-meta"><div><dt>Marca</dt><dd>{product.brand}</dd></div><div><dt>Composición</dt><dd>{product.composition ?? "—"}</dd></div><div><dt>Cuidado</dt><dd>{product.careInstructions ?? "—"}</dd></div></dl></div></main>;
 }
