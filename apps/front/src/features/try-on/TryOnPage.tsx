@@ -31,6 +31,14 @@ import {
   Notice,
 } from "../../shared/feedback/Notice";
 
+import {
+  primaryImage,
+} from "../../shared/lib/productImages";
+
+import {
+  ProductImagePlaceholder,
+} from "../../shared/ui/ProductImagePlaceholder";
+
 const terminal =
   (
     status:
@@ -199,6 +207,13 @@ export function TryOnPage() {
     ) ??
     activeVariants[0] ??
     null;
+
+  const selectedProductImage =
+    selectedProduct
+      ? primaryImage(
+          selectedProduct,
+        )
+      : null;
 
   useEffect(
     () => {
@@ -558,42 +573,52 @@ export function TryOnPage() {
                 )
               : (
                   <>
-                    <label>
-                      Producto
-                      <select
-                        value={
-                          selectedProduct?.id ??
-                          ""
-                        }
-                        onChange={
-                          (
-                            event,
-                          ) => {
-                            setSelectedProductId(
-                              event.target.value,
-                            );
-                            setSelectedVariantId(
-                              "",
-                            );
+                    <div className="try-on-product-picker">
+                      <label className="try-on-product-select">
+                        Producto
+                        <select
+                          value={
+                            selectedProduct?.id ??
+                            ""
                           }
-                        }
-                      >
-                        {
-                          readyProducts.map(
+                          onChange={
                             (
-                              product,
-                            ) => (
-                              <option
-                                key={product.id}
-                                value={product.id}
-                              >
-                                {product.name}
-                              </option>
-                            ),
-                          )
+                              event,
+                            ) => {
+                              setSelectedProductId(
+                                event.target.value,
+                              );
+                              setSelectedVariantId(
+                                "",
+                              );
+                            }
+                          }
+                        >
+                          {
+                            readyProducts.map(
+                              (
+                                product,
+                              ) => (
+                                <option
+                                  key={product.id}
+                                  value={product.id}
+                                >
+                                  {product.name}
+                                </option>
+                              ),
+                            )
+                          }
+                        </select>
+                      </label>
+
+                      <div className="try-on-product-thumb">
+                        {
+                          selectedProductImage
+                            ? <img src={selectedProductImage} alt={selectedProduct?.name ?? ""} />
+                            : <ProductImagePlaceholder />
                         }
-                      </select>
-                    </label>
+                      </div>
+                    </div>
 
                     {
                       activeVariants.length > 0
