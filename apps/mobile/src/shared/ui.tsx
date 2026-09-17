@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,13 +13,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import brandMark from "@/assets/images/brand-mark.png";
 import { colors, commonStyles } from "./theme";
 
 export function Brand() {
   return (
-    <View>
-      <Text style={commonStyles.brand}>VÉLORA</Text>
-      <Text style={commonStyles.brandTag}>MODA QUE TE DEFINE.</Text>
+    <View style={styles.brandRow}>
+      <Image source={brandMark} style={styles.brandMark} />
+      <View>
+        <Text style={commonStyles.brand}>VÉLORA</Text>
+        <Text style={commonStyles.brandTag}>More than fashion</Text>
+      </View>
     </View>
   );
 }
@@ -233,10 +238,20 @@ const styles = StyleSheet.create({
   navText: {
     color: colors.muted,
     fontSize: 10,
-    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
   },
   navTextActive: {
     color: colors.ivory,
+  },
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  brandMark: {
+    width: 28,
+    height: 28,
+    resizeMode: "contain",
   },
   notice: {
     borderRadius: 14,

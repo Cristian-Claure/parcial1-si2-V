@@ -2,18 +2,22 @@ import { StyleSheet } from "react-native";
 
 export const colors = {
   ivory: "#F8F4EF",
-  surface: "#F4F0EA",
+  surface: "#FAF6F0",
   surfaceSoft: "#EFE7DF",
   card: "#FFFDFA",
   cardMuted: "#EAE1D8",
-  ink: "#201D1B",
-  inkSoft: "#403A36",
+  ink: "#17130F",
+  inkSoft: "#6F675D",
   muted: "#786E68",
   mutedLight: "#9B8F87",
   champagne: "#C7A989",
-  terracotta: "#A97760",
+  terracotta: "#B5623E",
   dustyRose: "#C79A98",
   roseGold: "#B98273",
+  accent: "#8B6A34",
+  accentDeep: "#6B4F22",
+  accentSoft: "#F0E4CF",
+  hairline: "#E7E0D5",
   success: "#66825F",
   warning: "#A47A3E",
   error: "#A05F59",
@@ -35,42 +39,45 @@ export const commonStyles = StyleSheet.create({
   },
   brand: {
     fontSize: 22,
-    fontWeight: "800",
+    fontFamily: "Inter_800ExtraBold",
     letterSpacing: 3,
     color: colors.ink,
   },
   brandTag: {
     fontSize: 10,
+    fontFamily: "Inter_400Regular",
     letterSpacing: 2,
     color: colors.muted,
     marginTop: 2,
   },
   eyebrow: {
     fontSize: 11,
-    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
     letterSpacing: 1.5,
     color: colors.terracotta,
   },
   heading: {
     fontSize: 32,
     lineHeight: 38,
-    fontFamily: "serif",
+    fontFamily: "PlayfairDisplay_700Bold",
     color: colors.ink,
   },
   subheading: {
     fontSize: 21,
     lineHeight: 27,
-    fontFamily: "serif",
+    fontFamily: "PlayfairDisplay_700Bold",
     color: colors.ink,
   },
   body: {
     fontSize: 15,
     lineHeight: 22,
+    fontFamily: "Inter_400Regular",
     color: colors.inkSoft,
   },
   muted: {
     fontSize: 13,
     lineHeight: 19,
+    fontFamily: "Inter_400Regular",
     color: colors.muted,
   },
   card: {
@@ -102,11 +109,12 @@ export const commonStyles = StyleSheet.create({
     paddingVertical: 10,
     color: colors.ink,
     fontSize: 15,
+    fontFamily: "Inter_400Regular",
   },
   label: {
     color: colors.inkSoft,
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
     marginBottom: 6,
   },
   button: {
@@ -119,7 +127,7 @@ export const commonStyles = StyleSheet.create({
   },
   buttonText: {
     color: colors.ivory,
-    fontWeight: "800",
+    fontFamily: "Inter_800ExtraBold",
     letterSpacing: 0.5,
   },
   buttonSecondary: {
@@ -144,6 +152,7 @@ export const commonStyles = StyleSheet.create({
   },
   chipText: {
     fontSize: 12,
+    fontFamily: "Inter_400Regular",
     color: colors.ink,
   },
   chipTextActive: {
