@@ -701,7 +701,7 @@ export function TryOnPage() {
               ? (
                   <>
                     <p>
-                      Estado: <strong>{job.status}</strong>
+                      Estado: <span className={`status-pill status-${job.status.toLowerCase()}`}>{job.status}</span>
                     </p>
                     <p>
                       Provider: {job.provider}
@@ -799,7 +799,11 @@ export function TryOnPage() {
                                 }
                               </td>
                               <td>{item.provider}</td>
-                              <td>{item.status}</td>
+                              <td>
+                                <span className={`status-pill status-${item.status.toLowerCase()}`}>
+                                  {item.status}
+                                </span>
+                              </td>
                             </tr>
                           ),
                         )
