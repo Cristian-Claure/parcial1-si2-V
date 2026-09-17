@@ -316,6 +316,7 @@ export function AuditPage() {
           />
         </label>
 
+        <div className="audit-filter-fields">
         <label>
           Rol
           <select
@@ -524,6 +525,7 @@ export function AuditPage() {
             </option>
           </select>
         </label>
+        </div>
 
         <div className="audit-actions">
           <button
