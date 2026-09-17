@@ -51,7 +51,7 @@
 }
 
 .audit-table td small {
-  color: #84746d;
+  color: var(--ink-soft);
   margin-top: .2rem;
 }
 
@@ -63,19 +63,19 @@
 .audit-ok,
 .audit-fail {
   display: inline-flex;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: .2rem .55rem;
   font-weight: 700;
 }
 
 .audit-ok {
-  background: #e4f1e6;
-  color: #315c38;
+  background: color-mix(in srgb, var(--success) 16%, white);
+  color: var(--success);
 }
 
 .audit-fail {
-  background: #f5dfdc;
-  color: #7b302d;
+  background: color-mix(in srgb, var(--error) 16%, white);
+  color: var(--error);
 }
 
 @media (max-width: 720px) {

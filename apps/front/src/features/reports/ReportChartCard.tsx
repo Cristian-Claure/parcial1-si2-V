@@ -11,13 +11,14 @@ interface Props {
     ReportChart;
 }
 
+// Mirrors global.css tokens (--accent, --terracotta, --success, --accent-deep, --ink, --ink-soft); SVG can't read var() here.
 const COLORS = [
-  "#6f4d3f",
-  "#b58770",
-  "#d8b9a6",
-  "#8d766b",
-  "#c7a58e",
-  "#4d625c",
+  "#8B6A34",
+  "#B5623E",
+  "#3F6B4A",
+  "#6B4F22",
+  "#17130F",
+  "#6F675D",
 ] as const;
 
 function safeNumber(
