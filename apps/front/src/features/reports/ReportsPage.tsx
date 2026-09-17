@@ -939,6 +939,7 @@ export function ReportsPage() {
         </button>
       </div>
 
+      <div className="report-controls-bar">
       {role ===
       "ADMIN" ? (
         <div className="panel report-scope-panel">
@@ -1109,6 +1110,7 @@ export function ReportsPage() {
           Aplicar rango
         </button>
       </form>
+      </div>
 
       {overview.error instanceof
       Error ? (

@@ -10,17 +10,27 @@
   gap: 1rem;
 }
 
+.report-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
 .report-scope-panel,
 .report-date-form {
   display: flex;
+  flex-direction: row;
   gap: 1rem;
   align-items: end;
   flex-wrap: wrap;
+  margin-bottom: 0;
 }
 
 .report-scope-panel label,
 .report-date-form label {
-  min-width: 220px;
+  min-width: 200px;
+  flex: 0 1 220px;
 }
 
 .period-presets {
