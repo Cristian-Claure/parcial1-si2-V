@@ -6,6 +6,7 @@ import { useAuthStore } from "../../core/auth/authStore";
 import { useCompanyStore } from "../../core/company/companyStore";
 import { veloraApi } from "../../core/api/veloraApi";
 
+import mark from "../../assets/brand/logo-mark.png";
 import { ProductAssistantPanel } from "./ProductAssistantPanel";
 
 export function FloatingAssistantButton() {
@@ -59,7 +60,11 @@ export function FloatingAssistantButton() {
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        {open ? "✕" : "IA"}
+        {open ? (
+          <span className="assistant-fab-close">✕</span>
+        ) : (
+          <img className="assistant-fab-mark" src={mark} alt="" />
+        )}
       </button>
 
       {open ? (
