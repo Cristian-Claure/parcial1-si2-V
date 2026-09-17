@@ -529,7 +529,7 @@ export function TryOnPage() {
   }
 
   return (
-    <section className="page">
+    <section className="page try-on-page">
       <div className="page-heading">
         <span className="eyebrow">PROBADOR VIRTUAL</span>
         <h1>Pruebe una pieza con su foto</h1>
@@ -647,24 +647,18 @@ export function TryOnPage() {
           {
             personPreview
               ? (
-                  <img
-                    src={personPreview}
-                    alt="Vista previa de la foto"
-                    style={{
-                      width:
-                        "100%",
-                      maxHeight:
-                        360,
-                      objectFit:
-                        "contain",
-                    }}
-                  />
+                  <div className="try-on-preview">
+                    <img
+                      src={personPreview}
+                      alt="Vista previa de la foto"
+                    />
+                  </div>
                 )
               : null
           }
 
           <button
-            className="button primary"
+            className="button primary full"
             type="button"
             disabled={
               busy ||
@@ -684,7 +678,7 @@ export function TryOnPage() {
         </div>
 
         <div className="panel">
-          <h2>Resultado</h2>
+          <h2>3. Resultado</h2>
 
           {
             error
@@ -703,7 +697,7 @@ export function TryOnPage() {
                     <p>
                       Estado: <span className={`status-pill status-${job.status.toLowerCase()}`}>{job.status}</span>
                     </p>
-                    <p>
+                    <p className="try-on-meta">
                       Provider: {job.provider}
                     </p>
                   </>
@@ -752,18 +746,12 @@ export function TryOnPage() {
           {
             resultUrl
               ? (
-                  <img
-                    src={resultUrl}
-                    alt="Resultado del probador virtual"
-                    style={{
-                      width:
-                        "100%",
-                      maxHeight:
-                        520,
-                      objectFit:
-                        "contain",
-                    }}
-                  />
+                  <div className="try-on-result-frame">
+                    <img
+                      src={resultUrl}
+                      alt="Resultado del probador virtual"
+                    />
+                  </div>
                 )
               : null
           }
