@@ -9,6 +9,31 @@ const MAX_POLL_MS = 60000;
 
 const SETTLED_STATUSES = new Set(["PAID", "FAILED", "CANCELLED", "REFUNDED"]);
 
+type StatusVariant = "success" | "error" | "neutral" | "pending";
+
+function paymentVisual(params: { paymentId: string | null; isError: boolean; status?: string; stillPolling: boolean }): StatusVariant {
+  const { paymentId, isError, status, stillPolling } = params;
+  if (paymentId === null) return "neutral";
+  if (isError) return "error";
+  if (status === "PAID") return "success";
+  if (status === "FAILED") return "error";
+  if (status === "CANCELLED" || status === "REFUNDED") return "neutral";
+  if (stillPolling) return "pending";
+  return "error";
+}
+
+function PaymentStatusIcon({ variant }: { variant: StatusVariant }) {
+  return (
+    <svg className={`payment-status-icon payment-status-icon-${variant}`} viewBox="0 0 64 64" role="img" aria-hidden="true">
+      <circle cx="32" cy="32" r="27" />
+      {variant === "success" ? <path d="M20 33l8 8 16-18" /> : null}
+      {variant === "error" ? <path d="M23 23l18 18M41 23l-18 18" /> : null}
+      {variant === "neutral" ? <path d="M20 32h24" /> : null}
+      {variant === "pending" ? <path d="M32 19v13l9 6" /> : null}
+    </svg>
+  );
+}
+
 export function StripeReturnPage() {
   const client = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -40,10 +65,12 @@ export function StripeReturnPage() {
   }, [startedAt]);
 
   const stillPolling = (!payment.data || payment.data.status === "PENDING") && !timedOut;
+  const variant = paymentVisual({ paymentId, isError: payment.isError, status: payment.data?.status, stillPolling });
 
   return (
     <section className="page centered">
       <span className="eyebrow">STRIPE</span>
+      <PaymentStatusIcon variant={variant} />
       <h1>
         {paymentId === null
           ? "No se pudo identificar el pago"
