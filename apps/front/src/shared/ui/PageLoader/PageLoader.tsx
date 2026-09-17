@@ -1,11 +1,12 @@
-﻿export function PageLoader() {
+export function PageLoader() {
   return (
     <div
+      className="page-loading page-loader"
       role="status"
-      aria-label="Cargando VÃ‰LORA"
+      aria-label="Cargando VÉLORA"
     >
-      <strong>VÃ‰LORA</strong>
-      <span>Preparando experiencia...</span>
+      <strong>VÉLORA</strong>
+      <span>Preparando experiencia…</span>
     </div>
   );
 }
