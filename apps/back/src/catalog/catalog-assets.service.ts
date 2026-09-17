@@ -6,8 +6,9 @@ import {
   z,
 } from "zod";
 
-import type {
-  ImageResponse,
+import {
+  productImagePurposeSchema,
+  type ImageResponse,
 } from "@velora/contracts";
 
 import type {
@@ -78,10 +79,7 @@ const managedAssetFieldsSchema =
           value.trim() !== ""
             ? value.trim().toUpperCase()
             : "GALLERY",
-        z.enum([
-          "GALLERY",
-          "TRY_ON_GARMENT",
-        ]),
+        productImagePurposeSchema,
       ),
     sortOrder:
       z.preprocess(
