@@ -1,8 +1,9 @@
 import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
+import { isRunningInExpoGo } from "expo";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import type * as ExpoNotifications from "expo-notifications";
 import type { PushInstallationResponse } from "@velora/contracts";
 import { apiRequest, jsonBody } from "../api/apiClient";
 
@@ -11,32 +12,44 @@ const CHANNEL_ID = "velora_customer_updates_v2";
 
 type EnableResult = "enabled" | "denied" | "unsupported" | "error";
 
-try {
-  // expo-notifications' Android remote push handler was removed from Expo Go in SDK 53+;
-  // calling this at import time throws there and would otherwise crash the whole module
-  // graph (this file is imported from authStore.ts). Push still works in a dev build.
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
+// expo-notifications registers a push-token listener as a side effect of merely being
+// imported (DevicePushTokenAutoRegistration.fx), which throws synchronously on Android
+// under Expo Go (SDK 53+ removed remote push there) -- no try/catch around our own calls
+// can catch that, since it fires from the package's own top-level module code. Load it
+// lazily via dynamic import, and never at all under Expo Go, so the import itself never
+// runs there. Push still registers/loads normally in a real dev build.
+let notificationsModulePromise: Promise<typeof ExpoNotifications> | null = null;
+
+function loadNotifications(): Promise<typeof ExpoNotifications> {
+  if (!notificationsModulePromise) {
+    notificationsModulePromise = import("expo-notifications");
+  }
+  return notificationsModulePromise;
+}
+
+if (!isRunningInExpoGo()) {
+  void loadNotifications().then((Notifications) => {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
   });
-} catch {
-  // Silently degrade under Expo Go; MobilePushManager.available() already gates
-  // the rest of this module's behavior to real devices.
 }
 
 class MobilePushManager {
   async enableNotifications(): Promise<EnableResult> {
     if (!this.available()) return "unsupported";
+    const Notifications = await loadNotifications();
     try {
-      await this.ensureAndroidChannel();
+      await this.ensureAndroidChannel(Notifications);
       let permission = await Notifications.getPermissionsAsync();
       if (permission.status !== "granted") permission = await Notifications.requestPermissionsAsync();
       if (permission.status !== "granted") return "denied";
-      return (await this.syncCurrentInstallation()) ? "enabled" : "error";
+      return (await this.syncCurrentInstallation(Notifications)) ? "enabled" : "error";
     } catch {
       return "error";
     }
@@ -44,11 +57,12 @@ class MobilePushManager {
 
   async syncIfPermissionGranted(): Promise<boolean> {
     if (!this.available()) return false;
+    const Notifications = await loadNotifications();
     try {
-      await this.ensureAndroidChannel();
+      await this.ensureAndroidChannel(Notifications);
       const permission = await Notifications.getPermissionsAsync();
       if (permission.status !== "granted") return false;
-      return this.syncCurrentInstallation();
+      return this.syncCurrentInstallation(Notifications);
     } catch {
       return false;
     }
@@ -57,22 +71,36 @@ class MobilePushManager {
   startLifecycleListeners(): () => void {
     if (!this.available()) return () => undefined;
 
-    const tokenSubscription = Notifications.addPushTokenListener((token) => {
-      void this.syncNativeToken(token).catch(() => undefined);
-    });
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      this.navigateFromData(response.notification.request.content.data ?? {});
-    });
+    let cancelled = false;
+    let cleanup: (() => void) | null = null;
 
-    void Notifications.getLastNotificationResponseAsync()
-      .then((response) => {
-        if (response) this.navigateFromData(response.notification.request.content.data ?? {});
+    void loadNotifications()
+      .then((Notifications) => {
+        if (cancelled) return;
+
+        const tokenSubscription = Notifications.addPushTokenListener((token) => {
+          void this.syncNativeToken(token).catch(() => undefined);
+        });
+        const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+          this.navigateFromData(response.notification.request.content.data ?? {});
+        });
+
+        void Notifications.getLastNotificationResponseAsync()
+          .then((response) => {
+            if (response) this.navigateFromData(response.notification.request.content.data ?? {});
+          })
+          .catch(() => undefined);
+
+        cleanup = () => {
+          tokenSubscription.remove();
+          responseSubscription.remove();
+        };
       })
       .catch(() => undefined);
 
     return () => {
-      tokenSubscription.remove();
-      responseSubscription.remove();
+      cancelled = true;
+      cleanup?.();
     };
   }
 
@@ -88,12 +116,12 @@ class MobilePushManager {
     await SecureStore.deleteItemAsync(INSTALLATION_KEY);
   }
 
-  private async syncCurrentInstallation(): Promise<boolean> {
+  private async syncCurrentInstallation(Notifications: typeof ExpoNotifications): Promise<boolean> {
     const token = await Notifications.getDevicePushTokenAsync();
     return this.syncNativeToken(token);
   }
 
-  private async syncNativeToken(token: Notifications.DevicePushToken): Promise<boolean> {
+  private async syncNativeToken(token: ExpoNotifications.DevicePushToken): Promise<boolean> {
     const installationId = typeof token.data === "string" ? token.data.trim() : "";
     if (!installationId) return false;
 
@@ -118,7 +146,7 @@ class MobilePushManager {
     }
   }
 
-  private async ensureAndroidChannel(): Promise<void> {
+  private async ensureAndroidChannel(Notifications: typeof ExpoNotifications): Promise<void> {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
       name: "Actualizaciones de pedidos",
       importance: Notifications.AndroidImportance.HIGH,
@@ -126,7 +154,7 @@ class MobilePushManager {
   }
 
   private available(): boolean {
-    return Platform.OS === "android" && Device.isDevice;
+    return Platform.OS === "android" && Device.isDevice && !isRunningInExpoGo();
   }
 }
 
