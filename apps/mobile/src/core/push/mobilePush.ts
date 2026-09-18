@@ -11,14 +11,22 @@ const CHANNEL_ID = "velora_customer_updates_v2";
 
 type EnableResult = "enabled" | "denied" | "unsupported" | "error";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+try {
+  // expo-notifications' Android remote push handler was removed from Expo Go in SDK 53+;
+  // calling this at import time throws there and would otherwise crash the whole module
+  // graph (this file is imported from authStore.ts). Push still works in a dev build.
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+} catch {
+  // Silently degrade under Expo Go; MobilePushManager.available() already gates
+  // the rest of this module's behavior to real devices.
+}
 
 class MobilePushManager {
   async enableNotifications(): Promise<EnableResult> {
