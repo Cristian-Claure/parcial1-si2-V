@@ -14,7 +14,7 @@ import { useAuthStore } from "@/core/auth/authStore";
 import { cachedFetch } from "@/core/offline/cachedFetch";
 import { CompanyGate } from "@/features/company/CompanyGate";
 import { saveCache } from "@/core/offline/mobileDb";
-import { primaryImage } from "@/features/catalog/ProductCard";
+import { primaryImage } from "@/shared/lib/productImages";
 import { colors, commonStyles } from "@/shared/theme";
 import {
   Button,

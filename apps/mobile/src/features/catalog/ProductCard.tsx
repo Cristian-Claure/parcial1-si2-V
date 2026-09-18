@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import type { ProductResponse } from "@velora/contracts";
+import { primaryImage } from "@/shared/lib/productImages";
 import { colors, commonStyles } from "@/shared/theme";
 
 export function productPrice(product: ProductResponse): string {
@@ -13,14 +14,6 @@ export function productPrice(product: ProductResponse): string {
   const minimum = Math.min(...active.map((variant) => variant.price));
   const currency = active[0]?.currency ?? "BOB";
   return `Desde ${minimum.toFixed(2)} ${currency}`;
-}
-
-export function primaryImage(product: ProductResponse): string | null {
-  return (
-    product.images.find((image) => image.primary)?.imageUrl ??
-    product.images[0]?.imageUrl ??
-    null
-  );
 }
 
 export function ProductCard({ product }: { product: ProductResponse }) {

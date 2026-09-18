@@ -7,6 +7,7 @@ import {
 import {
   Image,
   Pressable,
+  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -48,6 +49,11 @@ import {
 } from "@/features/company/CompanyGate";
 
 import {
+  primaryImage,
+} from "@/shared/lib/productImages";
+
+import {
+  colors,
   commonStyles,
 } from "@/shared/theme";
 
@@ -232,6 +238,13 @@ export default function TryOnScreen() {
       ) ??
       readyProducts[0] ??
       null;
+
+  const selectedProductImage =
+    selectedProduct
+      ? primaryImage(
+          selectedProduct,
+        )
+      : null;
 
   const activeVariants =
     selectedProduct
@@ -686,9 +699,39 @@ export default function TryOnScreen() {
         }
 
         <View style={{ gap: 8 }}>
-          <Text style={commonStyles.label}>
-            Producto
-          </Text>
+          <View style={styles.productHeaderRow}>
+            <Text style={commonStyles.label}>
+              Producto
+            </Text>
+            {
+              selectedProduct
+                ? (
+                    <View style={styles.productThumb}>
+                      {
+                        selectedProductImage
+                          ? (
+                              <Image
+                                source={{
+                                  uri:
+                                    selectedProductImage,
+                                }}
+                                resizeMode="cover"
+                                style={styles.productThumbImage}
+                              />
+                            )
+                          : (
+                              <View style={[styles.productThumbImage, styles.productThumbPlaceholder]}>
+                                <Text style={commonStyles.muted}>
+                                  VÉLORA
+                                </Text>
+                              </View>
+                            )
+                      }
+                    </View>
+                  )
+                : null
+            }
+          </View>
           {
             readyProducts.map(
               (
@@ -966,3 +1009,26 @@ function Choice({
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  productHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  productThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  productThumbImage: {
+    width: 56,
+    height: 56,
+  },
+  productThumbPlaceholder: {
+    backgroundColor: colors.surfaceSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
