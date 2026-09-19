@@ -43,6 +43,13 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "scheme": "velora"
+    "scheme": "velora",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cf61816e-6b88-475c-9684-861d5a244229"
+      }
+    },
+    "owner": "cristian_claure"
   }
 }

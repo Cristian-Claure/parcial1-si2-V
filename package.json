@@ -11,6 +11,8 @@
     "dev:back": "pnpm --filter @velora/back dev",
     "dev:front": "pnpm --filter @velora/front dev",
     "dev:mobile": "pnpm --filter @velora/mobile start",
+    "postinstall": "pnpm build:packages",
+    "build": "corepack enable && corepack prepare pnpm@11.24.0 --activate && pnpm install && pnpm build:azure:back",
     "build:back": "pnpm --filter @velora/back build",
     "build:front": "pnpm --filter @velora/front build",
     "build:packages": "pnpm --filter @velora/config build && pnpm --filter @velora/contracts build && pnpm --filter @velora/database build",
