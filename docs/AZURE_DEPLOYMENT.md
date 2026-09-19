@@ -60,10 +60,10 @@ App Settings mínimos:
 - `VELORA_CORS_ALLOWED_ORIGINS`
 - `VELORA_RATE_LIMIT_TRUST_PROXY_HEADERS=true`
 - `VELORA_PUBLIC_BACKEND_URL`
-- variables Stripe requeridas
+- Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_SUCCESS_URL`, `STRIPE_CANCEL_URL`
 - variables Azure Blob
-- Firebase backend si Push queda habilitado
-- OpenAI/Replicate si esas funciones estarán activas
+- Firebase backend si Push queda habilitado: `VELORA_PUSH_FIREBASE_ENABLED=true`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (las cuatro son requeridas juntas para que el push se active)
+- `OPENAI_API_KEY` / `REPLICATE_API_TOKEN` si esas funciones estarán activas (el resto de variables de tuning de IA y Try-On tienen defaults razonables en `packages/config`; solo se sobreescriben si hace falta)
 - Bootstrap ADMIN solo durante el aprovisionamiento inicial si se necesita
 
 Health check:
@@ -150,7 +150,7 @@ No guardes en Git:
 - `OPENAI_API_KEY`;
 - `REPLICATE_API_TOKEN`;
 - `AZURE_STORAGE_CONNECTION_STRING`;
-- `FIREBASE_PRIVATE_KEY`;
+- `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`;
 - password del bootstrap.
 
 Usa App Settings/secretos de Azure y variables de build seguras.
