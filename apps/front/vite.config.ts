@@ -34,7 +34,20 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        // Fase 2: lectura del catálogo sin red (la API puede estar en otro origen).
+        runtimeCaching: [
+          {
+            urlPattern: ({ url, request }) => request.method === "GET" && /^\/api\/(catalog\/(products|categories)|companies|plans)(\/|$)/.test(url.pathname) && !url.pathname.includes("/assets/"),
+            handler: "NetworkFirst",
+            options: { cacheName: "velora-catalog-api", networkTimeoutSeconds: 4, expiration: { maxEntries: 300, maxAgeSeconds: 7 * 24 * 3600 }, cacheableResponse: { statuses: [0, 200] } }
+          },
+          {
+            urlPattern: ({ url, request }) => request.method === "GET" && /^\/api\/(catalog|companies)\/assets\//.test(url.pathname),
+            handler: "CacheFirst",
+            options: { cacheName: "velora-catalog-images", expiration: { maxEntries: 400, maxAgeSeconds: 30 * 24 * 3600 }, cacheableResponse: { statuses: [0, 200] } }
+          }
+        ]
       }
     })
   ]
