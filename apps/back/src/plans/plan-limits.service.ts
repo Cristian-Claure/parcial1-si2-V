@@ -215,10 +215,28 @@ export class PlanLimitsService {
    * destino; si no, 409 PLAN_DOWNGRADE_EXCEEDS con los excedentes (D2). El cobro DEMO llega en el bloque 4.
    */
   async changePlan(ownerUserId: string, planCode: string): Promise<AdminPlanResponse> {
+    const target = await this.validatePlanChange(ownerUserId, planCode);
+    const now = new Date();
+    await this.plans.changeOwnerPlan({ ownerUserId, planId: target.id, status: "ACTIVE", periodStart: now, periodEnd: this.periodEndFor(target, now) });
+    return this.adminPlan(ownerUserId);
+  }
+
+  /** Fin del periodo pagado (null = sin vencimiento para planes gratuitos). */
+  periodEndFor(plan: PlanRow, start: Date): Date | null {
+    return Number(plan.priceMonthly) > 0 ? new Date(start.getTime() + SUBSCRIPTION_PERIOD_DAYS * DAY_MS) : null;
+  }
+
+  /**
+   * Reglas del cambio de plan (sin cobrar). Se permite "cambiar" al mismo plan si está en
+   * TRIAL (activar) o vencido (renovar). Downgrade solo si el uso cabe en el destino (D2).
+   */
+  async validatePlanChange(ownerUserId: string, planCode: string): Promise<PlanRow> {
     const target = await this.plans.planByCode(planCode);
     if (!target || !target.active) throw new ApiHttpError(404, "Plan no encontrado.");
     const current = await this.resolveForOwner(ownerUserId);
-    if (current.subscribedPlan?.id === target.id && !current.restricted) throw new ApiHttpError(409, `Ya tienes el plan ${target.name}.`);
+    if (current.subscribedPlan?.id === target.id && !current.restricted && current.subscription?.status === "ACTIVE") {
+      throw new ApiHttpError(409, `Ya tienes el plan ${target.name}.`);
+    }
 
     const usage = await this.usage(ownerUserId);
     const excess: { resource: string; limit: number; used: number; companyId?: string }[] = [];
@@ -230,14 +248,7 @@ export class PlanLimitsService {
     if (excess.length > 0) {
       throw ApiHttpError.coded(409, "PLAN_DOWNGRADE_EXCEEDS", `Tu uso actual excede los límites del plan ${target.name}. Reduce tiendas, sucursales o productos antes de cambiar.`, { excess });
     }
-
-    const now = new Date();
-    const paid = Number(target.priceMonthly) > 0;
-    await this.plans.changeOwnerPlan({
-      ownerUserId, planId: target.id, status: "ACTIVE", periodStart: now,
-      periodEnd: paid ? new Date(now.getTime() + SUBSCRIPTION_PERIOD_DAYS * DAY_MS) : null,
-    });
-    return this.adminPlan(ownerUserId);
+    return target;
   }
 
   // -------------------------------------------------------------------------

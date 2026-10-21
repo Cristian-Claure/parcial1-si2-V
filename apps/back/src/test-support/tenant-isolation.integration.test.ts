@@ -39,6 +39,7 @@ interface Attack { path: string; body?: unknown; raw?: { contentType: string; da
 const ATTACKS: Record<string, (ctx: Ctx) => Attack[]> = {
   "GET audit": () => [{ path: "/api/admin/audit", expect: "NO_LEAK" }],
   "GET companies": () => [{ path: "/api/admin/companies", expect: "NO_LEAK" }],
+  "POST companies": () => [{ path: "/api/admin/companies", body: { name: "Otra tienda A", slug: `otra-a-${Date.now()}` }, expect: "SELF" }],
   "GET plan": () => [{ path: "/api/admin/plan", expect: "NO_LEAK" }],
   "POST plan/change": () => [{ path: "/api/admin/plan/change", body: { planCode: "MAX" }, expect: "SELF" }],
   "GET orders": ({ B }) => [{ path: "@/orders", expect: "NO_LEAK" }, { path: `@/orders?companyId=${B.companyId}`, expect: "DENIED" }],

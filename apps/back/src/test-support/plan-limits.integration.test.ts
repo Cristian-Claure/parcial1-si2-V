@@ -202,7 +202,7 @@ describe.skipIf(!available)("planes, suscripciones y límites (integración)", (
   });
 
   it("cambio de plan: upgrade inmediato y downgrade bloqueado con 409 si el uso excede (D2)", async () => {
-    const upgraded = await call<AdminPlanResponse>(tokens.ownerF, "POST", "/api/admin/plan/change", { planCode: "PLUS" });
+    const upgraded = await call<AdminPlanResponse>(tokens.ownerF, "POST", "/api/admin/plan/change", { planCode: "PLUS", card: { cardNumber: "4242 4242 4242 4242", holderName: "Dueno F" } });
     expect(upgraded.status, upgraded.text).toBe(200);
     expect(upgraded.body).toMatchObject({ effectivePlan: { code: "PLUS" }, restricted: false, subscription: { status: "ACTIVE", planCode: "PLUS" } });
     const nowAllowed = await call(tokens.ownerF, "POST", "/api/admin/stores", newStore(free));

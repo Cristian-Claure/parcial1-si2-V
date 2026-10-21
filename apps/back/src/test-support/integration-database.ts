@@ -63,6 +63,10 @@ export async function createMigratedDatabase(prefix: string, options: { upTo?: n
   await admin.pool.query(`create database ${name}`);
   const url = withDatabase(server, name);
   const database = createDatabase(url);
+  // `drop database ... with (force)` corta las conexiones que aún cierran: no es un fallo de la prueba.
+  const ignoreTermination = () => undefined;
+  database.pool.on("error", ignoreTermination);
+  admin.pool.on("error", ignoreTermination);
   try {
     for (const file of migrationFiles().filter((entry) => options.upTo === undefined || entry.version <= options.upTo)) {
       await database.pool.query(readFileSync(join(migrationDir, file.name), "utf8"));

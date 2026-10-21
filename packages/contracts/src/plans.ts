@@ -101,6 +101,8 @@ export const planLimitErrorCodeSchema = z.enum([
   "PLAN_LIMIT_REPORT_HISTORY",
   "PLAN_DOWNGRADE_EXCEEDS",
   "SUBSCRIPTION_INACTIVE",
+  "PAYMENT_REQUIRED",
+  "PAYMENT_DECLINED",
 ]);
 export type PlanLimitErrorCode = z.infer<typeof planLimitErrorCodeSchema>;
 

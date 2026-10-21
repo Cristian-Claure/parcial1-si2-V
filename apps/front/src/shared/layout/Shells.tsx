@@ -10,6 +10,7 @@ const customerNav = [
 const adminNav = [
   ["Dashboard", "/admin"], ["Catálogo", "/admin/catalogo"], ["Inventario", "/admin/inventario"], ["Pedidos", "/admin/pedidos"],
   ["POS", "/admin/pos"], ["Reportes", "/admin/reportes"], ["Auditoría", "/admin/auditoria"],
+  ["Mis tiendas", "/admin/empresas"], ["Mi plan", "/admin/mi-plan"],
 ] as const;
 const managerNav = [
   ["Sucursal", "/sucursal"], ["Catálogo", "/sucursal/catalogo"], ["Inventario", "/sucursal/inventario"], ["Pedidos", "/sucursal/pedidos"],
@@ -22,7 +23,7 @@ function NavItems({ items }: { items: readonly (readonly [string, string])[] }) 
 
 export function PublicShell() {
   const user = useAuthStore((state) => state.user);
-  return <><header className="public-header"><Link to="/"><Brand variant="lockup" /></Link><nav><NavLink to="/catalogo">Catálogo</NavLink>{user?.role === "CUSTOMER" ? <NavLink to="/bolsa">Mi bolsa</NavLink> : null}</nav><div className="header-actions">{user ? <RoleLink role={user.role} /> : <><Link to="/login">Ingresar</Link><Link className="button small" to="/registro">Crear cuenta</Link></>}</div></header><Outlet /><footer className="public-footer"><Brand variant="wordmark" /><span>Comercio omnicanal · Santa Cruz de la Sierra</span></footer></>;
+  return <><header className="public-header"><Link to="/"><Brand variant="lockup" /></Link><nav><NavLink to="/catalogo">Catálogo</NavLink>{user?.role === "CUSTOMER" ? <NavLink to="/bolsa">Mi bolsa</NavLink> : null}{!user ? <NavLink to="/planes">Planes</NavLink> : null}</nav><div className="header-actions">{user ? <RoleLink role={user.role} /> : <><Link to="/login">Ingresar</Link><Link className="button small" to="/registro">Crear cuenta</Link></>}</div></header><Outlet /><footer className="public-footer"><Brand variant="wordmark" /><span>Comercio omnicanal · Santa Cruz de la Sierra</span></footer></>;
 }
 
 function RoleLink({ role }: { role: UserRole }) {

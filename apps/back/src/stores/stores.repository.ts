@@ -21,6 +21,7 @@ import type {
 import {
   companies,
   stores,
+  warehouses,
 } from "@velora/database";
 
 import {
@@ -149,8 +150,11 @@ export class StoresRepository {
     const now =
       new Date();
 
+    // Fase 1 SaaS: la sucursal nace con su almacén por defecto (pedidos en línea y POS).
     const rows =
-      await this.database.db
+      await this.database.db.transaction(async (tx) => {
+        const inserted =
+          await tx
         .insert(
           stores,
         )
@@ -195,6 +199,42 @@ export class StoresRepository {
         .returning(
           storeResponseSelection,
         );
+
+        const store =
+          inserted[0];
+
+        if (store) {
+          await tx
+            .insert(
+              warehouses,
+            )
+            .values({
+              id:
+                randomUUID(),
+              storeId:
+                store.id,
+              code:
+                `ALM-${request.code}`
+                  .toUpperCase()
+                  .slice(0, 50),
+              name:
+                `Almacén ${request.name}`
+                  .slice(0, 120),
+              description:
+                null,
+              active:
+                true,
+              defaultWarehouse:
+                true,
+              createdAt:
+                now,
+              updatedAt:
+                now,
+            });
+        }
+
+        return inserted;
+      });
 
     const created =
       rows[0];

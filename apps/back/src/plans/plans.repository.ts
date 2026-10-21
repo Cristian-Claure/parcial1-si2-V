@@ -1,10 +1,20 @@
 import { randomUUID } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
-import { companies, plans, products, stores, subscriptions, type PlanRow, type SubscriptionRow } from "@velora/database";
+import { companies, payments, paymentStatusHistory, plans, products, stores, subscriptions, type PlanRow, type SubscriptionRow } from "@velora/database";
 import { DatabaseService } from "../database/database.service.js";
 
 export type SubscriptionStatusValue = SubscriptionRow["status"];
+
+type Transaction = Parameters<Parameters<DatabaseService["db"]["transaction"]>[0]>[0];
+
+export interface SubscriptionPaymentInput {
+  amount: number;
+  currency: string;
+  provider: string;
+  externalReference: string;
+  notes: string;
+}
 
 /** Zona horaria de negocio para "mes calendario" (cuota del probador). */
 export const BUSINESS_TIME_ZONE = "America/La_Paz";
@@ -53,26 +63,48 @@ export class PlansRepository {
     ));
   }
 
-  async changeOwnerPlan(input: { ownerUserId: string; planId: string; status: SubscriptionStatusValue; periodStart: Date; periodEnd: Date | null }): Promise<SubscriptionRow> {
+  /**
+   * Cambia (o crea) la suscripción de la cuenta y, si hubo cobro, registra el pago en
+   * `payments` con subscription_id (V30) en la MISMA transacción.
+   */
+  async changeOwnerPlan(input: { ownerUserId: string; planId: string; status: SubscriptionStatusValue; periodStart: Date; periodEnd: Date | null; payment?: SubscriptionPaymentInput | null }): Promise<SubscriptionRow> {
     return this.database.db.transaction(async (tx) => {
-      const now = new Date();
-      const current = await tx.select().from(subscriptions)
-        .where(and(eq(subscriptions.ownerUserId, input.ownerUserId), isNull(subscriptions.companyId), ne(subscriptions.status, "CANCELLED")))
-        .for("update").limit(1);
-      if (current[0]) {
-        const rows = await tx.update(subscriptions).set({
-          planId: input.planId, status: input.status, currentPeriodStart: input.periodStart, currentPeriodEnd: input.periodEnd,
-          grandfathered: false, updatedAt: now,
-        }).where(eq(subscriptions.id, current[0].id)).returning();
-        return rows[0]!;
-      }
-      const rows = await tx.insert(subscriptions).values({
-        id: randomUUID(), ownerUserId: input.ownerUserId, companyId: null, planId: input.planId, status: input.status,
-        currentPeriodStart: input.periodStart, currentPeriodEnd: input.periodEnd, grandfathered: false, cancelledAt: null,
-        createdAt: now, updatedAt: now,
-      }).returning();
-      return rows[0]!;
+      const saved = await this.upsertOwnerSubscription(tx, input);
+      if (input.payment) await this.insertSubscriptionPayment(tx, saved.id, input.ownerUserId, input.payment);
+      return saved;
     });
+  }
+
+  async insertSubscriptionPayment(tx: Transaction, subscriptionId: string, ownerUserId: string, payment: SubscriptionPaymentInput): Promise<void> {
+    const now = new Date();
+    const id = randomUUID();
+    await tx.insert(payments).values({
+      id, orderId: null, subscriptionId, method: "CARD", status: "PAID", amount: payment.amount.toFixed(2), currency: payment.currency,
+      provider: payment.provider, externalReference: payment.externalReference, notes: payment.notes,
+      createdBy: ownerUserId, processedBy: ownerUserId, paidAt: now, failedAt: null, cancelledAt: null, refundedAt: null,
+      createdAt: now, updatedAt: now,
+    });
+    await tx.insert(paymentStatusHistory).values({ id: randomUUID(), paymentId: id, fromStatus: null, toStatus: "PAID", changedBy: ownerUserId, reason: payment.notes, createdAt: now });
+  }
+
+  async upsertOwnerSubscription(tx: Transaction, input: { ownerUserId: string; planId: string; status: SubscriptionStatusValue; periodStart: Date; periodEnd: Date | null }): Promise<SubscriptionRow> {
+    const now = new Date();
+    const current = await tx.select().from(subscriptions)
+      .where(and(eq(subscriptions.ownerUserId, input.ownerUserId), isNull(subscriptions.companyId), ne(subscriptions.status, "CANCELLED")))
+      .for("update").limit(1);
+    if (current[0]) {
+      const rows = await tx.update(subscriptions).set({
+        planId: input.planId, status: input.status, currentPeriodStart: input.periodStart, currentPeriodEnd: input.periodEnd,
+        grandfathered: false, updatedAt: now,
+      }).where(eq(subscriptions.id, current[0].id)).returning();
+      return rows[0]!;
+    }
+    const rows = await tx.insert(subscriptions).values({
+      id: randomUUID(), ownerUserId: input.ownerUserId, companyId: null, planId: input.planId, status: input.status,
+      currentPeriodStart: input.periodStart, currentPeriodEnd: input.periodEnd, grandfathered: false, cancelledAt: null,
+      createdAt: now, updatedAt: now,
+    }).returning();
+    return rows[0]!;
   }
 
   async ownedCompanies(ownerUserId: string): Promise<{ id: string; name: string }[]> {

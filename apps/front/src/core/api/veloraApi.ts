@@ -1,4 +1,11 @@
 import type {
+  AdminPlanResponse,
+  ChangePlanWithPaymentRequest,
+  CreateCompanyRequest,
+  OnboardingResponse,
+  Plan,
+  RegisterOwnerStoreRequest,
+  SlugAvailabilityResponse,
   AddCartItemRequest,
   AuthResponse,
   CartResponse,
@@ -70,6 +77,14 @@ const operationsPrefix = (
     : "manager";
 
 export const veloraApi = {
+  // --- Fase 1 SaaS: planes, onboarding y empresas propias ---
+  plans: () => apiRequest<Plan[]>("/api/plans", {}, false),
+  adminPlan: () => apiRequest<AdminPlanResponse>("/api/admin/plan"),
+  changePlan: (body: ChangePlanWithPaymentRequest) => apiRequest<AdminPlanResponse>("/api/admin/plan/change", { method: "POST", body: jsonBody(body) }),
+  slugAvailability: (slug: string) => apiRequest<SlugAvailabilityResponse>(`/api/onboarding/slug-availability?slug=${q(slug)}`, {}, false),
+  registerStore: (body: RegisterOwnerStoreRequest) => apiRequest<OnboardingResponse>("/api/onboarding/store", { method: "POST", body: jsonBody(body) }, false),
+  createCompany: (body: CreateCompanyRequest) => apiRequest<CompanyResponse>("/api/admin/companies", { method: "POST", body: jsonBody(body) }),
+
   login: (
     body: LoginRequest,
   ) =>

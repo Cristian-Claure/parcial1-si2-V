@@ -41,6 +41,10 @@ import {
 } from "./stripe-gateway.service.js";
 
 import {
+  StripePaymentGateway,
+} from "./stripe-payment.gateway.js";
+
+import {
   StripeWebhookController,
 } from "./stripe-webhook.controller.js";
 
@@ -65,7 +69,11 @@ import {
     PaymentsRepository,
     PaymentsService,
     StripeGatewayService,
+    StripePaymentGateway,
     StripeWebhookService,
+  ],
+  exports: [
+    StripePaymentGateway,
   ],
 })
 export class PaymentsModule {}

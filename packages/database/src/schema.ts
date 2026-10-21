@@ -4485,12 +4485,19 @@ export const payments =
         uuid("id")
           .primaryKey(),
 
+      // V30: nullable; un pago pertenece a un pedido o a una suscripción.
       orderId:
         uuid("order_id")
-          .notNull()
           .references(
             () =>
               orders.id,
+          ),
+
+      subscriptionId:
+        uuid("subscription_id")
+          .references(
+            (): AnyPgColumn =>
+              subscriptions.id,
           ),
 
       method:

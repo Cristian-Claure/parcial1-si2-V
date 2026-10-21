@@ -1351,7 +1351,7 @@ export class PaymentsRepository {
             payments.id,
 
           orderId:
-            payments.orderId,
+            orders.id,
 
           orderNumber:
             orders.orderNumber,
@@ -1544,7 +1544,7 @@ export class PaymentsRepository {
       await tx
         .select({
           orderId:
-            payments.orderId,
+            orders.id,
 
           storeId:
             stores.id,
@@ -1603,7 +1603,7 @@ export class PaymentsRepository {
       await tx
         .select({
           orderId:
-            payments.orderId,
+            orders.id,
         })
         .from(
           payments,
@@ -1762,14 +1762,23 @@ export class PaymentsRepository {
     const payment =
       rows[0];
 
-    if (!payment) {
+    // Los pagos de suscripción (V30) no tienen pedido: no son operables aquí.
+    if (
+      !payment ||
+      payment.orderId ===
+        null
+    ) {
       throw new ApiHttpError(
         404,
         "Pago no encontrado.",
       );
     }
 
-    return payment;
+    return {
+      ...payment,
+      orderId:
+        payment.orderId,
+    };
   }
 
   private async ensureNoActivePayment(

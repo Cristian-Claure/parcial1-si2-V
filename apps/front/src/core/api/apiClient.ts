@@ -5,16 +5,23 @@ export const AUTH_STORAGE_KEY = "velora.auth.v2";
 export class ApiClientError extends Error {
   readonly status: number;
   readonly errors: Record<string, string>;
+  /** Código estable del backend (p. ej. PLAN_LIMIT_STORES). */
+  readonly code: string | null;
+  readonly details: Record<string, unknown>;
 
   constructor(
     status: number,
     message: string,
     errors: Record<string, string> = {},
+    code: string | null = null,
+    details: Record<string, unknown> = {},
   ) {
     super(message);
     this.name = "ApiClientError";
     this.status = status;
     this.errors = errors;
+    this.code = code;
+    this.details = details;
   }
 }
 
@@ -97,6 +104,8 @@ async function responseError(
     response.status,
     message,
     errors,
+    candidate && typeof candidate === "object" && typeof candidate.code === "string" ? candidate.code : null,
+    candidate && typeof candidate === "object" && candidate.details ? candidate.details : {},
   );
 }
 

@@ -23,6 +23,7 @@ import { PushModule } from "./push/push.module.js";
 import { BootstrapModule } from "./bootstrap/bootstrap.module.js";
 import { PlansModule } from "./plans/plans.module.js";
 import { PlatformModule } from "./platform/platform.module.js";
+import { OnboardingModule } from "./onboarding/onboarding.module.js";
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { PlatformModule } from "./platform/platform.module.js";
     CompaniesModule,
     PlansModule,
     PlatformModule,
+    OnboardingModule,
     AdminModule,
     CustomerModule,
     StoresModule,

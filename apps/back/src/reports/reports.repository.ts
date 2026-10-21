@@ -195,7 +195,7 @@ export class ReportsRepository {
         id:
           payments.id,
         orderId:
-          payments.orderId,
+          orders.id,
         method:
           payments.method,
         status:
