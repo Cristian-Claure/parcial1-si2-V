@@ -19,5 +19,6 @@ export * from "./plans.js";
 export * from "./platform.js";
 export * from "./branding.js";
 export * from "./onboarding.js";
+export * from "./sync.js";
 
 export const VELORA_API_CONTRACT_VERSION = "react-web-parity-v1" as const;

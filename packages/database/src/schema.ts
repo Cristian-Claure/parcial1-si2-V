@@ -409,6 +409,7 @@ export const appUsers =
         )
           .notNull(),
 
+      // V31: null solo para clientes sin acceso registrados por una empresa.
       email:
         varchar(
           "email",
@@ -417,7 +418,6 @@ export const appUsers =
               180,
           },
         )
-          .notNull()
           .unique(),
 
       passwordHash:
@@ -427,8 +427,21 @@ export const appUsers =
             length:
               120,
           },
+        ),
+
+      registeredCompanyId:
+        uuid(
+          "registered_company_id",
         )
-          .notNull(),
+          .references(
+            (): AnyPgColumn =>
+              companies.id,
+          ),
+
+      version:
+        integer("version")
+          .notNull()
+          .default(1),
 
       role:
         varchar(
@@ -916,6 +929,11 @@ export const products =
           },
         )
           .notNull(),
+
+      version:
+        integer("version")
+          .notNull()
+          .default(1),
     },
     (table) => [
       unique(
@@ -1139,6 +1157,11 @@ export const productVariants =
           },
         )
           .notNull(),
+
+      version:
+        integer("version")
+          .notNull()
+          .default(1),
     },
     (table) => [
       unique(
@@ -5070,3 +5093,23 @@ export const subscriptions = pgTable(
 );
 
 export type SubscriptionRow = typeof subscriptions.$inferSelect;
+
+export const syncChanges = pgTable("sync_changes", {
+  seq: bigint("seq", { mode: "number" }).primaryKey(),
+  txId: varchar("tx_id").notNull(),
+  companyId: uuid("company_id").notNull(),
+  entityType: varchar("entity_type", { length: 20 }).$type<"CATEGORY" | "PRODUCT" | "STORE" | "WAREHOUSE" | "CUSTOMER">().notNull(),
+  entityId: uuid("entity_id").notNull(),
+  op: varchar("op", { length: 10 }).$type<"UPSERT" | "DELETE">().notNull(),
+  changedAt: timestamp("changed_at", { withTimezone: true, mode: "date" }).notNull(),
+});
+
+export const syncOperations = pgTable("sync_operations", {
+  clientOperationId: uuid("client_operation_id").primaryKey(),
+  actorUserId: uuid("actor_user_id").notNull().references(() => appUsers.id),
+  companyId: uuid("company_id").notNull().references(() => companies.id),
+  opType: varchar("op_type", { length: 30 }).notNull(),
+  entityId: uuid("entity_id"),
+  result: jsonb("result").$type<Record<string, unknown>>().notNull(),
+  appliedAt: timestamp("applied_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+});

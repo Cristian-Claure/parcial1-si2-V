@@ -37,11 +37,14 @@ export interface UserRecord {
   lastName:
     string;
 
+  // V31: null solo para clientes sin acceso registrados por una empresa.
   email:
-    string;
+    string |
+    null;
 
   passwordHash:
-    string;
+    string |
+    null;
 
   role:
     DatabaseUserRole;
@@ -327,6 +330,36 @@ export class UsersRepository {
     };
   }
 
+  /** Vincula un cliente registrado sin acceso (V31) cuando se registra con su email. */
+  async activateRegisteredCustomer(
+    id: string,
+    input: {
+      firstName: string;
+      lastName: string;
+      passwordHash: string;
+    },
+  ): Promise<UserRecord> {
+    await this.database.db
+      .update(appUsers)
+      .set({
+        firstName: input.firstName.trim(),
+        lastName: input.lastName.trim(),
+        passwordHash: input.passwordHash,
+        status: "ACTIVE",
+        updatedAt: new Date(),
+      })
+      .where(eq(appUsers.id, id));
+
+    const user =
+      await this.findById(id);
+
+    if (!user) {
+      throw new Error("No se pudo vincular el cliente.");
+    }
+
+    return user;
+  }
+
   async createAdmin(
     input: {
       firstName: string;
@@ -410,7 +443,8 @@ export class UsersRepository {
         user.lastName,
 
       email:
-        user.email,
+        user.email ??
+        "",
 
       role:
         user.role,

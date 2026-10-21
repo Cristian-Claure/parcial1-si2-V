@@ -23,7 +23,7 @@ export class CustomerRepository {
       status: appUsers.status, storeId: appUsers.storeId,
     }).from(appUsers).where(eq(appUsers.id, userId)).limit(1);
     const user = rows[0];
-    return user ? { ...user, storeName: null } : null;
+    return user ? { ...user, email: user.email ?? "", storeName: null } : null;
   }
 
   async updateProfile(userId: string, request: CustomerProfileUpdateRequest): Promise<UserProfile | null> {
