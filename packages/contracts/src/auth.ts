@@ -5,6 +5,7 @@ import { dbIdSchema } from "./shared.js";
 
 export const userRoleSchema =
   z.enum([
+    "PLATFORM_ADMIN",
     "ADMIN",
     "STORE_MANAGER",
     "CUSTOMER",
@@ -250,6 +251,18 @@ export const apiErrorSchema =
         z.string(),
         z.string(),
       ),
+
+    // Código estable opcional (p. ej. PLAN_LIMIT_STORES) que la UI traduce.
+    code:
+      z.string()
+        .optional(),
+
+    details:
+      z.record(
+        z.string(),
+        z.unknown(),
+      )
+        .optional(),
   });
 
 export type ApiError =

@@ -4,6 +4,7 @@ import {
 
 import {
   Injectable,
+  Optional,
 } from "@nestjs/common";
 
 import {
@@ -41,6 +42,15 @@ import {
 import {
   DatabaseService,
 } from "../database/database.service.js";
+
+import {
+  PlanLimitsService,
+} from "../plans/plan-limits.service.js";
+
+import {
+  noDiscountResolver,
+  type DiscountResolver,
+} from "../plans/loyalty-discount.js";
 
 export type OrderFailure =
   | {
@@ -275,7 +285,20 @@ export class OrdersRepository {
   constructor(
     private readonly database:
       DatabaseService,
+    // Descuento automático por compras (Fase 1 SaaS); sin él no se aplica descuento.
+    @Optional()
+    private readonly limits?:
+      PlanLimitsService,
   ) {}
+
+  private discountFor(
+    input: Parameters<DiscountResolver>[0],
+  ): ReturnType<DiscountResolver> {
+    return (
+      this.limits?.discountResolver ??
+      noDiscountResolver
+    )(input);
+  }
 
   async createOnline(
     customerId: string,
@@ -301,8 +324,9 @@ export class OrdersRepository {
       const sorted=[...lines].sort((a,b)=>a.variantId.localeCompare(b.variantId));const byVariant=new Map<string,StockAllocation[]>();let currency:string|null=null;let subtotal=0;
       for(const line of sorted){const vr=await this.lockAndAllocateLine(tx,warehouse,line,line.quantity,request.fulfillmentType);if(vr.kind!=="OK")return vr;if(currency===null)currency=line.currency;else if(currency!==line.currency)return{kind:"CURRENCY_MISMATCH" as const};byVariant.set(line.variantId,vr.allocations);subtotal+=Number(line.price)*line.quantity;}
       if(!currency)return{kind:"EMPTY_CART" as const};
+      const discount=await this.discountFor({companyId:warehouse.companyId,customerId,subtotal});const total=subtotal-discount.amount;
       const orderId=randomUUID();const orderNumber=this.generateOrderNumber();const now=new Date();const address=ar.address;
-      await tx.insert(orders).values({id:orderId,orderNumber,orderChannel:"ECOMMERCE",customerId,sourceCartId:cart.id,warehouseId:warehouse.id,addressId:address?.id??null,pointOfSaleId:null,cashSessionId:null,fulfillmentType:request.fulfillmentType,status:"RESERVED",currency,subtotal:subtotal.toFixed(2),total:subtotal.toFixed(2),recipientName:address?.recipientName??null,recipientPhone:address?.recipientPhone??null,department:address?.department??null,city:address?.city??null,zone:address?.zone??null,addressLine:address?.addressLine??null,addressReference:address?.addressReference??null,notes:this.trimToNull(request.notes),idempotencyKeyHash,clientOperationId:null,clientCreatedAt:null,syncedAt:null,cancelledAt:null,fulfilledAt:null,createdAt:now,updatedAt:now});
+      await tx.insert(orders).values({id:orderId,orderNumber,orderChannel:"ECOMMERCE",customerId,sourceCartId:cart.id,warehouseId:warehouse.id,addressId:address?.id??null,pointOfSaleId:null,cashSessionId:null,fulfillmentType:request.fulfillmentType,status:"RESERVED",currency,subtotal:subtotal.toFixed(2),total:total.toFixed(2),discountAmount:discount.amount.toFixed(2),discountReason:discount.reason,recipientName:address?.recipientName??null,recipientPhone:address?.recipientPhone??null,department:address?.department??null,city:address?.city??null,zone:address?.zone??null,addressLine:address?.addressLine??null,addressReference:address?.addressReference??null,notes:this.trimToNull(request.notes),idempotencyKeyHash,clientOperationId:null,clientCreatedAt:null,syncedAt:null,cancelledAt:null,fulfilledAt:null,createdAt:now,updatedAt:now});
       for(const line of sorted){const orderItemId=randomUUID();await tx.insert(orderItems).values({id:orderItemId,orderId,variantId:line.variantId,productName:line.productName,sku:line.sku,size:line.size,color:line.color,unitPrice:line.price,currency:line.currency,quantity:line.quantity,subtotal:(Number(line.price)*line.quantity).toFixed(2),createdAt:now});const allocs=byVariant.get(line.variantId);if(!allocs?.length)throw new Error("No se encontraron allocations del pedido.");for(const a of allocs){await this.reserveStock(tx,a.stock,a.warehouseId,line.variantId,a.quantity,orderId,orderNumber,customerId,now);await tx.insert(orderInventoryAllocations).values({orderId,orderItemId,warehouseId:a.warehouseId,quantity:a.quantity,createdAt:now});}}
       await tx.update(shoppingCarts).set({storeId:warehouse.storeId,status:"CONVERTED",updatedAt:now}).where(eq(shoppingCarts.id,cart.id));return{kind:"OK" as const,orderId};
     });
@@ -340,8 +364,9 @@ export class OrdersRepository {
         const vr=await tx.select({variantId:productVariants.id,productName:products.name,productStatus:products.status,productCompanyId:products.companyId,sku:productVariants.sku,size:productVariants.size,color:productVariants.color,price:productVariants.price,currency:productVariants.currency,variantActive:productVariants.active}).from(productVariants).innerJoin(products,eq(productVariants.productId,products.id)).where(eq(productVariants.id,requestedItem.variantId)).limit(1);const variant=vr[0];if(!variant)return{kind:"VARIANT_MISSING" as const};const line:SaleLine={...variant,quantity:requestedItem.quantity};const validation=await this.lockAndAllocateLine(tx,warehouse,line,requestedItem.quantity,request.fulfillmentType);if(validation.kind!=="OK")return validation;if(currency===null)currency=line.currency;else if(currency!==line.currency)return{kind:"CURRENCY_MISMATCH" as const};byVariant.set(line.variantId,validation.allocations);saleLines.push(line);subtotal+=Number(line.price)*line.quantity;
       }
       if(!currency||saleLines.length===0)return{kind:"EMPTY_CART" as const};
+      const discount=await this.discountFor({companyId:warehouse.companyId,customerId,subtotal});const total=subtotal-discount.amount;
       const orderId=randomUUID();const orderNumber=this.generateOrderNumber();const now=new Date();const address=ar.address;
-      await tx.insert(orders).values({id:orderId,orderNumber,orderChannel:"ECOMMERCE",customerId,sourceCartId:null,warehouseId:warehouse.id,addressId:address?.id??null,pointOfSaleId:null,cashSessionId:null,fulfillmentType:request.fulfillmentType,status:"RESERVED",currency,subtotal:subtotal.toFixed(2),total:subtotal.toFixed(2),recipientName:address?.recipientName??null,recipientPhone:address?.recipientPhone??null,department:address?.department??null,city:address?.city??null,zone:address?.zone??null,addressLine:address?.addressLine??null,addressReference:address?.addressReference??null,notes:this.trimToNull(request.notes),idempotencyKeyHash:null,clientOperationId:request.clientOperationId,clientCreatedAt:new Date(request.clientCreatedAt),syncedAt:now,cancelledAt:null,fulfilledAt:null,createdAt:now,updatedAt:now});
+      await tx.insert(orders).values({id:orderId,orderNumber,orderChannel:"ECOMMERCE",customerId,sourceCartId:null,warehouseId:warehouse.id,addressId:address?.id??null,pointOfSaleId:null,cashSessionId:null,fulfillmentType:request.fulfillmentType,status:"RESERVED",currency,subtotal:subtotal.toFixed(2),total:total.toFixed(2),discountAmount:discount.amount.toFixed(2),discountReason:discount.reason,recipientName:address?.recipientName??null,recipientPhone:address?.recipientPhone??null,department:address?.department??null,city:address?.city??null,zone:address?.zone??null,addressLine:address?.addressLine??null,addressReference:address?.addressReference??null,notes:this.trimToNull(request.notes),idempotencyKeyHash:null,clientOperationId:request.clientOperationId,clientCreatedAt:new Date(request.clientCreatedAt),syncedAt:now,cancelledAt:null,fulfilledAt:null,createdAt:now,updatedAt:now});
       for(const line of saleLines){const orderItemId=randomUUID();await tx.insert(orderItems).values({id:orderItemId,orderId,variantId:line.variantId,productName:line.productName,sku:line.sku,size:line.size,color:line.color,unitPrice:line.price,currency:line.currency,quantity:line.quantity,subtotal:(Number(line.price)*line.quantity).toFixed(2),createdAt:now});const allocs=byVariant.get(line.variantId);if(!allocs?.length)throw new Error("No se encontraron allocations del pedido offline.");for(const a of allocs){await this.reserveStock(tx,a.stock,a.warehouseId,line.variantId,a.quantity,orderId,orderNumber,customerId,now);await tx.insert(orderInventoryAllocations).values({orderId,orderItemId,warehouseId:a.warehouseId,quantity:a.quantity,createdAt:now});}}
       if(sourceCartId){for(const item of sortedItems){const cir=await tx.select({id:shoppingCartItems.id,quantity:shoppingCartItems.quantity}).from(shoppingCartItems).where(and(eq(shoppingCartItems.cartId,sourceCartId),eq(shoppingCartItems.variantId,item.variantId))).limit(1);const cartItem=cir[0];if(!cartItem)continue;const remaining=cartItem.quantity-item.quantity;if(remaining>0)await tx.update(shoppingCartItems).set({quantity:remaining,updatedAt:now}).where(eq(shoppingCartItems.id,cartItem.id));else await tx.delete(shoppingCartItems).where(eq(shoppingCartItems.id,cartItem.id));}await tx.update(shoppingCarts).set({storeId:warehouse.storeId,updatedAt:now}).where(eq(shoppingCarts.id,sourceCartId));}
       return{kind:"OK" as const,orderId};
@@ -464,6 +489,12 @@ export class OrdersRepository {
 
           total:
             orders.total,
+
+          discountAmount:
+            orders.discountAmount,
+
+          discountReason:
+            orders.discountReason,
 
           recipientName:
             orders.recipientName,
@@ -632,6 +663,14 @@ export class OrdersRepository {
         Number(
           header.total,
         ),
+
+      discountAmount:
+        Number(
+          header.discountAmount,
+        ),
+
+      discountReason:
+        header.discountReason,
 
       recipientName:
         header.recipientName,

@@ -12,6 +12,10 @@ import type {
   AuditSearchQuery,
 } from "@velora/contracts";
 
+import type {
+  ActorAccessContext,
+} from "../common/authz/tenant-scope.service.js";
+
 import {
   UsersRepository,
 } from "../users/users.repository.js";
@@ -120,13 +124,27 @@ export class AuditService {
       });
   }
 
-  search(
+  async search(
+    actor:
+      ActorAccessContext,
     query:
       AuditSearchQuery,
   ): Promise<AuditEventPage> {
+    const actorIds =
+      actor.role === "PLATFORM_ADMIN"
+        ? null
+        : actor.role === "ADMIN"
+          ? await this.repository
+            .ownerScopedActorIds(
+              actor.userId,
+              actor.ownedCompanyIds,
+            )
+          : [actor.userId];
+
     return this.repository
       .search(
         query,
+        actorIds,
       );
   }
 

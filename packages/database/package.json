@@ -15,7 +15,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "migrate:fresh": "node ./scripts/migrate-fresh.mjs"
+    "migrate:fresh": "node ./scripts/migrate-fresh.mjs",
+    "migrate:up": "node ./scripts/migrate-up.mjs"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

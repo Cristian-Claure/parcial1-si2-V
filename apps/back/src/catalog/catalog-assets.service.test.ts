@@ -94,6 +94,11 @@ describe(
                   null,
                 companyId:
                   null,
+                // Fase 1 SaaS: un ADMIN solo administra las compañías que posee.
+                ownedCompanyIds: [
+                  companyId,
+                ],
+                ownedStoreIds: [],
               }),
         };
 

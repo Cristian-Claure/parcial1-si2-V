@@ -7,6 +7,7 @@ import {
   desc,
   eq,
   ilike,
+  inArray,
   or,
   sql,
   type SQL,
@@ -19,7 +20,9 @@ import type {
 } from "@velora/contracts";
 
 import {
+  appUsers,
   auditEvents,
+  stores,
 } from "@velora/database";
 
 import {
@@ -82,13 +85,51 @@ export class AuditRepository {
       );
   }
 
+  /**
+   * Los eventos no guardan compañía: el alcance de un propietario son sus propios
+   * eventos y los de los encargados de sus sucursales.
+   */
+  async ownerScopedActorIds(
+    ownerUserId: string,
+    companyIds: readonly string[],
+  ): Promise<string[]> {
+    if (companyIds.length === 0) {
+      return [ownerUserId];
+    }
+
+    const managers =
+      await this.database.db
+        .select({ id: appUsers.id })
+        .from(appUsers)
+        .innerJoin(stores, eq(appUsers.storeId, stores.id))
+        .where(inArray(stores.companyId, [...companyIds]));
+
+    return [ownerUserId, ...managers.map((row) => row.id)];
+  }
+
   async search(
     query:
       AuditSearchQuery,
+    actorIds:
+      readonly string[] |
+      null = null,
   ): Promise<AuditEventPage> {
     const conditions:
       SQL[] =
       [];
+
+    if (
+      actorIds !== null
+    ) {
+      conditions.push(
+        actorIds.length === 0
+          ? sql`false`
+          : inArray(
+              auditEvents.actorUserId,
+              [...actorIds],
+            ),
+      );
+    }
 
     if (
       query.actorId

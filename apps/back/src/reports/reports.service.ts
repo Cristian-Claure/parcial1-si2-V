@@ -8,6 +8,7 @@ import type {
   ReportOverview,
   ReportPeriodBounds,
   ReportTable,
+  UserRole,
 } from "@velora/contracts";
 
 import type {
@@ -17,6 +18,9 @@ import type {
 import {
   AccessContextService,
 } from "../common/authz/access-context.service.js";
+import { assertCompanyAccess } from "../common/authz/tenant-scope.service.js";
+import { PlanLimitsService } from "../plans/plan-limits.service.js";
+import { applyReportTier } from "./report-widgets.js";
 
 import {
   ApiHttpError,
@@ -33,6 +37,8 @@ const DAY_MS =
   86_400_000;
 
 export interface ReportScope {
+  actorRole:
+    UserRole;
   companyId:
     string;
   storeId:
@@ -67,6 +73,8 @@ export class ReportsService {
       ReportsRepository,
     private readonly access:
       AccessContextService,
+    private readonly limits:
+      PlanLimitsService,
   ) {}
 
   async periodBounds(
@@ -121,13 +129,35 @@ export class ReportsService {
       }
     }
 
+    // Ventana de historial del plan (BASIC 30 días, STANDARD 12 meses, ADVANCED completo).
+    const policy =
+      await this.limits
+        .reportPolicy(
+          scope.companyId,
+        );
+
+    const fallback =
+      minDate ??
+      this.shiftDate(
+        today,
+        -29,
+      );
+
+    const earliest =
+      policy.historyDays
+        ? this.shiftDate(
+            today,
+            -(policy.historyDays - 1),
+          )
+        : null;
+
     return {
       minDate:
-        minDate ??
-        this.shiftDate(
-          today,
-          -29,
-        ),
+        earliest &&
+        fallback <
+          earliest
+          ? earliest
+          : fallback,
       maxDate:
         today,
     };
@@ -156,10 +186,29 @@ export class ReportsService {
         storeId,
       );
 
-    const period =
-      this.resolvePeriod(
+    const policy =
+      await this.limits
+        .reportPolicy(
+          scope.companyId,
+        );
+
+    if (
+      storeId &&
+      scope.actorRole ===
+        "ADMIN"
+    ) {
+      await this.limits
+        .assertReportFeature(
+          scope.companyId,
+          "STORE_FILTER",
+        );
+    }
+
+    const { period, clamped } =
+      this.periodWithinHistory(
         requestedFrom,
         requestedTo,
+        policy.historyDays,
       );
 
     const [
@@ -312,6 +361,53 @@ export class ReportsService {
         0,
       );
 
+    // KPIs ADVANCED: clientes distintos con pedidos pagados y recurrentes (2+ pedidos pagados).
+    const customerByOrder =
+      new Map(
+        scopedOrders.map(
+          (order) => [
+            order.id,
+            order.customerId,
+          ] as const,
+        ),
+      );
+
+    const paidOrdersByCustomer =
+      new Map<string, number>();
+
+    for (
+      const orderId of
+      paidOrderIds
+    ) {
+      const customerId =
+        customerByOrder.get(
+          orderId,
+        );
+
+      if (customerId) {
+        paidOrdersByCustomer.set(
+          customerId,
+          (paidOrdersByCustomer.get(customerId) ?? 0) + 1,
+        );
+      }
+    }
+
+    const ticketPerCustomer =
+      paidOrdersByCustomer.size ===
+      0
+        ? 0
+        : this.money(
+            grossSales /
+              paidOrdersByCustomer.size,
+          );
+
+    const repeatCustomers =
+      [...paidOrdersByCustomer.values()]
+        .filter(
+          (count) =>
+            count >= 2,
+        ).length;
+
     const lowStockVariants =
       scopedStocks.filter(
         (stock) =>
@@ -420,7 +516,31 @@ export class ReportsService {
           helper:
             "Variantes con 3 unidades disponibles o menos.",
         },
-      ];
+        {
+        key:
+          "TICKET_PER_CUSTOMER",
+        label:
+          "Ticket por cliente",
+        value:
+          ticketPerCustomer,
+        format:
+          "CURRENCY",
+        helper:
+          "Venta bruta dividida entre clientes con pedidos pagados.",
+      },
+      {
+        key:
+          "REPEAT_CUSTOMERS",
+        label:
+          "Clientes recurrentes",
+        value:
+          repeatCustomers,
+        format:
+          "COUNT",
+        helper:
+          "Clientes con dos o más pedidos pagados en el período.",
+      },
+    ];
 
     const charts:
       ReportChart[] =
@@ -462,9 +582,33 @@ export class ReportsService {
         ranking.topProduct,
       );
 
-    return {
+    const requiredPlans = {
+      BASIC:
+        await this.limits
+          .requiredPlanForTier(
+            "BASIC",
+          ),
+      STANDARD:
+        await this.limits
+          .requiredPlanForTier(
+            "STANDARD",
+          ),
+      ADVANCED:
+        await this.limits
+          .requiredPlanForTier(
+            "ADVANCED",
+          ),
+    };
+
+    // Widgets filtrados EN EL BACKEND según el report_tier del plan; el resto llega en `locked`.
+    return applyReportTier(
+      {
+      policy: {
+        ...policy,
+        clamped,
+      },
       title:
-        "Resumen comercial VÉLORA",
+        "Resumen comercial",
       scopeLabel:
         scope.label,
       from:
@@ -480,7 +624,11 @@ export class ReportsService {
         ranking.table,
       ],
       deterministicInsights,
-    };
+      },
+      policy.tier,
+      (tier) =>
+        requiredPlans[tier],
+    );
   }
 
   async availableStores(
@@ -598,6 +746,9 @@ export class ReportsService {
       }
 
       return {
+        actorRole:
+          actor.role,
+
         companyId:
           actor.companyId,
         storeId:
@@ -641,6 +792,11 @@ export class ReportsService {
       );
     }
 
+    assertCompanyAccess(
+      actor,
+      company.id,
+    );
+
     if (
       !company.active
     ) {
@@ -654,6 +810,9 @@ export class ReportsService {
       !requestedStoreId
     ) {
       return {
+        actorRole:
+          actor.role,
+
         companyId:
           company.id,
         storeId:
@@ -689,12 +848,80 @@ export class ReportsService {
     }
 
     return {
+      actorRole:
+        actor.role,
+
       companyId:
         company.id,
       storeId:
         store.id,
       label:
         store.name,
+    };
+  }
+
+  /** Recorta el inicio del período a la ventana de historial del plan (null = completo). */
+  private periodWithinHistory(
+    requestedFrom:
+      string |
+      null,
+    requestedTo:
+      string |
+      null,
+    historyDays:
+      number |
+      null,
+  ): {
+    period:
+      ReportPeriod;
+    clamped:
+      boolean;
+  } {
+    const period =
+      this.resolvePeriod(
+        requestedFrom,
+        requestedTo,
+      );
+
+    if (
+      historyDays ===
+      null
+    ) {
+      return {
+        period,
+        clamped:
+          false,
+      };
+    }
+
+    const earliest =
+      this.shiftDate(
+        this.today(),
+        -(historyDays - 1),
+      );
+
+    if (
+      period.from >=
+      earliest
+    ) {
+      return {
+        period,
+        clamped:
+          false,
+      };
+    }
+
+    return {
+      period:
+        this.resolvePeriod(
+          earliest,
+          period.to <
+            earliest
+            ? earliest
+            : period.to,
+        ),
+      clamped:
+        true,
     };
   }
 

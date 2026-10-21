@@ -3,9 +3,18 @@ import { Link } from "react-router-dom";
 import { veloraApi } from "../../core/api/veloraApi";
 import { useCompanyStore } from "../../core/company/companyStore";
 import { Notice } from "../../shared/feedback/Notice";
+import { useStorefrontBrand } from "../../core/company/useBrand";
+import { GenericTenantHome } from "./GenericTenantHome";
 import { HeroCarousel, LooksSection } from "./components";
 
+/** El home editorial (hero con fotos y looks) es solo de VÉLORA; las demás tiendas ven su home genérico. */
 export function HomePage() {
+  const brand = useStorefrontBrand();
+  if (brand && !brand.isPlatformBrand) return <GenericTenantHome brand={brand} />;
+  return <VeloraHomePage />;
+}
+
+function VeloraHomePage() {
   const companyId = useCompanyStore((state) => state.storefrontCompanyId);
   const companies = useCompanyStore((state) => state.companies);
   const select = useCompanyStore((state) => state.selectStorefront);

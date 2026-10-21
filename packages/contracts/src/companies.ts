@@ -6,6 +6,10 @@ import {
   dbIdSchema,
 } from "./shared.js";
 
+import {
+  companyBrandSchema,
+} from "./branding.js";
+
 export const companyIdSchema =
   dbIdSchema;
 
@@ -29,6 +33,23 @@ export const companySchema =
 
     active:
       z.boolean(),
+
+    // Aditivos (Fase 1 SaaS): opcionales para no romper consumidores existentes.
+    slug:
+      z.string()
+        .max(60)
+        .optional(),
+
+    displayName:
+      z.string()
+        .max(160)
+        .nullable()
+        .optional(),
+
+    // Marca efectiva (logo, paleta resuelta) para headers y selector.
+    brand:
+      companyBrandSchema
+        .optional(),
 
     createdAt:
       z.string(),

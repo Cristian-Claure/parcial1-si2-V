@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Query,
+  Req,
   UseGuards,
 } from "@nestjs/common";
 
@@ -24,6 +25,18 @@ import {
 } from "../common/authz/roles.guard.js";
 
 import {
+  TenantScopeService,
+} from "../common/authz/tenant-scope.service.js";
+
+import {
+  ApiHttpError,
+} from "../common/http/api-http.error.js";
+
+import type {
+  AuthenticatedRequest,
+} from "../common/http/authenticated-request.js";
+
+import {
   ZodValidationPipe,
 } from "../common/http/zod-validation.pipe.js";
 
@@ -41,10 +54,15 @@ export class AuditController {
   constructor(
     private readonly audit:
       AuditService,
+    private readonly scope:
+      TenantScopeService,
   ) {}
 
   @Get()
-  search(
+  async search(
+    @Req()
+    request:
+      AuthenticatedRequest,
     @Query(
       new ZodValidationPipe(
         auditSearchQuerySchema,
@@ -53,8 +71,21 @@ export class AuditController {
     query:
       AuditSearchQuery,
   ): Promise<AuditEventPage> {
+    if (
+      !request.authPrincipal
+    ) {
+      throw new ApiHttpError(
+        401,
+        "No autenticado.",
+      );
+    }
+
     return this.audit
       .search(
+        await this.scope
+          .resolve(
+            request.authPrincipal,
+          ),
         query,
       );
   }

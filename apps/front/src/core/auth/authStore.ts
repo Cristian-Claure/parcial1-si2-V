@@ -11,6 +11,8 @@ interface AuthState {
   restore: () => Promise<void>; login: (request: LoginRequest) => Promise<UserProfile>;
   register: (request: RegisterRequest) => Promise<UserProfile>; logout: () => Promise<void>;
   replaceUser: (user: UserProfile) => void;
+  /** Adopta una sesión emitida por otro flujo (p. ej. "Crear mi tienda"). */
+  adopt: (response: AuthResponse) => void;
 }
 
 function readStored(): StoredAuth | null {
@@ -51,6 +53,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ status: "authenticated", accessToken: response.accessToken, user: response.user }); if (response.user.role === "CUSTOMER") void webPush.syncIfPermissionGranted(); return response.user;
     },
     logout: async () => { try { await webPush.revokeForLogout(); } finally { localStorage.removeItem(AUTH_STORAGE_KEY); set({ status: "anonymous", accessToken: null, user: null }); } },
+    adopt: (response) => { persist(response); set({ status: "authenticated", accessToken: response.accessToken, user: response.user }); },
     replaceUser: (user) => {
       const token = get().accessToken;
       if (token) persist({ accessToken: token, user });

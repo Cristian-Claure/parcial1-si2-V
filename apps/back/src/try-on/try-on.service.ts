@@ -39,6 +39,7 @@ import {
   type ProviderImage,
   type ProviderJob,
 } from "./try-on-provider.service.js";
+import { PlanLimitsService } from "../plans/plan-limits.service.js";
 
 import {
   TryOnRepository,
@@ -91,6 +92,8 @@ export class TryOnService {
       ManagedAssetStorageService,
     private readonly config:
       RuntimeConfigService,
+    private readonly limits:
+      PlanLimitsService,
   ) {}
 
   async create(
@@ -147,6 +150,13 @@ export class TryOnService {
         "El producto no está disponible para el probador virtual.",
       );
     }
+
+    // Cuota mensual del probador por cliente y compañía según el plan (PLAN_LIMIT_TRY_ON).
+    await this.limits
+      .assertTryOnQuota(
+        principal.userId,
+        product.companyId,
+      );
 
     const variantId =
       parsed.data.variantId ??

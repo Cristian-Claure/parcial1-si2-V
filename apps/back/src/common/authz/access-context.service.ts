@@ -3,101 +3,36 @@ import {
 } from "@nestjs/common";
 
 import type {
-  UserRole,
-} from "@velora/contracts";
-
-import type {
   AuthPrincipal,
 } from "../../auth/security.js";
 
 import {
-  ApiHttpError,
-} from "../http/api-http.error.js";
+  TenantScopeService,
+  type ActorAccessContext,
+} from "./tenant-scope.service.js";
 
-import {
-  UsersRepository,
-} from "../../users/users.repository.js";
+export type {
+  ActorAccessContext,
+} from "./tenant-scope.service.js";
 
-export interface ActorAccessContext {
-  userId:
-    string;
-
-  role:
-    UserRole;
-
-  storeId:
-    string |
-    null;
-
-  companyId:
-    string |
-    null;
-}
-
+/**
+ * Punto de entrada histórico del contexto del actor. Delega en
+ * TenantScopeService, que resuelve rol, sucursal y alcance multi-tenant desde la BD.
+ */
 @Injectable()
 export class AccessContextService {
   constructor(
-    private readonly users:
-      UsersRepository,
+    private readonly scope:
+      TenantScopeService,
   ) {}
 
-  async resolve(
+  resolve(
     principal:
       AuthPrincipal,
   ): Promise<ActorAccessContext> {
-    const user =
-      await this.users
-        .findById(
-          principal.userId,
-        );
-
-    if (
-      !user ||
-      user.role !==
-        principal.role
-    ) {
-      throw new ApiHttpError(
-        401,
-        "Usuario autenticado no encontrado.",
+    return this.scope
+      .resolve(
+        principal,
       );
-    }
-
-    if (
-      user.status !==
-      "ACTIVE"
-    ) {
-      throw new ApiHttpError(
-        403,
-        "El usuario no está activo.",
-      );
-    }
-
-    if (
-      user.role ===
-      "STORE_MANAGER" &&
-      (
-        !user.storeId ||
-        !user.storeCompanyId
-      )
-    ) {
-      throw new ApiHttpError(
-        403,
-        "El encargado no tiene una sucursal asignada.",
-      );
-    }
-
-    return {
-      userId:
-        user.id,
-
-      role:
-        user.role,
-
-      storeId:
-        user.storeId,
-
-      companyId:
-        user.storeCompanyId,
-    };
   }
 }

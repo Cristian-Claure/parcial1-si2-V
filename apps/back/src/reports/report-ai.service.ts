@@ -38,6 +38,7 @@ import {
   ReportsService,
   type ReportStoreOption,
 } from "./reports.service.js";
+import { PlanLimitsService } from "../plans/plan-limits.service.js";
 
 const REPORT_ZONE =
   "America/La_Paz";
@@ -235,6 +236,8 @@ export class ReportAiService {
       ReportsService,
     private readonly config:
       RuntimeConfigService,
+    private readonly limits:
+      PlanLimitsService,
   ) {}
 
   async query(
@@ -246,8 +249,6 @@ export class ReportAiService {
     request:
       AiQueryRequest,
   ): Promise<ReportAiQueryResponse> {
-    this.requireConfigured();
-
     const question =
       request.question
         .trim();
@@ -258,6 +259,15 @@ export class ReportAiService {
           principal,
           companyId,
         );
+
+    // D3: consultas y narración con IA desde PLUS.
+    await this.limits
+      .assertReportFeature(
+        available.scope.companyId,
+        "AI_NARRATIVE",
+      );
+
+    this.requireConfigured();
 
     const interpreted =
       await this.interpret(
@@ -364,7 +374,18 @@ export class ReportAiService {
     request:
       AiNarrativeRequest,
   ): Promise<ReportAiNarrativeResponse> {
-    this.requireConfigured();
+    const available =
+      await this.reports
+        .availableStores(
+          principal,
+          companyId,
+        );
+
+    await this.limits
+      .assertReportFeature(
+        available.scope.companyId,
+        "AI_NARRATIVE",
+      );
 
     const storeId =
       "storeId" in
@@ -384,6 +405,8 @@ export class ReportAiService {
             null,
           storeId,
         );
+
+    this.requireConfigured();
 
     const narrative =
       await this.narrate(
@@ -412,13 +435,21 @@ export class ReportAiService {
       string |
       undefined,
   ): Promise<ReportVoiceTranscriptionResponse> {
-    this.requireConfigured();
+    const available =
+      await this.reports
+        .availableStores(
+          principal,
+          companyId,
+        );
 
-    await this.reports
-      .availableStores(
-        principal,
-        companyId,
+    // D3: reportes por voz solo en MAX.
+    await this.limits
+      .assertReportFeature(
+        available.scope.companyId,
+        "VOICE",
       );
+
+    this.requireConfigured();
 
     if (
       !Buffer.isBuffer(

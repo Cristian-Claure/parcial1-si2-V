@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module.js";
 import { AuthorizationModule } from "../common/authz/authorization.module.js";
+import { PlansModule } from "../plans/plans.module.js";
 import { DatabaseModule } from "../database/database.module.js";
 import { PushModule } from "../push/push.module.js";
 import { CommerceOperationsController } from "./commerce-operations.controller.js";
@@ -14,7 +15,7 @@ import { OrdersRepository } from "./orders.repository.js";
 import { OrdersService } from "./orders.service.js";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, AuthorizationModule, PushModule],
+  imports: [DatabaseModule, AuthModule, AuthorizationModule, PushModule, PlansModule],
   controllers: [OrdersController, OrderOperationsController, CommerceOperationsController],
   providers: [OrdersRepository, OrdersService, OrderOperationsRepository, OrderOperationsService, CommerceOperationsRepository, CommerceOperationsService],
 })

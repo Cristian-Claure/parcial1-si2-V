@@ -1,6 +1,7 @@
 import {
   Injectable,
   Logger,
+  Optional,
   type OnApplicationBootstrap,
 } from "@nestjs/common";
 
@@ -16,6 +17,10 @@ import {
   hashPassword,
 } from "../auth/security.js";
 
+import {
+  SaasBootstrapService,
+} from "./saas-bootstrap.service.js";
+
 @Injectable()
 export class AdminBootstrapService
   implements OnApplicationBootstrap {
@@ -30,9 +35,21 @@ export class AdminBootstrapService
 
     private readonly config:
       RuntimeConfigService,
+    @Optional()
+    private readonly saas?:
+      SaasBootstrapService,
   ) {}
 
   async onApplicationBootstrap():
+    Promise<void> {
+    await this.ensureConfiguredAdmin();
+
+    // Propietario de VÉLORA, su suscripción MAX y el PLATFORM_ADMIN (Fase 1 SaaS).
+    await this.saas
+      ?.run();
+  }
+
+  private async ensureConfiguredAdmin():
     Promise<void> {
     const config =
       this.config.value;

@@ -132,6 +132,8 @@ export class ReportsRepository {
       .select({
         id:
           orders.id,
+        customerId:
+          orders.customerId,
         orderChannel:
           orders.orderChannel,
         createdAt:
@@ -193,7 +195,7 @@ export class ReportsRepository {
         id:
           payments.id,
         orderId:
-          payments.orderId,
+          orders.id,
         method:
           payments.method,
         status:

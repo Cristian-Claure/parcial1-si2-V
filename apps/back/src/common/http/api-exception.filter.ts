@@ -77,6 +77,17 @@ export class ApiExceptionFilter
         string
       > = {};
 
+    let code:
+      string |
+      undefined;
+
+    let details:
+      Record<
+        string,
+        unknown
+      > |
+      undefined;
+
     if (
       error instanceof
       ApiHttpError
@@ -89,6 +100,12 @@ export class ApiExceptionFilter
 
       errors =
         error.errors;
+
+      code =
+        error.code;
+
+      details =
+        error.details;
     }
     else if (
       error instanceof
@@ -145,6 +162,10 @@ export class ApiExceptionFilter
       message,
 
       errors,
+
+      ...(code ? { code } : {}),
+
+      ...(details ? { details } : {}),
     };
 
     response

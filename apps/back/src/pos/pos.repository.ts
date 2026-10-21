@@ -4,6 +4,7 @@ import {
 
 import {
   Injectable,
+  Optional,
 } from "@nestjs/common";
 
 import {
@@ -52,6 +53,7 @@ import {
 import type {
   ActorAccessContext,
 } from "../common/authz/access-context.service.js";
+import { assertCompanyAccess, assertStoreAccess } from "../common/authz/tenant-scope.service.js";
 
 import {
   ApiHttpError,
@@ -60,6 +62,8 @@ import {
 import {
   DatabaseService,
 } from "../database/database.service.js";
+import { PlanLimitsService } from "../plans/plan-limits.service.js";
+import { noDiscountResolver, type DiscountResolver } from "../plans/loyalty-discount.js";
 
 import {
   calculateExpectedCash,
@@ -195,7 +199,20 @@ export class PosRepository {
   constructor(
     private readonly database:
       DatabaseService,
+    // Descuento automático por compras (Fase 1 SaaS); sin él no se aplica descuento.
+    @Optional()
+    private readonly limits?:
+      PlanLimitsService,
   ) {}
+
+  private discountFor(
+    input: Parameters<DiscountResolver>[0],
+  ): ReturnType<DiscountResolver> {
+    return (
+      this.limits?.discountResolver ??
+      noDiscountResolver
+    )(input);
+  }
 
   async listPoints(
     actor: ActorAccessContext,
@@ -208,6 +225,7 @@ export class PosRepository {
         ? eq(
             stores.companyId,
             this.requireCompanyId(
+              actor,
               companyId,
             ),
           )
@@ -336,6 +354,11 @@ export class PosRepository {
                 "Sucursal no encontrada.",
               );
             }
+
+            this.requireStoreAccess(
+              actor,
+              store.id,
+            );
 
             if (!store.active) {
               throw new ApiHttpError(
@@ -509,6 +532,11 @@ export class PosRepository {
               "Punto de venta no encontrado.",
             );
           }
+
+          this.requireStoreAccess(
+            actor,
+            point.storeId,
+          );
 
           const warehouseRows =
             await tx
@@ -1772,6 +1800,18 @@ export class PosRepository {
               );
             }
 
+            const discount =
+              await this.discountFor({
+                companyId:
+                  session.storeCompanyId,
+                customerId,
+                subtotal,
+              });
+
+            const total =
+              subtotal -
+              discount.amount;
+
             const id =
               randomUUID();
 
@@ -1815,7 +1855,11 @@ export class PosRepository {
                 subtotal:
                   subtotal.toFixed(2),
                 total:
-                  subtotal.toFixed(2),
+                  total.toFixed(2),
+                discountAmount:
+                  discount.amount.toFixed(2),
+                discountReason:
+                  discount.reason,
                 recipientName:
                   null,
                 recipientPhone:
@@ -2091,7 +2135,7 @@ export class PosRepository {
                     ? "PAID"
                     : "PENDING",
                 amount:
-                  subtotal.toFixed(2),
+                  total.toFixed(2),
                 currency,
                 provider:
                   null,
@@ -3758,6 +3802,11 @@ export class PosRepository {
       actor.role ===
       "ADMIN"
     ) {
+      assertStoreAccess(
+        actor,
+        storeId,
+      );
+
       return;
     }
 
@@ -3801,6 +3850,7 @@ export class PosRepository {
   }
 
   private requireCompanyId(
+    actor: ActorAccessContext,
     companyId: string | null,
   ): string {
     if (!companyId) {
@@ -3809,6 +3859,11 @@ export class PosRepository {
         "companyId es obligatorio para ADMIN.",
       );
     }
+
+    assertCompanyAccess(
+      actor,
+      companyId,
+    );
 
     return companyId;
   }

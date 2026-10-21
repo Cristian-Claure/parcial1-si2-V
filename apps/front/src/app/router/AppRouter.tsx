@@ -10,7 +10,7 @@ function lazyNamed(
   return lazy(() => importer().then((module) => ({ default: module[name] })));
 }
 import { RequireRole, GuestOnly } from "../../shared/auth/RouteGuards";
-import { CustomerShell, OperationsShell, PublicShell } from "../../shared/layout/Shells";
+import { CustomerShell, OperationsShell, PlatformShell, PublicShell } from "../../shared/layout/Shells";
 const HomePage = lazy(() => import("../../features/home/HomePage").then((module) => ({ default: module.HomePage })));
 import { LoginPage, RegisterPage } from "../../features/auth/AuthPages";
 const CatalogPage = lazyNamed(() => import("../../features/catalog/CatalogPages"), "CatalogPage");
@@ -29,6 +29,13 @@ import { OperationalOrdersPage } from "../../features/operations/OperationalOrde
 const PosPage = lazy(() => import("../../features/operations/PosPage").then((module) => ({ default: module.PosPage })));
 const ReportsPage = lazy(() => import("../../features/reports/ReportsPage").then((module) => ({ default: module.ReportsPage })));
 import { AuditPage } from "../../features/audit/AuditPage";
+const PlansPage = lazyNamed(() => import("../../features/saas/PlansPage"), "PlansPage");
+const CreateStorePage = lazyNamed(() => import("../../features/saas/CreateStorePage"), "CreateStorePage");
+const MyPlanPage = lazyNamed(() => import("../../features/saas/MyPlanPage"), "MyPlanPage");
+const CompaniesPage = lazyNamed(() => import("../../features/saas/CompaniesPage"), "CompaniesPage");
+const BrandEditorPage = lazyNamed(() => import("../../features/saas/BrandEditorPage"), "BrandEditorPage");
+import { TenantEntry } from "../../features/tenant/TenantEntry";
+const PlatformPage = lazyNamed(() => import("../../features/platform/PlatformPage"), "PlatformPage");
 
 function NotFound() { return <main className="page centered"><Brand variant="mark" /><span className="eyebrow">404</span><h1>Ruta no encontrada</h1><p>La navegación no reconoce esta dirección.</p><Link className="button primary" to="/">Volver al inicio</Link></main>; }
 
@@ -40,6 +47,13 @@ export function AppRouter() {
       <Route path="catalogo/:slug" element={<ProductDetailPage />} />
       <Route path="login" element={<GuestOnly><LoginPage /></GuestOnly>} />
       <Route path="registro" element={<GuestOnly><RegisterPage /></GuestOnly>} />
+      <Route path="planes" element={<PlansPage />} />
+      <Route path="t/:tenantSlug" element={<TenantEntry />}>
+        <Route index element={<HomePage />} />
+        <Route path="catalogo" element={<CatalogPage />} />
+        <Route path="catalogo/:slug" element={<ProductDetailPage />} />
+      </Route>
+      <Route path="crear-tienda" element={<GuestOnly><CreateStorePage /></GuestOnly>} />
     </Route>
     <Route element={<RequireRole roles={["CUSTOMER"]}><CustomerShell /></RequireRole>}>
       <Route path="favoritos" element={<FavoritesPage />} />
@@ -58,6 +72,9 @@ export function AppRouter() {
       <Route path="admin/pos" element={<PosPage />} />
       <Route path="admin/reportes" element={<ReportsPage />} />
       <Route path="admin/auditoria" element={<AuditPage />} />
+      <Route path="admin/mi-plan" element={<MyPlanPage />} />
+      <Route path="admin/empresas" element={<CompaniesPage />} />
+      <Route path="admin/marca" element={<BrandEditorPage />} />
     </Route>
     <Route element={<RequireRole roles={["STORE_MANAGER"]}><OperationsShell role="STORE_MANAGER" /></RequireRole>}>
       <Route path="sucursal" element={<ManagerDashboard />} />
@@ -66,6 +83,9 @@ export function AppRouter() {
       <Route path="sucursal/pedidos" element={<OperationalOrdersPage />} />
       <Route path="sucursal/pos" element={<PosPage />} />
       <Route path="sucursal/reportes" element={<ReportsPage />} />
+    </Route>
+    <Route element={<RequireRole roles={["PLATFORM_ADMIN"]}><PlatformShell /></RequireRole>}>
+      <Route path="plataforma" element={<PlatformPage />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes></Suspense>;

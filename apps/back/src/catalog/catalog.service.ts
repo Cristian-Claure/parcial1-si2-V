@@ -20,6 +20,9 @@ import type {
 import {
   AccessContextService,
 } from "../common/authz/access-context.service.js";
+import {
+  assertCompanyAccess,
+} from "../common/authz/tenant-scope.service.js";
 
 import {
   RuntimeConfigService,
@@ -805,17 +808,11 @@ export class CatalogService {
           principal,
         );
 
-    if (
-      context.role ===
-        "STORE_MANAGER" &&
-      context.companyId !==
-        companyId
-    ) {
-      throw new ApiHttpError(
-        403,
-        "No tiene permisos para administrar esta compaÃ±Ã­a.",
-      );
-    }
+    assertCompanyAccess(
+      context,
+      companyId,
+      "No tiene permisos para administrar esta compañía.",
+    );
 
     return context;
   }

@@ -2,6 +2,11 @@ import {
   z,
 } from "zod";
 
+import {
+  planCodeSchema,
+  reportTierSchema,
+} from "./plans.js";
+
 
 export const reportEntityIdSchema =
   z
@@ -54,6 +59,11 @@ export const reportKpiSchema =
       reportKpiFormatSchema,
     helper:
       z.string(),
+
+    // Fase 1 SaaS (aditivo): nivel mínimo del widget.
+    minTier:
+      reportTierSchema
+        .optional(),
   });
 
 export type ReportKpi =
@@ -92,6 +102,11 @@ export const reportChartSchema =
       z.array(
         reportChartSeriesSchema,
       ),
+
+    // Fase 1 SaaS (aditivo): nivel mínimo del widget.
+    minTier:
+      reportTierSchema
+        .optional(),
   });
 
 export type ReportChart =
@@ -115,6 +130,11 @@ export const reportTableSchema =
           z.string(),
         ),
       ),
+
+    // Fase 1 SaaS (aditivo): nivel mínimo del widget.
+    minTier:
+      reportTierSchema
+        .optional(),
   });
 
 export type ReportTable =
@@ -133,6 +153,61 @@ export const reportPeriodBoundsSchema =
 export type ReportPeriodBounds =
   z.infer<
     typeof reportPeriodBoundsSchema
+  >;
+
+export const reportLockedWidgetSchema =
+  z.object({
+    id:
+      z.string(),
+    kind:
+      z.enum([
+        "KPI",
+        "CHART",
+        "TABLE",
+      ]),
+    title:
+      z.string(),
+    minTier:
+      reportTierSchema,
+    requiredPlan:
+      planCodeSchema
+        .nullable(),
+  });
+
+export type ReportLockedWidget =
+  z.infer<
+    typeof reportLockedWidgetSchema
+  >;
+
+export const reportPolicySchema =
+  z.object({
+    tier:
+      reportTierSchema,
+    historyDays:
+      z.number()
+        .int()
+        .nullable(),
+    clamped:
+      z.boolean(),
+    canExport:
+      z.boolean(),
+    canDynamicReports:
+      z.boolean(),
+    canMlDashboards:
+      z.boolean(),
+    canAiNarrative:
+      z.boolean(),
+    canVoiceReports:
+      z.boolean(),
+    canPeriodComparison:
+      z.boolean(),
+    canStoreFilter:
+      z.boolean(),
+  });
+
+export type ReportPolicy =
+  z.infer<
+    typeof reportPolicySchema
   >;
 
 export const reportOverviewSchema =
@@ -163,6 +238,21 @@ export const reportOverviewSchema =
       z.array(
         z.string(),
       ),
+
+    // Fase 1 SaaS (aditivos): nivel del plan, política aplicada y widgets bloqueados.
+    tier:
+      reportTierSchema
+        .optional(),
+
+    policy:
+      reportPolicySchema
+        .optional(),
+
+    locked:
+      z.array(
+        reportLockedWidgetSchema,
+      )
+        .optional(),
   });
 
 export type ReportOverview =

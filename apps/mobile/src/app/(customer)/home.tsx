@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useAuthStore } from "@/core/auth/authStore";
 import { useCompanyStore } from "@/core/company/companyStore";
@@ -24,7 +24,16 @@ export default function HomeScreen() {
       ) : null}
 
       <CompanyGate>
-        <Text style={commonStyles.eyebrow}>VÉLORA PARA USTED</Text>
+        {company?.brand && !company.brand.isPlatformBrand ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            {company.brand.logoUrl ? (
+              <Image source={{ uri: company.brand.logoUrl }} style={{ width: 36, height: 36, borderRadius: 8 }} accessibilityLabel={company.brand.name} />
+            ) : null}
+            <Text style={commonStyles.eyebrow}>{company.brand.name.toUpperCase()} PARA USTED</Text>
+          </View>
+        ) : (
+          <Text style={commonStyles.eyebrow}>VÉLORA PARA USTED</Text>
+        )}
         <Text style={commonStyles.heading}>Hola, {user.firstName}.</Text>
         <Text style={commonStyles.body}>
           Descubra piezas para cada momento y continúe su experiencia donde la
@@ -32,7 +41,7 @@ export default function HomeScreen() {
         </Text>
 
         {company ? (
-          <Text style={commonStyles.muted}>Catálogo: {company.name}</Text>
+          <Text style={commonStyles.muted}>Catálogo: {company.brand?.name ?? company.name}</Text>
         ) : null}
 
         <View

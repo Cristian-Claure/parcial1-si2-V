@@ -393,3 +393,33 @@ requireStore(principal, storeId) / requireWarehouse(principal, warehouseId)
 | 3 | Reportes: reforzar los existentes, catálogo completo de widgets por nivel, constructor dinámico y exportación Excel/PDF. |
 | 4 | Historial realista y ML local en Python (dashboards ADVANCED). |
 | 5 | Pago por QR (`QrGateway`) para suscripciones y pedidos. |
+
+---
+
+## 10. Impacto del nuevo alcance en scripts existentes (ajustar en la Fase 4)
+
+Desde el bloque 2, un ADMIN solo opera las compañías de las que es propietario (`companies.owner_user_id`); ya no existe un ADMIN global. No se modificaron los scripts; quedan así:
+
+| Script | Uso de ADMIN | Estado con el nuevo alcance | Ajuste previsto (Fase 4) |
+|---|---|---|---|
+| `scripts/seed-historical-orders.mjs` | Inicia sesión como `seed.script.admin@velora.local` (credenciales en el código) y usa `POST /api/admin/payments/:id/confirm` y `POST /api/admin/orders/:id/fulfill` sobre VÉLORA. | **Deja de funcionar** tras transferir VÉLORA a la cuenta de administración habitual: las confirmaciones devuelven 404 (fuera de alcance). La parte de cliente (carrito, checkout, pagos) sigue funcionando. | Leer la cuenta operadora de variables de entorno y usar el **propietario** de la compañía destino o el **encargado** de la sucursal (rutas `/api/manager/*`). Quitar las credenciales del código. |
+| `apps/back/scripts/upload-gallery-images.mjs` | `VELORA_MIGRATION_ADMIN_EMAIL/PASSWORD` → `POST /api/catalog/manage/products/:id/assets`. | Funciona solo si esa cuenta es la propietaria de VÉLORA o su encargado; con `migration.admin` u otra cuenta sin compañías → 404. | Documentar que la cuenta debe ser el propietario (o un encargado) de la compañía de los productos. |
+| `scripts/load-env.ps1` | — | Sin impacto. | — |
+
+Además, las suites y pruebas de aceptación que asumían un ADMIN global (por ejemplo `acceptance.admin`) deben iniciar sesión como el propietario de la compañía que verifican.
+
+---
+
+## 11. Estado de la Fase 1 (bloques 1 a 7 implementados)
+
+| Bloque | Estado | Notas |
+|---|---|---|
+| 1 Esquema | Hecho | V26–V30 (V30: `payments.subscription_id`, se movió del bloque 1 al 4). `db:migrate:up` para bases existentes. |
+| 2 Alcance y roles | Hecho | `TenantScopeService` desde la BD; suite A/B que exige un caso por cada ruta ADMIN enumerada por reflexión. |
+| 3 Planes y límites | Hecho | `PlanLimitsService`, `PLAN_LIMIT_*`, cuota del probador, descuento MAX (pedidos web, offline y POS), widgets por nivel. |
+| 4 Onboarding | Hecho | `PaymentGateway` (Demo + adaptador Stripe), provisioning transaccional, `/planes`, `/crear-tienda`, Mi plan, Mis tiendas. |
+| 5 Marca | Hecho | Marca filtrada por nivel al leer (no se borra al bajar de plan), AA compartido front/back, `/t/:slug`, editor con vista previa, móvil mínimo. |
+| 6 Plataforma | Hecho | `/plataforma` (propietarios, tiendas, suscripciones, cambio de plan, ajuste de fechas, transferencia de propiedad). |
+| 7 Demo | Hecho | `scripts/demo-saas.mjs` (32 verificaciones). |
+
+Pendiente para fases siguientes: gráfico de ventas por categoría y comparación de periodos (Fase 3), ThemeContext móvil (aplazado), pago QR (Fase 5), ajuste de scripts que usaban un ADMIN global (§10, Fase 4).

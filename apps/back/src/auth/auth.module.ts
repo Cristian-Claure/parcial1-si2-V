@@ -46,6 +46,8 @@ import {
   ],
   exports: [
     BearerAuthGuard,
+    AuthRateLimitGuard,
+    AuthRateLimitService,
   ],
 })
 export class AuthModule {}

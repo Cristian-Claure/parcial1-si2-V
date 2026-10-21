@@ -19,6 +19,7 @@ import type {
 import {
   AccessContextService,
 } from "../common/authz/access-context.service.js";
+import { assertCompanyAccess } from "../common/authz/tenant-scope.service.js";
 
 import {
   ApiHttpError,
@@ -163,15 +164,10 @@ export class CatalogAssetsService {
       );
     }
 
-    if (
-      actor.role === "STORE_MANAGER" &&
-      actor.companyId !== product.companyId
-    ) {
-      throw new ApiHttpError(
-        403,
-        "No tiene permisos para administrar esta compaÃ±Ã­a.",
-      );
-    }
+    assertCompanyAccess(
+      actor,
+      product.companyId,
+    );
 
     const parsed =
       managedAssetFieldsSchema

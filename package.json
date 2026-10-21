@@ -22,7 +22,8 @@
     "build:azure:back": "pnpm build:packages && pnpm --filter @velora/back build",
     "start:azure:back": "pnpm --filter @velora/back start",
     "build:azure:front": "pnpm --filter @velora/contracts build && pnpm --filter @velora/front build",
-    "db:migrate:fresh": "pnpm --filter @velora/database migrate:fresh"
+    "db:migrate:fresh": "pnpm --filter @velora/database migrate:fresh",
+    "db:migrate:up": "pnpm --filter @velora/database migrate:up"
   },
   "devDependencies": {
     "prettier": "3.8.1",

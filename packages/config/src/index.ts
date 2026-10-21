@@ -404,6 +404,56 @@ export const serverRuntimeConfigSchema =
           .max(100),
       ),
 
+    // Fase 1 SaaS: superadministrador de la plataforma (cuenta distinta del propietario de VÉLORA).
+    BOOTSTRAP_PLATFORM_ADMIN_ENABLED:
+      booleanFromEnv(
+        false,
+      ),
+
+    BOOTSTRAP_PLATFORM_ADMIN_EMAIL:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() === ""
+            ? undefined
+            : value,
+        z
+          .string()
+          .trim()
+          .email()
+          .max(180)
+          .optional(),
+      ),
+
+    BOOTSTRAP_PLATFORM_ADMIN_PASSWORD:
+      optionalSecretFromEnv(),
+
+    BOOTSTRAP_PLATFORM_ADMIN_FIRST_NAME:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() !== ""
+            ? value.trim()
+            : "Plataforma",
+        z
+          .string()
+          .min(1)
+          .max(80),
+      ),
+
+    BOOTSTRAP_PLATFORM_ADMIN_LAST_NAME:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" &&
+          value.trim() !== ""
+            ? value.trim()
+            : "Velora",
+        z
+          .string()
+          .min(1)
+          .max(100),
+      ),
+
     VELORA_AZURE_BLOB_CONTAINER:
       z.preprocess(
         (value) =>
