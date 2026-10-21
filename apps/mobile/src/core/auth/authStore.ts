@@ -26,11 +26,12 @@ interface AuthState {
   replaceUser: (user: UserProfile) => Promise<void>;
 }
 
+/** El móvil admite clientes y, desde la Fase 2, encargados (modo operaciones). */
 function requireCustomer(user: UserProfile): void {
-  if (user.role !== "CUSTOMER") {
+  if (user.role !== "CUSTOMER" && user.role !== "STORE_MANAGER") {
     throw new ApiClientError(
       403,
-      "La aplicación móvil de cliente no admite cuentas administrativas.",
+      "La aplicación móvil admite clientes y encargados de sucursal. Los propietarios usan el panel web.",
     );
   }
 }
@@ -60,7 +61,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       requireCustomer(user);
       await saveSessionUser(user);
       set({ status: "authenticated", user });
-      void mobilePush.syncIfPermissionGranted();
+      if (user.role === "CUSTOMER") void mobilePush.syncIfPermissionGranted();
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 0) {
         set({ status: "authenticated", user: stored.user });
@@ -77,7 +78,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     requireCustomer(response.user);
     await saveSession(response);
     set({ status: "authenticated", user: response.user });
-    void mobilePush.syncIfPermissionGranted();
+    if (response.user.role === "CUSTOMER") void mobilePush.syncIfPermissionGranted();
     return response.user;
   },
 

@@ -29,8 +29,8 @@ export default function LoginScreen() {
     setError(null);
 
     try {
-      await login(parsed.data);
-      router.replace("/home" as never);
+      const user = await login(parsed.data);
+      router.replace((user.role === "STORE_MANAGER" ? "/operations" : "/home") as never);
     } catch (reason) {
       setError(
         reason instanceof Error

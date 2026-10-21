@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { SyncOperation, SyncOperationResult, SyncPullResponse } from "@velora/contracts";
-import { decideTransportError, mirrorChanges, pushOutbox, resolveConflict, type OutboxStore } from "../outboxEngine";
-import type { OutboxEntry } from "../types";
+import type { SyncOperation, SyncOperationResult, SyncPullResponse } from "./sync.js";
+import { decideTransportError, mirrorChanges, pushOutbox, resolveConflict, type OutboxStore } from "./syncEngine.js";
+import type { OutboxEntry } from "./syncEngine.js";
 
 const company = "10000000-0000-0000-0000-000000000001";
 const user = "20000000-0000-4000-8000-000000000001";

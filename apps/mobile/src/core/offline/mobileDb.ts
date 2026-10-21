@@ -35,6 +35,11 @@ interface OfflineRow {
 
 let databasePromise: ReturnType<typeof SQLite.openDatabaseAsync> | null = null;
 
+/** Acceso compartido para la cola genérica de sincronización (Fase 2). */
+export async function mobileDatabase() {
+  return database();
+}
+
 async function database() {
   databasePromise ??= SQLite.openDatabaseAsync("velora-mobile.db");
   return databasePromise;
@@ -71,6 +76,43 @@ export async function initMobileDb(): Promise<void> {
 
     CREATE INDEX IF NOT EXISTS idx_offline_orders_user_status
       ON offline_orders(user_id, status, created_at);
+
+    CREATE TABLE IF NOT EXISTS sync_outbox (
+      client_operation_id TEXT PRIMARY KEY NOT NULL,
+      company_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      label TEXT NOT NULL,
+      operation_json TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      code TEXT,
+      error TEXT,
+      result_json TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sync_outbox_owner
+      ON sync_outbox(company_id, user_id, status, created_at);
+
+    CREATE TABLE IF NOT EXISTS sync_mirror (
+      mirror_key TEXT PRIMARY KEY NOT NULL,
+      company_id TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      data_json TEXT NOT NULL,
+      pending INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sync_mirror_company_type
+      ON sync_mirror(company_id, entity_type);
+
+    CREATE TABLE IF NOT EXISTS sync_state (
+      company_id TEXT PRIMARY KEY NOT NULL,
+      cursor TEXT,
+      last_pull_at TEXT
+    );
   `);
 
   await migrateOfflineOrdersAttemptsColumn(db);

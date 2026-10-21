@@ -18,6 +18,10 @@ export default function CustomerLayout() {
     return <Loading label="Validando sesión…" />;
   }
 
+  if (status === "authenticated" && user?.role === "STORE_MANAGER") {
+    return <Redirect href={"/operations" as never} />;
+  }
+
   if (status !== "authenticated" || !user || user.role !== "CUSTOMER") {
     return <Redirect href={"/login" as never} />;
   }
