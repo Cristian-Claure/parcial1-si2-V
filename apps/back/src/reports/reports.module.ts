@@ -11,6 +11,10 @@ import {
 } from "../common/authz/authorization.module.js";
 
 import {
+  PlansModule,
+} from "../plans/plans.module.js";
+
+import {
   RuntimeConfigModule,
 } from "../common/config/runtime-config.module.js";
 
@@ -39,6 +43,7 @@ import {
     DatabaseModule,
     AuthModule,
     AuthorizationModule,
+    PlansModule,
     RuntimeConfigModule,
   ],
   controllers: [

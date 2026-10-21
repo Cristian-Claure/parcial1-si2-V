@@ -62,6 +62,14 @@ import {
   CatalogService,
 } from "./catalog.service.js";
 
+import {
+  TenantScopeService,
+} from "../common/authz/tenant-scope.service.js";
+
+import {
+  PlanLimitsService,
+} from "../plans/plan-limits.service.js";
+
 @Controller("api/catalog")
 export class CatalogPublicController {
   constructor(
@@ -161,6 +169,10 @@ export class CatalogManageController {
   constructor(
     private readonly catalog:
       CatalogService,
+    private readonly scope:
+      TenantScopeService,
+    private readonly limits:
+      PlanLimitsService,
   ) {}
 
   @Get("categories")
@@ -293,7 +305,7 @@ export class CatalogManageController {
   }
 
   @Post("products")
-  createProduct(
+  async createProduct(
     @Req()
     request:
       AuthenticatedRequest,
@@ -306,6 +318,20 @@ export class CatalogManageController {
     body:
       ProductRequest,
   ): Promise<ProductResponse> {
+    // Primero el alcance (no revelar el plan de otra compañía) y luego el cupo del plan.
+    await this.scope
+      .requireCompany(
+        this.principal(
+          request,
+        ),
+        body.companyId,
+      );
+
+    await this.limits
+      .assertCanCreateProduct(
+        body.companyId,
+      );
+
     return this.catalog
       .createProduct(
         this.principal(

@@ -48,6 +48,10 @@ import {
   StoresService,
 } from "./stores.service.js";
 
+import {
+  PlanLimitsService,
+} from "../plans/plan-limits.service.js";
+
 @Controller("api/admin/stores")
 @UseGuards(
   BearerAuthGuard,
@@ -62,6 +66,8 @@ export class StoresController {
       StoresService,
     private readonly scope:
       TenantScopeService,
+    private readonly limits:
+      PlanLimitsService,
   ) {}
 
   @Get()
@@ -109,6 +115,11 @@ export class StoresController {
         this.principal(
           authenticated,
         ),
+        request.companyId,
+      );
+
+    await this.limits
+      .assertCanCreateStore(
         request.companyId,
       );
 

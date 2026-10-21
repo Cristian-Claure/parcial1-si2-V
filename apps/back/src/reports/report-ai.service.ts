@@ -38,6 +38,7 @@ import {
   ReportsService,
   type ReportStoreOption,
 } from "./reports.service.js";
+import { PlanLimitsService } from "../plans/plan-limits.service.js";
 
 const REPORT_ZONE =
   "America/La_Paz";
@@ -235,6 +236,8 @@ export class ReportAiService {
       ReportsService,
     private readonly config:
       RuntimeConfigService,
+    private readonly limits:
+      PlanLimitsService,
   ) {}
 
   async query(
@@ -256,6 +259,13 @@ export class ReportAiService {
           principal,
           companyId,
         );
+
+    // D3: consultas y narración con IA desde PLUS.
+    await this.limits
+      .assertReportFeature(
+        available.scope.companyId,
+        "AI_NARRATIVE",
+      );
 
     this.requireConfigured();
 
@@ -364,6 +374,19 @@ export class ReportAiService {
     request:
       AiNarrativeRequest,
   ): Promise<ReportAiNarrativeResponse> {
+    const available =
+      await this.reports
+        .availableStores(
+          principal,
+          companyId,
+        );
+
+    await this.limits
+      .assertReportFeature(
+        available.scope.companyId,
+        "AI_NARRATIVE",
+      );
+
     const storeId =
       "storeId" in
         request
@@ -412,10 +435,18 @@ export class ReportAiService {
       string |
       undefined,
   ): Promise<ReportVoiceTranscriptionResponse> {
-    await this.reports
-      .availableStores(
-        principal,
-        companyId,
+    const available =
+      await this.reports
+        .availableStores(
+          principal,
+          companyId,
+        );
+
+    // D3: reportes por voz solo en MAX.
+    await this.limits
+      .assertReportFeature(
+        available.scope.companyId,
+        "VOICE",
       );
 
     this.requireConfigured();

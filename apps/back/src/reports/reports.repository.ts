@@ -132,6 +132,8 @@ export class ReportsRepository {
       .select({
         id:
           orders.id,
+        customerId:
+          orders.customerId,
         orderChannel:
           orders.orderChannel,
         createdAt:

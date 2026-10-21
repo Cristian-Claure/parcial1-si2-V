@@ -21,6 +21,7 @@ import { StoresModule } from "./stores/stores.module.js";
 import { TryOnModule } from "./try-on/try-on.module.js";
 import { PushModule } from "./push/push.module.js";
 import { BootstrapModule } from "./bootstrap/bootstrap.module.js";
+import { PlansModule } from "./plans/plans.module.js";
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { BootstrapModule } from "./bootstrap/bootstrap.module.js";
     AuthModule,
     AuthorizationModule,
     CompaniesModule,
+    PlansModule,
     AdminModule,
     CustomerModule,
     StoresModule,

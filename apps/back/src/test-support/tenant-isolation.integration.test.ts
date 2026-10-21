@@ -28,16 +28,19 @@ interface Fixtures {
 
 interface Ctx { A: SeededTenant; B: SeededTenant; b: Fixtures }
 
-type Expectation = "DENIED" | "NO_LEAK";
+type Expectation = "DENIED" | "NO_LEAK" | "SELF";
 interface Attack { path: string; body?: unknown; raw?: { contentType: string; data: Uint8Array }; expect: Expectation }
 
 /**
  * Casos A→B por ruta (sin el prefijo /api/admin o /api/manager, que comparten handler).
  * DENIED: 403/404 sin datos de B. NO_LEAK: listado sin compañía explícita → no debe contener datos de B.
+ * SELF: ruta del propio titular sin parámetro de tenant (cualquier estado, nunca datos de B).
  */
 const ATTACKS: Record<string, (ctx: Ctx) => Attack[]> = {
   "GET audit": () => [{ path: "/api/admin/audit", expect: "NO_LEAK" }],
   "GET companies": () => [{ path: "/api/admin/companies", expect: "NO_LEAK" }],
+  "GET plan": () => [{ path: "/api/admin/plan", expect: "NO_LEAK" }],
+  "POST plan/change": () => [{ path: "/api/admin/plan/change", body: { planCode: "MAX" }, expect: "SELF" }],
   "GET orders": ({ B }) => [{ path: "@/orders", expect: "NO_LEAK" }, { path: `@/orders?companyId=${B.companyId}`, expect: "DENIED" }],
   "POST orders/:orderId/fulfill": ({ b }) => [{ path: `@/orders/${b.orderId}/fulfill`, body: {}, expect: "DENIED" }],
   "POST payments/:paymentId/confirm": ({ b }) => [{ path: `@/payments/${b.orderPaymentId}/confirm`, body: {}, expect: "DENIED" }],
