@@ -343,6 +343,8 @@ export default function TryOnScreen() {
         job?.status !==
         "SUCCEEDED"
       ) {
+        // Reinicio derivado del job (código previo a la Fase 3, sin cambio de comportamiento).
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setResultToken(
           null,
         );
@@ -446,6 +448,8 @@ export default function TryOnScreen() {
 
         const filename =
           photo.fileName ??
+          // Se ejecuta al enviar (manejador), no durante el render.
+          // eslint-disable-next-line react-hooks/purity
           `person-${Date.now()}.jpg`;
 
         form.append(

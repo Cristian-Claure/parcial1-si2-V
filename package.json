@@ -17,7 +17,7 @@
     "build:front": "pnpm --filter @velora/front build",
     "build:packages": "pnpm --filter @velora/config build && pnpm --filter @velora/contracts build && pnpm --filter @velora/database build",
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm --filter @velora/back lint && pnpm --filter @velora/front lint",
+    "lint": "pnpm --filter @velora/back lint && pnpm --filter @velora/front lint && pnpm --filter @velora/mobile lint",
     "test": "pnpm -r --if-present test",
     "build:azure:back": "pnpm build:packages && pnpm --filter @velora/back build",
     "start:azure:back": "pnpm --filter @velora/back start",

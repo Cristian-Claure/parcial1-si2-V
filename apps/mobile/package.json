@@ -40,6 +40,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eslint": "9.39.5",
+    "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -47,7 +49,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint",
+    "lint": "eslint src --max-warnings=0",
     "test": "node --experimental-strip-types --test",
     "validate:bundle": "expo export --platform android --output-dir .expo-export-check",
     "typecheck": "tsc --noEmit"

@@ -145,11 +145,11 @@ export type CustomerNavKey =
   | "cart"
   | "account";
 
-const navItems: Array<{
+const navItems: {
   key: CustomerNavKey;
   label: string;
   href: string;
-}> = [
+}[] = [
   { key: "home", label: "Inicio", href: "/home" },
   { key: "catalog", label: "Catálogo", href: "/catalog" },
   { key: "tryon", label: "Probador", href: "/try-on" },

@@ -9,7 +9,7 @@ import { useManagerCompany } from "./useManagerCompany";
 
 export type OperationsNavKey = "home" | "customer" | "product" | "sync";
 
-const items: Array<{ key: OperationsNavKey; label: string; href: string }> = [
+const items: { key: OperationsNavKey; label: string; href: string }[] = [
   { key: "home", label: "Inicio", href: "/operations" },
   { key: "customer", label: "Cliente", href: "/register-customer" },
   { key: "product", label: "Producto", href: "/register-product" },
