@@ -16,5 +16,6 @@ export * from "./reports.js";
 export * from "./audit.js";
 export * from "./push.js";
 export * from "./plans.js";
+export * from "./platform.js";
 
 export const VELORA_API_CONTRACT_VERSION = "react-web-parity-v1" as const;
