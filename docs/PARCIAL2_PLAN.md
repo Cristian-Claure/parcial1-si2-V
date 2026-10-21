@@ -372,6 +372,17 @@ requireStore(principal, storeId) / requireWarehouse(principal, warehouseId)
 - **D6.** Duración del TRIAL (¿14 días?) y si FREE necesita suscripción, propuesta: sí, `ACTIVE` sin vencimiento.
 - **D7.** ¿Un CUSTOMER puede ser también propietario con el mismo email? Propuesta: no, son cuentas distintas, porque el rol es único por usuario.
 
+### Decisiones confirmadas (dueño del proyecto)
+- **D1** plan por cuenta propietaria (`subscriptions.company_id` permite pasar a plan por empresa).
+- **D2** downgrade bloqueado con 409 `PLAN_DOWNGRADE_EXCEEDS` si el uso excede el plan destino.
+- **D3** narración IA desde PLUS; voz solo MAX.
+- **D4** descuento MAX por monto de compras FULFILLED de los últimos 12 meses en esa empresa: ≥1500 BOB 5%, ≥4000 BOB 10%, ≥8000 BOB 15% (en el seed: `loyalty_discounts = {"windowDays":365,"tiers":[{"minAmount":1500,"percent":5},…]}`).
+- **D5** sin modo oscuro; superficies oscuras usan el `--ink` de la empresa (validado AA).
+- **D6** TRIAL de 14 días solo en PLUS y MAX; FREE sin trial (ACTIVE sin vencimiento). PLATFORM_ADMIN puede ajustar fechas de suscripción.
+- **D7** un correo = un rol; registro con correo existente → error claro.
+- Suscripción vencida: límites FREE, se bloquea CREAR, nunca se borra ni oculta lo existente.
+- El alcance se resuelve siempre desde la BD (no desde claims del JWT).
+
 ---
 
 ## 9. Fases siguientes (sin cambios respecto al plan previo)
