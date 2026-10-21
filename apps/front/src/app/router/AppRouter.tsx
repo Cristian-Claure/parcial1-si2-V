@@ -10,7 +10,7 @@ function lazyNamed(
   return lazy(() => importer().then((module) => ({ default: module[name] })));
 }
 import { RequireRole, GuestOnly } from "../../shared/auth/RouteGuards";
-import { CustomerShell, OperationsShell, PublicShell } from "../../shared/layout/Shells";
+import { CustomerShell, OperationsShell, PlatformShell, PublicShell } from "../../shared/layout/Shells";
 const HomePage = lazy(() => import("../../features/home/HomePage").then((module) => ({ default: module.HomePage })));
 import { LoginPage, RegisterPage } from "../../features/auth/AuthPages";
 const CatalogPage = lazyNamed(() => import("../../features/catalog/CatalogPages"), "CatalogPage");
@@ -35,6 +35,7 @@ const MyPlanPage = lazyNamed(() => import("../../features/saas/MyPlanPage"), "My
 const CompaniesPage = lazyNamed(() => import("../../features/saas/CompaniesPage"), "CompaniesPage");
 const BrandEditorPage = lazyNamed(() => import("../../features/saas/BrandEditorPage"), "BrandEditorPage");
 import { TenantEntry } from "../../features/tenant/TenantEntry";
+const PlatformPage = lazyNamed(() => import("../../features/platform/PlatformPage"), "PlatformPage");
 
 function NotFound() { return <main className="page centered"><Brand variant="mark" /><span className="eyebrow">404</span><h1>Ruta no encontrada</h1><p>La navegación no reconoce esta dirección.</p><Link className="button primary" to="/">Volver al inicio</Link></main>; }
 
@@ -82,6 +83,9 @@ export function AppRouter() {
       <Route path="sucursal/pedidos" element={<OperationalOrdersPage />} />
       <Route path="sucursal/pos" element={<PosPage />} />
       <Route path="sucursal/reportes" element={<ReportsPage />} />
+    </Route>
+    <Route element={<RequireRole roles={["PLATFORM_ADMIN"]}><PlatformShell /></RequireRole>}>
+      <Route path="plataforma" element={<PlatformPage />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes></Suspense>;

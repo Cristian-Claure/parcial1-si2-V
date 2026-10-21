@@ -9,8 +9,7 @@ import loginVisual from "../../assets/hero/VELORA9.png";
 import registerVisual from "../../assets/hero/VELORA10.png";
 
 function targetForRole(role: UserRole): string {
-  // PLATFORM_ADMIN no tiene panel web todavía (Fase 1, bloque 6).
-  return role === "ADMIN" ? "/admin" : role === "STORE_MANAGER" ? "/sucursal" : role === "PLATFORM_ADMIN" ? "/" : "/mis-pedidos";
+  return role === "ADMIN" ? "/admin" : role === "STORE_MANAGER" ? "/sucursal" : role === "PLATFORM_ADMIN" ? "/plataforma" : "/mis-pedidos";
 }
 
 function AuthVisual({ src, position }: { src: string; position: string }) {
