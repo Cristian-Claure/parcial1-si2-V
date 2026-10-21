@@ -47,6 +47,9 @@ export const veloraApi = {
   companies: () =>
     apiRequest<CompanyResponse[]>("/api/companies", {}, false),
 
+  managerCompany: () =>
+    apiRequest<CompanyResponse>("/api/manager/company"),
+
   categories: (companyId: string) =>
     apiRequest<CategoryResponse[]>(
       `/api/catalog/categories?companyId=${q(companyId)}`,

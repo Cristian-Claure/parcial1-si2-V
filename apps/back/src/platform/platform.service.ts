@@ -58,6 +58,7 @@ export class PlatformService {
       .orderBy(desc(subscriptions.updatedAt));
     return rows.map((row) => ({
       ...row,
+      ownerEmail: row.ownerEmail ?? "",
       currentPeriodStart: row.currentPeriodStart.toISOString(),
       currentPeriodEnd: row.currentPeriodEnd ? row.currentPeriodEnd.toISOString() : null,
       updatedAt: row.updatedAt.toISOString(),

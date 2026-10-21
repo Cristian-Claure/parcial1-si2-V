@@ -44,6 +44,8 @@ const ATTACKS: Record<string, (ctx: Ctx) => Attack[]> = {
   "PATCH companies/:companyId/branding": ({ B }) => [{ path: `/api/admin/companies/${B.companyId}/branding`, body: { displayName: "Hackeada" }, expect: "DENIED" }],
   "POST companies/:companyId/branding/:asset": ({ B }) => [{ path: `/api/admin/companies/${B.companyId}/branding/logo`, body: {}, expect: "DENIED" }],
   "DELETE companies/:companyId/branding/:asset": ({ B }) => [{ path: `/api/admin/companies/${B.companyId}/branding/logo`, expect: "DENIED" }],
+  "POST sync/push": ({ B }) => [{ path: "/api/sync/push", body: { companyId: B.companyId, operations: [{ clientOperationId: randomUUID(), type: "CUSTOMER_CREATE", payload: { id: randomUUID(), firstName: "In", lastName: "Truso" } }] }, expect: "DENIED" }],
+  "GET sync/pull": ({ B }) => [{ path: `/api/sync/pull?companyId=${B.companyId}`, expect: "DENIED" }],
   "GET plan": () => [{ path: "/api/admin/plan", expect: "NO_LEAK" }],
   "POST plan/change": () => [{ path: "/api/admin/plan/change", body: { planCode: "MAX" }, expect: "SELF" }],
   "GET orders": ({ B }) => [{ path: "@/orders", expect: "NO_LEAK" }, { path: `@/orders?companyId=${B.companyId}`, expect: "DENIED" }],

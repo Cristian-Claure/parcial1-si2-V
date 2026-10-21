@@ -423,3 +423,60 @@ Además, las suites y pruebas de aceptación que asumían un ADMIN global (por e
 | 7 Demo | Hecho | `scripts/demo-saas.mjs` (32 verificaciones). |
 
 Pendiente para fases siguientes: gráfico de ventas por categoría y comparación de periodos (Fase 3), ThemeContext móvil (aplazado), pago QR (Fase 5), ajuste de scripts que usaban un ADMIN global (§10, Fase 4).
+
+---
+
+# Fase 2 — Offline completo (web y móvil)
+
+## F2.1 Auditoría (estado al iniciar)
+
+| Capa | Existe | Falta |
+|---|---|---|
+| Web (Dexie `velora-customer-v2`) | `offlineOrders` (cliente) y `posSales` (POS) con PENDING/CONFLICT/FAILED, tope de 5 intentos, `clientOperationId` en pedidos y ventas; sync al evento `online` solo para CUSTOMER; cachés de carrito y checkout. | **No hay cola genérica**: son dos tablas por tipo y dos funciones de sync; no hay estado SYNCING; no hay catálogo, clientes ni sucursales locales; el service worker precachea el shell (`navigateFallback`) pero **no** cachea lecturas del catálogo. |
+| Móvil (expo-sqlite `velora-mobile.db`) | `offline_orders` con PENDING/SYNCING/CONFLICT/FAILED (recupera SYNCING al arrancar), `cache_entries` (lecturas cacheadas), `app_settings`. | Solo CUSTOMER (`requireCustomer` rechaza ADMIN y STORE_MANAGER); sin cola genérica, sin pull incremental. |
+| Backend | Idempotencia por `client_operation_id` en `POST /api/customer/orders/offline-sync` (V12–V14) y en ventas POS. | No hay `/api/sync/*`, cursor ni tombstones; no hay versión por fila; `app_users.email` y `password_hash` son NOT NULL (un cliente sin acceso no cabe hoy); no hay vínculo cliente↔empresa. |
+
+**Refutación con evidencia:** la decisión dice "outbox existente con estados PENDING/SYNCING/CONFLICT/FAILED"; en el código hay **dos colas por tipo** y SYNCING solo en móvil. Para no crear un segundo mecanismo: (1) todo lo nuevo entra en **una sola cola genérica** (`syncOutbox` en Dexie / `sync_outbox` en SQLite) con esos cuatro estados y el mismo tope de 5 reintentos; (2) un **único motor de sync** procesa en orden la cola genérica y las colas heredadas de pedidos y POS (que no se migran para no arriesgar datos ya encolados en dispositivos); (3) el centro de sincronización muestra las tres fuentes como una sola lista.
+
+## F2.2 Esquema (V31+)
+
+- **V31 `offline_customers_and_sync`**
+  - `app_users.email` y `password_hash` pasan a NULL solo para clientes sin acceso (`CHECK (role <> 'CUSTOMER' OR ...)`, y para otros roles siguen obligatorios). El login rechaza cuentas sin contraseña.
+  - `app_users.registered_company_id` (FK companies, nullable): empresa que registró al cliente sin acceso. Unicidad de documento por empresa: índice único parcial `(registered_company_id, lower(tax_id))`.
+  - Vinculación: si luego alguien se registra con el mismo email y la cuenta es un CUSTOMER sin contraseña, se completa (contraseña y nombre) en vez de rechazar.
+  - `version INTEGER NOT NULL DEFAULT 1` en `products`, `product_variants` y `app_users`, incrementada por trigger en cada UPDATE (control optimista de ediciones).
+  - `sync_changes(seq BIGSERIAL, tx_id xid8, company_id, entity_type, entity_id, op UPSERT|DELETE, changed_at)` alimentada por **triggers** en `categories`, `products`, `product_variants`, `stores`, `warehouses`, `inventory_stocks` y clientes registrados por empresa. Cubre todos los caminos de escritura existentes sin tocar su código.
+  - `sync_operations(client_operation_id PK, actor_user_id, company_id, op_type, entity_id, result JSONB, applied_at)`: registro de operaciones APLICADAS para responder `DUPLICATE` con el mismo resultado.
+
+## F2.3 Protocolo y contratos (`@velora/contracts/sync.ts`)
+
+- `POST /api/sync/push` `{ companyId, operations: [{ clientOperationId, type, payload, baseVersion? }] }` → `results: [{ clientOperationId, status: APPLIED|DUPLICATE|CONFLICT|REJECTED, code?, message?, entityId?, server? , options? }]`. Tipos: `CUSTOMER_CREATE`, `CUSTOMER_UPDATE`, `PRODUCT_CREATE` (variantes y stock inicial opcional por almacén), `PRODUCT_UPDATE`. Ids generados por el cliente (UUID) → la imagen offline se sube después con el endpoint de assets existente usando ese id.
+- Reglas: alcance por `TenantScopeService` (compañía y almacén); `PlanLimitsService` → `REJECTED` con `PLAN_LIMIT_*` (nunca CONFLICT); unicidad (SKU, email, documento) → `CONFLICT` con opciones `USE_EXISTING | ADJUST_AND_RETRY | DISCARD` y el registro existente; edición con versión desactualizada → `CONFLICT` `VERSION_MISMATCH` con opciones `KEEP_MINE | KEEP_SERVER` y la versión del servidor; stock inicial = movimiento `ENTRY` validado por el servidor.
+- `GET /api/sync/pull?companyId=&since=<cursor>&limit=` → `{ cursor, hasMore, changes: { categories, products, stores, warehouses, customers }, tombstones: [{ entityType, id }] }`. Cursor monotónico seguro ante transacciones en vuelo (se corta en el primer `tx_id` aún no visible). Producto INACTIVE o eliminado ⇒ tombstone.
+
+## F2.4 Pantallas
+
+- **Web**: indicador online/offline en los shells; centro de sincronización (`/admin/sincronizacion`, `/sucursal/sincronizacion`) con pendientes, errores y conflictos y las acciones reintentar, descartar y resolver; formularios "Registrar cliente" y "Registrar producto" que funcionan sin red. El service worker agrega caché de lectura del catálogo, empresas y planes (NetworkFirst).
+- **Móvil**: "Modo operaciones" solo para STORE_MANAGER (registrar cliente, registrar producto, cola y conflictos; sin POS). Los módulos nativos se cargan con `import()` dinámico.
+
+## F2.5 Bloques
+
+1. Backend (V31, push/pull, idempotencia, conflictos, límites) con pruebas de reenvío, conflictos, tombstones y aislamiento A/B.
+2. Web (Dexie v3, outbox genérica, motor único, formularios, centro, service worker).
+3. Móvil (SQLite `sync_outbox`, motor, modo operaciones, centro).
+4. `scripts/demo-offline.mjs` y guía manual de 3 minutos.
+
+## F2.6 Estado de la Fase 2 (bloques 1 a 4 implementados)
+
+| Bloque | Estado | Notas |
+|---|---|---|
+| 1 Backend | Hecho | V31; `POST /api/sync/push` y `GET /api/sync/pull` con alcance y límites; cursor xid8 (se entrega todo lo visible y el cursor queda en `xmin`, por lo que puede haber reenvíos idempotentes pero nunca pérdidas). |
+| 2 Web | Hecho | Dexie v3 (`syncOutbox`, espejo, cursor, imágenes); motor único; formularios offline; centro de sincronización; service worker con caché de lectura del catálogo e imágenes. |
+| 3 Móvil | Hecho | Motor de cola movido a `@velora/contracts` (compartido web/móvil); SQLite `sync_outbox`/`sync_mirror`/`sync_state`; modo operaciones para STORE_MANAGER. |
+| 4 Demo | Hecho | `scripts/demo-offline.mjs` (17 verificaciones) y `docs/FASE2_DEMO_OFFLINE.md`. |
+
+Pendiente o fuera de alcance:
+- **Imágenes offline en el móvil**: requieren `expo-image-picker`, que no está instalado y obligaría a un nuevo build nativo. En la web sí están.
+- **Edición offline**: solo de datos básicos de producto y cliente (con versión). Precios de variantes y stock se editan en línea.
+- **Lint de mobile**: no configurado; instalar `eslint-config-expo` exige reinstalar dependencias por la ubicación del *virtual store* de pnpm.
+- **Pedidos y POS offline existentes**: siguen en sus colas originales (no se migraron datos ya encolados en dispositivos), pero los procesa el mismo motor y se ven en el mismo centro.

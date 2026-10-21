@@ -1,3 +1,9 @@
+import type {
+  MirrorRecord,
+  OutboxEntry,
+  PendingImage,
+  SyncStateRecord,
+} from "../sync/types";
 import Dexie, {
   type EntityTable,
 } from "dexie";
@@ -90,6 +96,31 @@ class VeloraOfflineDatabase extends Dexie {
       "id"
     >;
 
+  // Fase 2: cola genérica de operaciones, espejo local del alcance, cursor e imágenes.
+  syncOutbox!:
+    EntityTable<
+      OutboxEntry,
+      "clientOperationId"
+    >;
+
+  mirror!:
+    EntityTable<
+      MirrorRecord,
+      "key"
+    >;
+
+  syncState!:
+    EntityTable<
+      SyncStateRecord,
+      "companyId"
+    >;
+
+  pendingImages!:
+    EntityTable<
+      PendingImage,
+      "id"
+    >;
+
   constructor() {
     super(
       "velora-customer-v2",
@@ -115,6 +146,26 @@ class VeloraOfflineDatabase extends Dexie {
           "id,userId,status,createdAt",
         posSales:
           "id,userId,status,cashSessionId,warehouseId,createdAt",
+      });
+
+    this.version(3)
+      .stores({
+        cartCache:
+          "userId",
+        checkoutCache:
+          "userId",
+        offlineOrders:
+          "id,userId,status,createdAt",
+        posSales:
+          "id,userId,status,cashSessionId,warehouseId,createdAt",
+        syncOutbox:
+          "clientOperationId,[companyId+userId],status,createdAt",
+        mirror:
+          "key,[companyId+entityType],companyId",
+        syncState:
+          "companyId",
+        pendingImages:
+          "id,dependsOn,companyId",
       });
   }
 }

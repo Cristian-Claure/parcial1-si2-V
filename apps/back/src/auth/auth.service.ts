@@ -52,6 +52,39 @@ export class AuthService {
           email,
         );
 
+    if (
+      existing &&
+      existing.role ===
+        "CUSTOMER" &&
+      existing.passwordHash ===
+        null
+    ) {
+      // Fase 2: el cliente fue registrado sin acceso por una tienda; se vincula y obtiene acceso.
+      const linked =
+        await this.users
+          .activateRegisteredCustomer(
+            existing.id,
+            {
+              firstName:
+                request.firstName,
+              lastName:
+                request.lastName,
+              passwordHash:
+                await hashPassword(
+                  request.password,
+                ),
+            },
+          );
+
+      return issueAuthToken(
+        this.users
+          .toProfile(
+            linked,
+          ),
+        this.config.value,
+      );
+    }
+
     if (existing) {
       // Un correo = un rol (D7): una cuenta propietaria u operativa no puede reutilizarse para comprar.
       throw new ApiHttpError(
@@ -135,7 +168,9 @@ export class AuthService {
       );
     }
 
+    // Clientes registrados sin acceso (V31) no tienen contraseña: no pueden iniciar sesión.
     const matches =
+      user.passwordHash !== null &&
       await passwordMatches(
         request.password,
         user.passwordHash,

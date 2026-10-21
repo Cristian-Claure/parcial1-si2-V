@@ -36,6 +36,8 @@ const CompaniesPage = lazyNamed(() => import("../../features/saas/CompaniesPage"
 const BrandEditorPage = lazyNamed(() => import("../../features/saas/BrandEditorPage"), "BrandEditorPage");
 import { TenantEntry } from "../../features/tenant/TenantEntry";
 const PlatformPage = lazyNamed(() => import("../../features/platform/PlatformPage"), "PlatformPage");
+const SyncCenterPage = lazyNamed(() => import("../../features/sync/SyncCenterPage"), "SyncCenterPage");
+const OfflineRegistryPage = lazyNamed(() => import("../../features/sync/OfflineRegistryPage"), "OfflineRegistryPage");
 
 function NotFound() { return <main className="page centered"><Brand variant="mark" /><span className="eyebrow">404</span><h1>Ruta no encontrada</h1><p>La navegación no reconoce esta dirección.</p><Link className="button primary" to="/">Volver al inicio</Link></main>; }
 
@@ -75,6 +77,8 @@ export function AppRouter() {
       <Route path="admin/mi-plan" element={<MyPlanPage />} />
       <Route path="admin/empresas" element={<CompaniesPage />} />
       <Route path="admin/marca" element={<BrandEditorPage />} />
+      <Route path="admin/registro" element={<OfflineRegistryPage />} />
+      <Route path="admin/sincronizacion" element={<SyncCenterPage />} />
     </Route>
     <Route element={<RequireRole roles={["STORE_MANAGER"]}><OperationsShell role="STORE_MANAGER" /></RequireRole>}>
       <Route path="sucursal" element={<ManagerDashboard />} />
@@ -83,6 +87,8 @@ export function AppRouter() {
       <Route path="sucursal/pedidos" element={<OperationalOrdersPage />} />
       <Route path="sucursal/pos" element={<PosPage />} />
       <Route path="sucursal/reportes" element={<ReportsPage />} />
+      <Route path="sucursal/registro" element={<OfflineRegistryPage />} />
+      <Route path="sucursal/sincronizacion" element={<SyncCenterPage />} />
     </Route>
     <Route element={<RequireRole roles={["PLATFORM_ADMIN"]}><PlatformShell /></RequireRole>}>
       <Route path="plataforma" element={<PlatformPage />} />

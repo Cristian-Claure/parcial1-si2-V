@@ -24,6 +24,7 @@ import { BootstrapModule } from "./bootstrap/bootstrap.module.js";
 import { PlansModule } from "./plans/plans.module.js";
 import { PlatformModule } from "./platform/platform.module.js";
 import { OnboardingModule } from "./onboarding/onboarding.module.js";
+import { SyncModule } from "./sync/sync.module.js";
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { OnboardingModule } from "./onboarding/onboarding.module.js";
     PlansModule,
     PlatformModule,
     OnboardingModule,
+    SyncModule,
     AdminModule,
     CustomerModule,
     StoresModule,
