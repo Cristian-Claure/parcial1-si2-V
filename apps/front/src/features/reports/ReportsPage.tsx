@@ -42,6 +42,7 @@ import {
 import "./reports.css";
 
 import { LockedWidgets } from "./LockedWidgets";
+import { HeatmapChart } from "./HeatmapChart";
 type PeriodPreset =
   "7D" |
   "30D" |
@@ -87,8 +88,22 @@ function formatMetric(
     number,
   format:
     "CURRENCY" |
-    "COUNT",
+    "COUNT" |
+    "PERCENT",
 ): string {
+  if (
+    format ===
+    "PERCENT"
+  ) {
+    return `${value.toLocaleString(
+      "es-BO",
+      {
+        maximumFractionDigits:
+          1,
+      },
+    )} %`;
+  }
+
   if (
     format ===
     "CURRENCY"
@@ -1153,6 +1168,19 @@ export function ReportsPage() {
                       kpi.format,
                     )}
                   </strong>
+                  {kpi.changePct !== null &&
+                  kpi.changePct !== undefined ? (
+                    <em
+                      className={
+                        kpi.changePct >= 0
+                          ? "report-kpi-change up"
+                          : "report-kpi-change down"
+                      }
+                    >
+                      {kpi.changePct >= 0 ? "▲" : "▼"}{" "}
+                      {Math.abs(kpi.changePct).toLocaleString("es-BO", { maximumFractionDigits: 1 })} % vs período anterior
+                    </em>
+                  ) : null}
                   <small>
                     {kpi.helper}
                   </small>
@@ -1170,16 +1198,27 @@ export function ReportsPage() {
             {display.charts.map(
               (
                 chart,
-              ) => (
-                <ReportChartCard
-                  key={
-                    chart.id
-                  }
-                  chart={
-                    chart
-                  }
-                />
-              ),
+              ) =>
+                chart.type ===
+                "HEATMAP" ? (
+                  <HeatmapChart
+                    key={
+                      chart.id
+                    }
+                    chart={
+                      chart
+                    }
+                  />
+                ) : (
+                  <ReportChartCard
+                    key={
+                      chart.id
+                    }
+                    chart={
+                      chart
+                    }
+                  />
+                ),
             )}
           </div>
 

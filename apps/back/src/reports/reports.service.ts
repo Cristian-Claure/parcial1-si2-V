@@ -21,6 +21,7 @@ import {
 import { assertCompanyAccess } from "../common/authz/tenant-scope.service.js";
 import { PlanLimitsService } from "../plans/plan-limits.service.js";
 import { applyReportTier } from "./report-widgets.js";
+import { ReportExtensionsService } from "./report-extensions.service.js";
 
 import {
   ApiHttpError,
@@ -75,6 +76,8 @@ export class ReportsService {
       AccessContextService,
     private readonly limits:
       PlanLimitsService,
+    private readonly extensions:
+      ReportExtensionsService,
   ) {}
 
   async periodBounds(
@@ -572,6 +575,94 @@ export class ReportsService {
         period,
       );
 
+    // Fase 3: widgets completos por nivel (solo se consultan los permitidos) y periodo anterior.
+    const extension =
+      await this.extensions
+        .build({
+          scope: {
+            companyId:
+              scope.companyId,
+            storeId:
+              scope.storeId,
+          },
+          window: {
+            start:
+              period.start,
+            endExclusive:
+              period.endExclusive,
+          },
+          days:
+            this.dayList(
+              period,
+            ),
+          tier:
+            policy.tier,
+          canCompare:
+            policy.canPeriodComparison,
+          earliestAllowed:
+            policy.historyDays
+              ? new Date(
+                  `${this.shiftDate(this.today(), -(policy.historyDays - 1))}T00:00:00-04:00`,
+                )
+              : null,
+        });
+
+    if (
+      extension.previous
+    ) {
+      const previousByKey: Record<string, number> = {
+        NET_SALES: extension.previous.netSales,
+        GROSS_SALES: extension.previous.grossSales,
+        PAID_ORDERS: extension.previous.paidOrders,
+        AVERAGE_TICKET: extension.previous.averageTicket,
+        FULFILLED_ORDERS: extension.previous.fulfilledOrders,
+        REFUNDS: extension.previous.refunds,
+      };
+
+      for (const kpi of kpis) {
+        const previousValue =
+          previousByKey[kpi.key];
+
+        if (previousValue !== undefined) {
+          kpi.previousValue =
+            previousValue;
+          kpi.changePct =
+            previousValue === 0
+              ? null
+              : Math.round(((kpi.value - previousValue) / previousValue) * 1000) / 10;
+        }
+      }
+    }
+
+    const dailyChart =
+      charts.find(
+        (chart) =>
+          chart.id ===
+          "sales-daily",
+      );
+
+    if (
+      dailyChart &&
+      extension.previousDaily &&
+      dailyChart.categories.length ===
+        extension.previousDaily.length
+    ) {
+      dailyChart.series.push({
+        name:
+          "Período anterior",
+        data:
+          extension.previousDaily,
+      });
+    }
+
+    kpis.push(
+      ...extension.kpis,
+    );
+
+    charts.push(
+      ...extension.charts,
+    );
+
     const deterministicInsights =
       this.buildDeterministicInsights(
         netSales,
@@ -622,6 +713,7 @@ export class ReportsService {
       charts,
       tables: [
         ranking.table,
+        ...extension.tables,
       ],
       deterministicInsights,
       },
@@ -2071,6 +2163,24 @@ export class ReportsService {
       value.getTime() <
         period.endExclusive.getTime()
     );
+  }
+
+  /** Días (YYYY-MM-DD) del período, en orden. */
+  private dayList(
+    period:
+      ReportPeriod,
+  ): string[] {
+    const days: string[] = [];
+
+    for (
+      let day = period.from;
+      day <= period.to;
+      day = this.shiftDate(day, 1)
+    ) {
+      days.push(day);
+    }
+
+    return days;
   }
 
   private today():

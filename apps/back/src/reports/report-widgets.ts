@@ -30,9 +30,20 @@ export const REPORT_WIDGETS: readonly ReportWidgetDefinition[] = [
   { id: "orders-channel", kind: "CHART", title: "Pedidos por canal", minTier: "STANDARD" },
   { id: "payments-method", kind: "CHART", title: "Cobros por método", minTier: "STANDARD" },
   { id: "inventory-store", kind: "CHART", title: "Stock disponible por sucursal", minTier: "STANDARD" },
+  { id: "CANCELLATION_RATE", kind: "KPI", title: "Tasa de cancelación", minTier: "STANDARD" },
+  { id: "UNITS_SOLD", kind: "KPI", title: "Unidades vendidas", minTier: "STANDARD" },
+  { id: "sales-category", kind: "CHART", title: "Ventas por categoría", minTier: "STANDARD" },
+  { id: "fulfillment-mix", kind: "CHART", title: "Pedidos por tipo de entrega", minTier: "STANDARD" },
+  { id: "critical-inventory", kind: "TABLE", title: "Inventario crítico", minTier: "STANDARD" },
 
   { id: "TICKET_PER_CUSTOMER", kind: "KPI", title: "Ticket por cliente", minTier: "ADVANCED" },
   { id: "REPEAT_CUSTOMERS", kind: "KPI", title: "Clientes recurrentes", minTier: "ADVANCED" },
+  { id: "REPURCHASE_RATE", kind: "KPI", title: "Tasa de recompra", minTier: "ADVANCED" },
+  { id: "GROWTH_RATE", kind: "KPI", title: "Crecimiento vs periodo anterior", minTier: "ADVANCED" },
+  { id: "NEW_CUSTOMERS", kind: "KPI", title: "Clientes nuevos", minTier: "ADVANCED" },
+  { id: "sales-trend", kind: "CHART", title: "Tendencia mensual (12 meses)", minTier: "ADVANCED" },
+  { id: "sales-heatmap", kind: "CHART", title: "Mapa de calor día y hora", minTier: "ADVANCED" },
+  { id: "store-comparison", kind: "CHART", title: "Comparativa entre sucursales", minTier: "ADVANCED" },
 ];
 
 const BASIC_TOP_ROWS = 5;

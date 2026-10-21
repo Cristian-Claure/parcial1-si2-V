@@ -139,10 +139,12 @@ describe.skipIf(!available)("planes, suscripciones y límites (integración)", (
     expect(basic.body.from > "2020-01-01").toBe(true);
 
     const standard = await overview(tokens.ownerP, plus);
+    expect(standard.status, standard.text).toBe(200);
     expect(standard.body.tier).toBe("STANDARD");
     expect(standard.body.kpis.map((kpi) => kpi.key)).toContain("GROSS_SALES");
     expect(standard.body.charts.map((chart) => chart.id)).toEqual(expect.arrayContaining(["sales-store", "orders-channel", "payments-method"]));
-    expect(standard.body.locked?.map((widget) => widget.minTier)).toEqual(["ADVANCED", "ADVANCED"]);
+    expect(standard.body.locked?.length).toBeGreaterThan(0);
+    expect(standard.body.locked?.every((widget) => widget.minTier === "ADVANCED")).toBe(true);
 
     const advanced = await overview(tokens.ownerM, max);
     expect(advanced.body.tier).toBe("ADVANCED");

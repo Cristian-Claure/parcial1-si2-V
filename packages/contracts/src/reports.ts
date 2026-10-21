@@ -28,6 +28,7 @@ export const reportKpiFormatSchema =
   z.enum([
     "CURRENCY",
     "COUNT",
+    "PERCENT",
   ]);
 
 export type ReportKpiFormat =
@@ -40,6 +41,7 @@ export const reportChartTypeSchema =
     "LINE",
     "BAR",
     "DONUT",
+    "HEATMAP",
   ]);
 
 export type ReportChartType =
@@ -63,6 +65,17 @@ export const reportKpiSchema =
     // Fase 1 SaaS (aditivo): nivel mínimo del widget.
     minTier:
       reportTierSchema
+        .optional(),
+
+    // Fase 3 (aditivo): valor del periodo anterior y variación %, desde STANDARD.
+    previousValue:
+      z.number()
+        .nullable()
+        .optional(),
+
+    changePct:
+      z.number()
+        .nullable()
         .optional(),
   });
 

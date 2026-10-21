@@ -35,6 +35,14 @@ import {
 } from "./reports.repository.js";
 
 import {
+  ReportAnalyticsRepository,
+} from "./report-analytics.repository.js";
+
+import {
+  ReportExtensionsService,
+} from "./report-extensions.service.js";
+
+import {
   ReportsService,
 } from "./reports.service.js";
 
@@ -50,6 +58,8 @@ import {
     ReportsController,
   ],
   providers: [
+    ReportAnalyticsRepository,
+    ReportExtensionsService,
     ReportsRepository,
     ReportsService,
     ReportAiService,
