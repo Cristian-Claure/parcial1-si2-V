@@ -33,6 +33,8 @@ const PlansPage = lazyNamed(() => import("../../features/saas/PlansPage"), "Plan
 const CreateStorePage = lazyNamed(() => import("../../features/saas/CreateStorePage"), "CreateStorePage");
 const MyPlanPage = lazyNamed(() => import("../../features/saas/MyPlanPage"), "MyPlanPage");
 const CompaniesPage = lazyNamed(() => import("../../features/saas/CompaniesPage"), "CompaniesPage");
+const BrandEditorPage = lazyNamed(() => import("../../features/saas/BrandEditorPage"), "BrandEditorPage");
+import { TenantEntry } from "../../features/tenant/TenantEntry";
 
 function NotFound() { return <main className="page centered"><Brand variant="mark" /><span className="eyebrow">404</span><h1>Ruta no encontrada</h1><p>La navegación no reconoce esta dirección.</p><Link className="button primary" to="/">Volver al inicio</Link></main>; }
 
@@ -45,6 +47,11 @@ export function AppRouter() {
       <Route path="login" element={<GuestOnly><LoginPage /></GuestOnly>} />
       <Route path="registro" element={<GuestOnly><RegisterPage /></GuestOnly>} />
       <Route path="planes" element={<PlansPage />} />
+      <Route path="t/:tenantSlug" element={<TenantEntry />}>
+        <Route index element={<HomePage />} />
+        <Route path="catalogo" element={<CatalogPage />} />
+        <Route path="catalogo/:slug" element={<ProductDetailPage />} />
+      </Route>
       <Route path="crear-tienda" element={<GuestOnly><CreateStorePage /></GuestOnly>} />
     </Route>
     <Route element={<RequireRole roles={["CUSTOMER"]}><CustomerShell /></RequireRole>}>
@@ -66,6 +73,7 @@ export function AppRouter() {
       <Route path="admin/auditoria" element={<AuditPage />} />
       <Route path="admin/mi-plan" element={<MyPlanPage />} />
       <Route path="admin/empresas" element={<CompaniesPage />} />
+      <Route path="admin/marca" element={<BrandEditorPage />} />
     </Route>
     <Route element={<RequireRole roles={["STORE_MANAGER"]}><OperationsShell role="STORE_MANAGER" /></RequireRole>}>
       <Route path="sucursal" element={<ManagerDashboard />} />

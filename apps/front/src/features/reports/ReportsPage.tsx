@@ -41,6 +41,7 @@ import {
 
 import "./reports.css";
 
+import { LockedWidgets } from "./LockedWidgets";
 type PeriodPreset =
   "7D" |
   "30D" |
@@ -1159,6 +1160,11 @@ export function ReportsPage() {
               ),
             )}
           </div>
+
+          <LockedWidgets
+            overview={display}
+            canUpgrade={role === "ADMIN"}
+          />
 
           <div className="report-charts-grid">
             {display.charts.map(

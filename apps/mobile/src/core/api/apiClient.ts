@@ -5,16 +5,23 @@ import { getAccessToken } from "../auth/sessionStore";
 export class ApiClientError extends Error {
   readonly status: number;
   readonly errors: Record<string, string>;
+  /** Código estable del backend (p. ej. PLAN_LIMIT_TRY_ON). */
+  readonly code: string | null;
+  readonly details: Record<string, unknown>;
 
   constructor(
     status: number,
     message: string,
     errors: Record<string, string> = {},
+    code: string | null = null,
+    details: Record<string, unknown> = {},
   ) {
     super(message);
     this.name = "ApiClientError";
     this.status = status;
     this.errors = errors;
+    this.code = code;
+    this.details = details;
   }
 }
 
@@ -88,7 +95,13 @@ export async function apiRequest<T>(
         ? candidate.errors
         : {};
 
-    throw new ApiClientError(response.status, message, errors);
+    throw new ApiClientError(
+      response.status,
+      message,
+      errors,
+      candidate && typeof candidate === "object" && typeof candidate.code === "string" ? candidate.code : null,
+      candidate && typeof candidate === "object" && candidate.details ? candidate.details : {},
+    );
   }
 
   return payload as T;

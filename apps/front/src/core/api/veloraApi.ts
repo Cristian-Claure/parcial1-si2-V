@@ -1,4 +1,7 @@
 import type {
+  AdminBrandingResponse,
+  CompanyBrand,
+  UpdateBrandingRequest,
   AdminPlanResponse,
   ChangePlanWithPaymentRequest,
   CreateCompanyRequest,
@@ -83,6 +86,11 @@ export const veloraApi = {
   changePlan: (body: ChangePlanWithPaymentRequest) => apiRequest<AdminPlanResponse>("/api/admin/plan/change", { method: "POST", body: jsonBody(body) }),
   slugAvailability: (slug: string) => apiRequest<SlugAvailabilityResponse>(`/api/onboarding/slug-availability?slug=${q(slug)}`, {}, false),
   registerStore: (body: RegisterOwnerStoreRequest) => apiRequest<OnboardingResponse>("/api/onboarding/store", { method: "POST", body: jsonBody(body) }, false),
+  companyBySlug: (slug: string) => apiRequest<CompanyBrand>(`/api/companies/by-slug/${q(slug)}`, {}, false),
+  adminBranding: (companyId: string) => apiRequest<AdminBrandingResponse>(`/api/admin/companies/${q(companyId)}/branding`),
+  updateBranding: (companyId: string, body: UpdateBrandingRequest) => apiRequest<AdminBrandingResponse>(`/api/admin/companies/${q(companyId)}/branding`, { method: "PATCH", body: jsonBody(body) }),
+  uploadBrandAsset: (companyId: string, kind: "logo" | "banner", file: File) => { const form = new FormData(); form.append("file", file); return apiRequest<AdminBrandingResponse>(`/api/admin/companies/${q(companyId)}/branding/${kind}`, { method: "POST", body: form }); },
+  removeBrandAsset: (companyId: string, kind: "logo" | "banner") => apiRequest<AdminBrandingResponse>(`/api/admin/companies/${q(companyId)}/branding/${kind}`, { method: "DELETE" }),
   createCompany: (body: CreateCompanyRequest) => apiRequest<CompanyResponse>("/api/admin/companies", { method: "POST", body: jsonBody(body) }),
 
   login: (

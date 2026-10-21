@@ -6,6 +6,10 @@ import {
   dbIdSchema,
 } from "./shared.js";
 
+import {
+  companyBrandSchema,
+} from "./branding.js";
+
 export const companyIdSchema =
   dbIdSchema;
 
@@ -40,6 +44,11 @@ export const companySchema =
       z.string()
         .max(160)
         .nullable()
+        .optional(),
+
+    // Marca efectiva (logo, paleta resuelta) para headers y selector.
+    brand:
+      companyBrandSchema
         .optional(),
 
     createdAt:

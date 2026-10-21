@@ -18,7 +18,13 @@ export const companyContactSchema = z.object({
   phone: z.string().trim().max(40).nullable().optional(),
   email: z.string().trim().email("Correo de contacto inválido.").max(180).nullable().optional(),
   address: z.string().trim().max(240).nullable().optional(),
-  socials: z.record(z.enum(["instagram", "facebook", "tiktok", "whatsapp", "web"]), z.string().trim().max(200)).optional(),
+  socials: z.object({
+    instagram: z.string().trim().max(200).optional(),
+    facebook: z.string().trim().max(200).optional(),
+    tiktok: z.string().trim().max(200).optional(),
+    whatsapp: z.string().trim().max(200).optional(),
+    web: z.string().trim().max(200).optional(),
+  }).optional(),
 });
 export type CompanyContact = z.infer<typeof companyContactSchema>;
 
@@ -114,3 +120,67 @@ export function validateBrandPalette(palette: Partial<BrandPalette>): PaletteIss
   }
   return issues;
 }
+
+// ---------------------------------------------------------------------------
+// Marca por plan (branding_tier) y contratos de lectura/edición
+// ---------------------------------------------------------------------------
+
+export type BrandingField = "displayName" | "slug" | "logo" | "accent" | "fullPalette" | "tagline" | "banner" | "contact";
+
+const BRANDING_FIELDS_BY_TIER: Record<"BASIC" | "FULL_PALETTE" | "FULL", readonly BrandingField[]> = {
+  BASIC: ["displayName", "slug", "logo", "accent"],
+  FULL_PALETTE: ["displayName", "slug", "logo", "accent", "fullPalette"],
+  FULL: ["displayName", "slug", "logo", "accent", "fullPalette", "tagline", "banner", "contact"],
+};
+
+/** Qué puede personalizar cada nivel de marca (FREE=BASIC, PLUS=FULL_PALETTE, MAX=FULL). */
+export function brandingAllows(tier: "BASIC" | "FULL_PALETTE" | "FULL", field: BrandingField): boolean {
+  return BRANDING_FIELDS_BY_TIER[tier].includes(field);
+}
+
+export const resolvedBrandPaletteSchema = z.object({
+  primary: hexColorSchema, accent: hexColorSchema, accentDeep: hexColorSchema, accentSoft: hexColorSchema,
+  paper: hexColorSchema, ink: hexColorSchema, inkSoft: hexColorSchema, onAccent: hexColorSchema,
+});
+
+/** Marca efectiva pública de una compañía (ya filtrada por el nivel de su plan). */
+export const companyBrandSchema = z.object({
+  companyId: z.string(),
+  code: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  /** VÉLORA: marca de la plataforma con home editorial. */
+  isPlatformBrand: z.boolean(),
+  tier: z.enum(["BASIC", "FULL_PALETTE", "FULL"]),
+  logoUrl: z.string().nullable(),
+  bannerUrl: z.string().nullable(),
+  tagline: z.string().nullable(),
+  contact: companyContactSchema.nullable(),
+  palette: resolvedBrandPaletteSchema,
+});
+export type CompanyBrand = z.infer<typeof companyBrandSchema>;
+
+export const updateBrandingRequestSchema = z.object({
+  displayName: z.string().trim().min(2, "Ingrese el nombre comercial.").max(160).optional(),
+  slug: z.string().trim().toLowerCase().min(3).max(60).regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])$/, "Enlace inválido.").optional(),
+  tagline: z.string().trim().max(200).nullable().optional(),
+  palette: brandPaletteSchema.optional(),
+  contact: companyContactSchema.nullable().optional(),
+});
+export type UpdateBrandingRequest = z.infer<typeof updateBrandingRequestSchema>;
+
+/** Datos guardados (sin filtrar) + marca efectiva + nivel permitido, para el editor. */
+export const adminBrandingResponseSchema = z.object({
+  brand: companyBrandSchema,
+  stored: z.object({
+    displayName: z.string().nullable(),
+    slug: z.string(),
+    tagline: z.string().nullable(),
+    palette: brandPaletteSchema.partial().nullable(),
+    contact: companyContactSchema.nullable(),
+    hasLogo: z.boolean(),
+    hasBanner: z.boolean(),
+  }),
+  allowed: z.array(z.enum(["displayName", "slug", "logo", "accent", "fullPalette", "tagline", "banner", "contact"])),
+});
+export type AdminBrandingResponse = z.infer<typeof adminBrandingResponseSchema>;

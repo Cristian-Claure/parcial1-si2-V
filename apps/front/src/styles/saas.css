@@ -102,3 +102,8 @@
   .brand-preview { position: static; }
   .wizard-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Contenedor de marca: selector compuesto para ganar a reglas de un solo atributo sin !important. */
+.tenant-theme[data-tenant] { background: var(--paper); color: var(--ink); min-height: 100vh; }
+.tenant-theme[data-tenant] .button.primary { background: var(--ink); color: var(--paper); }
+.tenant-theme[data-tenant] .eyebrow { color: var(--accent-deep); }

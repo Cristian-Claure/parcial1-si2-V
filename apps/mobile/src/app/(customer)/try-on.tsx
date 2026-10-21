@@ -65,6 +65,7 @@ import {
   Notice,
 } from "@/shared/ui";
 
+import { tryOnErrorMessage } from "@/features/try-on/tryOnQuota";
 const terminal =
   (
     status:
@@ -485,10 +486,12 @@ export default function TryOnScreen() {
           });
       }
       catch (cause) {
+        // Fase 1 SaaS: la cuota mensual del probador depende del plan de la tienda.
         setError(
-          cause instanceof Error
-            ? cause.message
-            : "No se pudo iniciar el probador virtual.",
+          tryOnErrorMessage(
+            cause,
+            useCompanyStore.getState().companies.find((company) => company.id === companyId)?.brand?.name ?? null,
+          ),
         );
       }
       finally {

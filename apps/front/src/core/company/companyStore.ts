@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { CompanyResponse } from "@velora/contracts";
+import type { CompanyBrand, CompanyResponse } from "@velora/contracts";
 import { veloraApi } from "../api/veloraApi";
 import { resolveCompanySelection } from "./companySelection";
 
@@ -10,13 +10,16 @@ const configuredCompany = import.meta.env.VITE_STOREFRONT_COMPANY_ID?.trim() || 
 interface CompanyState {
   companies: CompanyResponse[]; storefrontCompanyId: string | null; adminCompanyId: string | null;
   managerCompany: CompanyResponse | null; loading: boolean;
+  /** Marca resuelta por /t/:slug (la tienda puede no estar en el listado cargado). */
+  tenantBrand: CompanyBrand | null; enterTenant: (brand: CompanyBrand) => void;
   initializePublic: () => Promise<void>; loadAdmin: () => Promise<void>; loadManager: () => Promise<void>;
   selectStorefront: (id: string) => void; selectAdmin: (id: string) => void;
 }
 
 export const useCompanyStore = create<CompanyState>((set, get) => ({
   companies: [], storefrontCompanyId: configuredCompany ?? localStorage.getItem(STOREFRONT_KEY),
-  adminCompanyId: localStorage.getItem(ADMIN_KEY), managerCompany: null, loading: false,
+  adminCompanyId: localStorage.getItem(ADMIN_KEY), managerCompany: null, loading: false, tenantBrand: null,
+  enterTenant: (brand) => { localStorage.setItem(STOREFRONT_KEY, brand.companyId); set({ tenantBrand: brand, storefrontCompanyId: brand.companyId }); },
   initializePublic: async () => {
     set({ loading: true });
     try {

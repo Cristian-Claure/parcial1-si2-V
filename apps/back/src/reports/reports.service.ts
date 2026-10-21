@@ -608,7 +608,7 @@ export class ReportsService {
         clamped,
       },
       title:
-        "Resumen comercial VÉLORA",
+        "Resumen comercial",
       scopeLabel:
         scope.label,
       from:
