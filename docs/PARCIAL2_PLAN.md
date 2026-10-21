@@ -393,3 +393,17 @@ requireStore(principal, storeId) / requireWarehouse(principal, warehouseId)
 | 3 | Reportes: reforzar los existentes, catálogo completo de widgets por nivel, constructor dinámico y exportación Excel/PDF. |
 | 4 | Historial realista y ML local en Python (dashboards ADVANCED). |
 | 5 | Pago por QR (`QrGateway`) para suscripciones y pedidos. |
+
+---
+
+## 10. Impacto del nuevo alcance en scripts existentes (ajustar en la Fase 4)
+
+Desde el bloque 2, un ADMIN solo opera las compañías de las que es propietario (`companies.owner_user_id`); ya no existe un ADMIN global. No se modificaron los scripts; quedan así:
+
+| Script | Uso de ADMIN | Estado con el nuevo alcance | Ajuste previsto (Fase 4) |
+|---|---|---|---|
+| `scripts/seed-historical-orders.mjs` | Inicia sesión como `seed.script.admin@velora.local` (credenciales en el código) y usa `POST /api/admin/payments/:id/confirm` y `POST /api/admin/orders/:id/fulfill` sobre VÉLORA. | **Deja de funcionar** tras transferir VÉLORA a la cuenta de administración habitual: las confirmaciones devuelven 404 (fuera de alcance). La parte de cliente (carrito, checkout, pagos) sigue funcionando. | Leer la cuenta operadora de variables de entorno y usar el **propietario** de la compañía destino o el **encargado** de la sucursal (rutas `/api/manager/*`). Quitar las credenciales del código. |
+| `apps/back/scripts/upload-gallery-images.mjs` | `VELORA_MIGRATION_ADMIN_EMAIL/PASSWORD` → `POST /api/catalog/manage/products/:id/assets`. | Funciona solo si esa cuenta es la propietaria de VÉLORA o su encargado; con `migration.admin` u otra cuenta sin compañías → 404. | Documentar que la cuenta debe ser el propietario (o un encargado) de la compañía de los productos. |
+| `scripts/load-env.ps1` | — | Sin impacto. | — |
+
+Además, las suites y pruebas de aceptación que asumían un ADMIN global (por ejemplo `acceptance.admin`) deben iniciar sesión como el propietario de la compañía que verifican.
