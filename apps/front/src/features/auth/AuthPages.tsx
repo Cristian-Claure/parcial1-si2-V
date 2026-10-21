@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import type { UserRole } from "@velora/contracts";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../core/auth/authStore";
 import { ApiClientError } from "../../core/api/apiClient";
@@ -7,8 +8,9 @@ import { Brand } from "../../shared/brand";
 import loginVisual from "../../assets/hero/VELORA9.png";
 import registerVisual from "../../assets/hero/VELORA10.png";
 
-function targetForRole(role: "ADMIN" | "STORE_MANAGER" | "CUSTOMER"): string {
-  return role === "ADMIN" ? "/admin" : role === "STORE_MANAGER" ? "/sucursal" : "/mis-pedidos";
+function targetForRole(role: UserRole): string {
+  // PLATFORM_ADMIN no tiene panel web todavía (Fase 1, bloque 6).
+  return role === "ADMIN" ? "/admin" : role === "STORE_MANAGER" ? "/sucursal" : role === "PLATFORM_ADMIN" ? "/" : "/mis-pedidos";
 }
 
 function AuthVisual({ src, position }: { src: string; position: string }) {

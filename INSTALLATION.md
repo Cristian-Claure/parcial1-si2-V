@@ -55,9 +55,11 @@ docker compose up -d postgres
 pnpm db:migrate:fresh
 ```
 
-Las migraciones viven en `packages/database/migrations` y deben existir exactamente V1-V25. V1-V24 son históricas e inmutables.
+Las migraciones viven en `packages/database/migrations` y deben ser contiguas desde V1. V1-V25 son históricas e inmutables; V26+ son incrementales (SaaS multi-tenant).
 
 `db:migrate:fresh` está diseñado solo para una base nueva: si detecta tablas existentes en `public`, se detiene sin borrar nada.
+
+Para una base existente (V1-V25 ya aplicadas) use `pnpm db:migrate:up`: registra V1-V25 como línea base en `velora_schema_migrations` y aplica solo las pendientes, cada una en su transacción.
 
 ## 6. API
 

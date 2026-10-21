@@ -10,6 +10,7 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   numeric,
   pgTable,
   primaryKey,
@@ -19,9 +20,11 @@ import {
   uniqueIndex,
   uuid,
   varchar,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 export type DatabaseUserRole =
+  | "PLATFORM_ADMIN"
   | "ADMIN"
   | "STORE_MANAGER"
   | "CUSTOMER";
@@ -74,6 +77,20 @@ export type DatabaseInventoryMovementType =
   | "TRANSFER_IN"
   | "TRANSFER_OUT";
 
+export interface DatabaseBrandPalette {
+  primary?: string;
+  accent: string;
+  paper?: string;
+  ink?: string;
+}
+
+export interface DatabaseCompanyContact {
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  socials?: Record<string, string>;
+}
+
 export const companies =
   pgTable(
     "companies",
@@ -111,6 +128,74 @@ export const companies =
               500,
           },
         ),
+
+      ownerUserId:
+        uuid(
+          "owner_user_id",
+        )
+          .references(
+            (): AnyPgColumn =>
+              appUsers.id,
+          ),
+
+      slug:
+        varchar(
+          "slug",
+          {
+            length:
+              60,
+          },
+        )
+          .notNull()
+          .unique(),
+
+      displayName:
+        varchar(
+          "display_name",
+          {
+            length:
+              160,
+          },
+        ),
+
+      tagline:
+        varchar(
+          "tagline",
+          {
+            length:
+              200,
+          },
+        ),
+
+      logoStorageKey:
+        varchar(
+          "logo_storage_key",
+          {
+            length:
+              120,
+          },
+        ),
+
+      bannerStorageKey:
+        varchar(
+          "banner_storage_key",
+          {
+            length:
+              120,
+          },
+        ),
+
+      brandPalette:
+        jsonb(
+          "brand_palette",
+        )
+          .$type<DatabaseBrandPalette>(),
+
+      contact:
+        jsonb(
+          "contact",
+        )
+          .$type<DatabaseCompanyContact>(),
 
       active:
         boolean("active")
@@ -461,6 +546,7 @@ export const appUsers =
         sql`
           ${table.role}
           in (
+            'PLATFORM_ADMIN',
             'ADMIN',
             'STORE_MANAGER',
             'CUSTOMER'
@@ -3667,6 +3753,29 @@ export const orders =
         )
           .notNull(),
 
+      discountAmount:
+        numeric(
+          "discount_amount",
+          {
+            precision:
+              12,
+
+            scale:
+              2,
+          },
+        )
+          .notNull()
+          .default("0"),
+
+      discountReason:
+        varchar(
+          "discount_reason",
+          {
+            length:
+              120,
+          },
+        ),
+
       recipientName:
         varchar(
           "recipient_name",
@@ -4876,3 +4985,81 @@ export const pushInstallations = pgTable(
 );
 
 export type PushInstallationRow = typeof pushInstallations.$inferSelect;
+
+export type DatabaseBrandingTier = "BASIC" | "FULL_PALETTE" | "FULL";
+
+export type DatabaseReportTier = "BASIC" | "STANDARD" | "ADVANCED";
+
+export type DatabaseSubscriptionStatus = "TRIAL" | "ACTIVE" | "PAST_DUE" | "CANCELLED";
+
+export interface DatabaseLoyaltyDiscounts {
+  basis: "FULFILLED_AMOUNT";
+  windowDays: number;
+  tiers: { minAmount: number; percent: number }[];
+}
+
+export const plans = pgTable(
+  "plans",
+  {
+    id: uuid("id").primaryKey(),
+    code: varchar("code", { length: 20 }).notNull(),
+    name: varchar("name", { length: 60 }).notNull(),
+    description: varchar("description", { length: 300 }),
+    sortOrder: integer("sort_order").notNull(),
+    priceMonthly: numeric("price_monthly", { precision: 12, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 3 }).notNull(),
+    trialDays: integer("trial_days").notNull().default(0),
+    maxCompanies: integer("max_companies"),
+    maxStoresPerCompany: integer("max_stores_per_company"),
+    maxProductsPerCompany: integer("max_products_per_company"),
+    tryOnMonthlyPerCustomer: integer("try_on_monthly_per_customer"),
+    brandingTier: varchar("branding_tier", { length: 12 }).$type<DatabaseBrandingTier>().notNull(),
+    reportTier: varchar("report_tier", { length: 10 }).$type<DatabaseReportTier>().notNull(),
+    reportHistoryDays: integer("report_history_days"),
+    canExport: boolean("can_export").notNull(),
+    canDynamicReports: boolean("can_dynamic_reports").notNull(),
+    canMlDashboards: boolean("can_ml_dashboards").notNull(),
+    canAiNarrative: boolean("can_ai_narrative").notNull(),
+    canVoiceReports: boolean("can_voice_reports").notNull(),
+    canPeriodComparison: boolean("can_period_comparison").notNull(),
+    canStoreFilter: boolean("can_store_filter").notNull(),
+    loyaltyDiscounts: jsonb("loyalty_discounts").$type<DatabaseLoyaltyDiscounts>(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    unique("uq_plans_code").on(table.code),
+    check("ck_plans_branding_tier", sql`${table.brandingTier} in ('BASIC', 'FULL_PALETTE', 'FULL')`),
+    check("ck_plans_report_tier", sql`${table.reportTier} in ('BASIC', 'STANDARD', 'ADVANCED')`),
+  ],
+);
+
+export type PlanRow = typeof plans.$inferSelect;
+
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    id: uuid("id").primaryKey(),
+    ownerUserId: uuid("owner_user_id").notNull().references(() => appUsers.id),
+    companyId: uuid("company_id").references(() => companies.id),
+    planId: uuid("plan_id").notNull().references(() => plans.id),
+    status: varchar("status", { length: 12 }).$type<DatabaseSubscriptionStatus>().notNull(),
+    currentPeriodStart: timestamp("current_period_start", { withTimezone: true, mode: "date" }).notNull(),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true, mode: "date" }),
+    grandfathered: boolean("grandfathered").notNull().default(false),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true, mode: "date" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("uq_subscriptions_current_owner").on(table.ownerUserId)
+      .where(sql`${table.companyId} is null and ${table.status} <> 'CANCELLED'`),
+    uniqueIndex("uq_subscriptions_current_company").on(table.companyId)
+      .where(sql`${table.companyId} is not null and ${table.status} <> 'CANCELLED'`),
+    index("idx_subscriptions_plan").on(table.planId),
+    check("ck_subscriptions_status", sql`${table.status} in ('TRIAL', 'ACTIVE', 'PAST_DUE', 'CANCELLED')`),
+  ],
+);
+
+export type SubscriptionRow = typeof subscriptions.$inferSelect;

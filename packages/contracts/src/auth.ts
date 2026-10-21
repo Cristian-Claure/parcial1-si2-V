@@ -5,6 +5,7 @@ import { dbIdSchema } from "./shared.js";
 
 export const userRoleSchema =
   z.enum([
+    "PLATFORM_ADMIN",
     "ADMIN",
     "STORE_MANAGER",
     "CUSTOMER",
