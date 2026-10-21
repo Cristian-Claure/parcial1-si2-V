@@ -407,3 +407,19 @@ Desde el bloque 2, un ADMIN solo opera las compañías de las que es propietario
 | `scripts/load-env.ps1` | — | Sin impacto. | — |
 
 Además, las suites y pruebas de aceptación que asumían un ADMIN global (por ejemplo `acceptance.admin`) deben iniciar sesión como el propietario de la compañía que verifican.
+
+---
+
+## 11. Estado de la Fase 1 (bloques 1 a 7 implementados)
+
+| Bloque | Estado | Notas |
+|---|---|---|
+| 1 Esquema | Hecho | V26–V30 (V30: `payments.subscription_id`, se movió del bloque 1 al 4). `db:migrate:up` para bases existentes. |
+| 2 Alcance y roles | Hecho | `TenantScopeService` desde la BD; suite A/B que exige un caso por cada ruta ADMIN enumerada por reflexión. |
+| 3 Planes y límites | Hecho | `PlanLimitsService`, `PLAN_LIMIT_*`, cuota del probador, descuento MAX (pedidos web, offline y POS), widgets por nivel. |
+| 4 Onboarding | Hecho | `PaymentGateway` (Demo + adaptador Stripe), provisioning transaccional, `/planes`, `/crear-tienda`, Mi plan, Mis tiendas. |
+| 5 Marca | Hecho | Marca filtrada por nivel al leer (no se borra al bajar de plan), AA compartido front/back, `/t/:slug`, editor con vista previa, móvil mínimo. |
+| 6 Plataforma | Hecho | `/plataforma` (propietarios, tiendas, suscripciones, cambio de plan, ajuste de fechas, transferencia de propiedad). |
+| 7 Demo | Hecho | `scripts/demo-saas.mjs` (32 verificaciones). |
+
+Pendiente para fases siguientes: gráfico de ventas por categoría y comparación de periodos (Fase 3), ThemeContext móvil (aplazado), pago QR (Fase 5), ajuste de scripts que usaban un ADMIN global (§10, Fase 4).
