@@ -22,3 +22,13 @@ $env:VELORA_DEMO_API_BASE="http://127.0.0.1:18080"; node scripts/demo-saas.mjs
 ```
 
 Sale con código 1 si alguna verificación falla. Los propietarios demo usan la contraseña `DemoSaas2026` (cuentas locales de prueba).
+
+## seed-realistic-history.mjs (Fase 3)
+
+Genera ~11.000 pedidos realistas (jul-2025 → hoy) por el flujo HTTP real para cuatro tiendas (MAX, PLUS, FREE y VÉLORA). Reemplaza a `seed-historical-orders.mjs`. Parámetros, patrones y verificación: [`docs/DATOS_SINTETICOS.md`](../docs/DATOS_SINTETICOS.md).
+
+```powershell
+node scripts/seed-realistic-history.mjs --dry-run
+node scripts/seed-realistic-history.mjs --resume --fill-gaps
+node scripts/seed-realistic-history.mjs --verify
+```
