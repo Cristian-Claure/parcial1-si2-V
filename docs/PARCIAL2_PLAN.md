@@ -518,3 +518,20 @@ Pendiente o fuera de alcance:
 2. **Reportes por nivel**: catálogo completo de widgets y pruebas contra SQL de referencia. Al terminar, pausa para revisión.
 3. **Constructor dinámico y exportación** XLSX/PDF.
 4. **Pruebas, demo y guía**.
+
+## F3.6 Estado (cierre del 21-oct-2026)
+
+- **En `main`**: Fase 1 (PR #28) y Fase 2 (PR #29), mergeadas.
+- **Rama `feat/fase3-reportes`** (PR #30 en borrador, sin mergear): bloques 1 y 2 hechos; en pausa para revisión.
+
+| Bloque | Estado | Notas |
+|---|---|---|
+| 1 Datos realistas | Hecho | `scripts/seed-realistic-history.mjs` reemplaza a `seed-historical-orders.mjs`; 10.986 pedidos (jul-2025 → 21-oct-2026) en Urbano Boutique y Urbano Outlet (MAX), Andina Moda (PLUS), Primer Paso (FREE) y VÉLORA. Patrones y verificación en `docs/DATOS_SINTETICOS.md`. |
+| 2 Reportes por nivel | Hecho | Widgets STANDARD (cancelación, unidades, categorías, tipo de entrega, inventario crítico, comparación con el período anterior) y ADVANCED (recompra, crecimiento, clientes nuevos, tendencia de 12 meses, mapa de calor día × hora, comparativa de sucursales); el backend solo calcula lo permitido. Pruebas por nivel, ventana de historial y cifras contra una referencia independiente. |
+| 3 Constructor dinámico y exportación | Siguiente | Capa semántica, `report_definitions` (V32), exportación XLSX/PDF en el backend. |
+| 4 Pruebas, demo y guía | Pendiente | `scripts/demo-reportes.mjs` y `docs/FASE3_DEMO_REPORTES.md`. |
+
+Notas:
+- El lint del móvil ya está configurado (`eslint-config-expo`), lo que cierra ese pendiente de la Fase 2.
+- Los respaldos locales de la base y de los recursos están fuera del repositorio, en la carpeta de respaldos del equipo de desarrollo.
+- Las credenciales de VÉLORA para el generador se leen del `.env` local (`VELORA_SEED_OWNER_EMAIL` / `VELORA_SEED_OWNER_PASSWORD`), que no está versionado.
