@@ -246,8 +246,6 @@ export class ReportAiService {
     request:
       AiQueryRequest,
   ): Promise<ReportAiQueryResponse> {
-    this.requireConfigured();
-
     const question =
       request.question
         .trim();
@@ -258,6 +256,8 @@ export class ReportAiService {
           principal,
           companyId,
         );
+
+    this.requireConfigured();
 
     const interpreted =
       await this.interpret(
@@ -364,8 +364,6 @@ export class ReportAiService {
     request:
       AiNarrativeRequest,
   ): Promise<ReportAiNarrativeResponse> {
-    this.requireConfigured();
-
     const storeId =
       "storeId" in
         request
@@ -384,6 +382,8 @@ export class ReportAiService {
             null,
           storeId,
         );
+
+    this.requireConfigured();
 
     const narrative =
       await this.narrate(
@@ -412,13 +412,13 @@ export class ReportAiService {
       string |
       undefined,
   ): Promise<ReportVoiceTranscriptionResponse> {
-    this.requireConfigured();
-
     await this.reports
       .availableStores(
         principal,
         companyId,
       );
+
+    this.requireConfigured();
 
     if (
       !Buffer.isBuffer(

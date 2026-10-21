@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { CompanyResponse } from "@velora/contracts";
 import type { AuthPrincipal } from "../auth/security.js";
 import { AccessContextService } from "../common/authz/access-context.service.js";
+import { companyFilter } from "../common/authz/tenant-scope.service.js";
 import { ApiHttpError } from "../common/http/api-http.error.js";
 import { CompaniesRepository } from "./companies.repository.js";
 
@@ -13,7 +14,11 @@ export class CompaniesService {
   ) {}
 
   listPublic(): Promise<CompanyResponse[]> { return this.companies.listActive(); }
-  listAdmin(): Promise<CompanyResponse[]> { return this.companies.listAll(); }
+  /** Solo las compañías del alcance del actor (propias para ADMIN; todas para PLATFORM_ADMIN). */
+  async listAdmin(principal: AuthPrincipal): Promise<CompanyResponse[]> {
+    const allowed = companyFilter(await this.access.resolve(principal));
+    return allowed === null ? this.companies.listAll() : this.companies.listByIds(allowed);
+  }
 
   async managerCompany(principal: AuthPrincipal): Promise<CompanyResponse> {
     const actor = await this.access.resolve(principal);

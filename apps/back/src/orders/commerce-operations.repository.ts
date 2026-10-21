@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import type { OperationalOrderListItem, OperationalPaymentSummary } from "@velora/contracts";
 import { appUsers, orders, payments, stores, warehouses } from "@velora/database";
 import { DatabaseService } from "../database/database.service.js";
@@ -8,10 +8,14 @@ import { DatabaseService } from "../database/database.service.js";
 export class CommerceOperationsRepository {
   constructor(private readonly database: DatabaseService) {}
 
-  async list(input: { companyId: string | null; storeId: string | null }): Promise<OperationalOrderListItem[]> {
+  /** `companyIds` (alcance del actor) se aplica siempre que no sea null (null = sin restricción). */
+  async list(input: { companyId: string | null; storeId: string | null; companyIds?: readonly string[] | null }): Promise<OperationalOrderListItem[]> {
+    const scoped = input.companyIds === undefined || input.companyIds === null
+      ? undefined
+      : input.companyIds.length === 0 ? sql`false` : inArray(stores.companyId, [...input.companyIds]);
     const where = input.storeId
       ? eq(stores.id, input.storeId)
-      : input.companyId ? eq(stores.companyId, input.companyId) : undefined;
+      : input.companyId ? eq(stores.companyId, input.companyId) : scoped;
     const query = this.database.db.select({
       id: orders.id, orderNumber: orders.orderNumber, customerId: orders.customerId,
       customerFirstName: appUsers.firstName, customerLastName: appUsers.lastName, customerEmail: appUsers.email,

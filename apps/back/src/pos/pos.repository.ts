@@ -52,6 +52,7 @@ import {
 import type {
   ActorAccessContext,
 } from "../common/authz/access-context.service.js";
+import { assertCompanyAccess, assertStoreAccess } from "../common/authz/tenant-scope.service.js";
 
 import {
   ApiHttpError,
@@ -208,6 +209,7 @@ export class PosRepository {
         ? eq(
             stores.companyId,
             this.requireCompanyId(
+              actor,
               companyId,
             ),
           )
@@ -336,6 +338,11 @@ export class PosRepository {
                 "Sucursal no encontrada.",
               );
             }
+
+            this.requireStoreAccess(
+              actor,
+              store.id,
+            );
 
             if (!store.active) {
               throw new ApiHttpError(
@@ -509,6 +516,11 @@ export class PosRepository {
               "Punto de venta no encontrado.",
             );
           }
+
+          this.requireStoreAccess(
+            actor,
+            point.storeId,
+          );
 
           const warehouseRows =
             await tx
@@ -3758,6 +3770,11 @@ export class PosRepository {
       actor.role ===
       "ADMIN"
     ) {
+      assertStoreAccess(
+        actor,
+        storeId,
+      );
+
       return;
     }
 
@@ -3801,6 +3818,7 @@ export class PosRepository {
   }
 
   private requireCompanyId(
+    actor: ActorAccessContext,
     companyId: string | null,
   ): string {
     if (!companyId) {
@@ -3809,6 +3827,11 @@ export class PosRepository {
         "companyId es obligatorio para ADMIN.",
       );
     }
+
+    assertCompanyAccess(
+      actor,
+      companyId,
+    );
 
     return companyId;
   }

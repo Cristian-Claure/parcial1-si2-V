@@ -30,6 +30,18 @@ export const companySchema =
     active:
       z.boolean(),
 
+    // Aditivos (Fase 1 SaaS): opcionales para no romper consumidores existentes.
+    slug:
+      z.string()
+        .max(60)
+        .optional(),
+
+    displayName:
+      z.string()
+        .max(160)
+        .nullable()
+        .optional(),
+
     createdAt:
       z.string(),
 

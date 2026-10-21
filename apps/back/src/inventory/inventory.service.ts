@@ -21,6 +21,7 @@ import {
   AccessContextService,
   type ActorAccessContext,
 } from "../common/authz/access-context.service.js";
+import { assertStoreAccess, canAccessStore } from "../common/authz/tenant-scope.service.js";
 
 import {
   ApiHttpError,
@@ -71,10 +72,18 @@ export class InventoryService {
     }
 
     const rows =
-      await this.inventory
-        .listWarehouses(
-          storeId,
-        );
+      (
+        await this.inventory
+          .listWarehouses(
+            storeId,
+          )
+      ).filter(
+        (warehouse) =>
+          canAccessStore(
+            context,
+            warehouse.storeId,
+          ),
+      );
 
     return rows.map(
       (warehouse) =>
@@ -477,6 +486,11 @@ export class InventoryService {
       context.role ===
       "ADMIN"
     ) {
+      assertStoreAccess(
+        context,
+        storeId,
+      );
+
       return;
     }
 

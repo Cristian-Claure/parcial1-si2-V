@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { OperationalOrderListItem, OperationalOrdersQuery } from "@velora/contracts";
 import type { AuthPrincipal } from "../auth/security.js";
 import { AccessContextService } from "../common/authz/access-context.service.js";
+import { assertCompanyAccess, companyFilter } from "../common/authz/tenant-scope.service.js";
 import { ApiHttpError } from "../common/http/api-http.error.js";
 import { CommerceOperationsRepository } from "./commerce-operations.repository.js";
 
@@ -17,6 +18,7 @@ export class CommerceOperationsService {
       return this.repository.list({ companyId: actor.companyId, storeId: actor.storeId });
     }
     if (actor.role !== "ADMIN") throw new ApiHttpError(403, "No tiene permisos para consultar pedidos operativos.");
-    return this.repository.list({ companyId: query.companyId ?? null, storeId: null });
+    if (query.companyId) assertCompanyAccess(actor, query.companyId);
+    return this.repository.list({ companyId: query.companyId ?? null, storeId: null, companyIds: companyFilter(actor) });
   }
 }

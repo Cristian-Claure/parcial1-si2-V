@@ -333,6 +333,7 @@ export class UsersRepository {
       lastName: string;
       email: string;
       passwordHash: string;
+      role?: "ADMIN" | "PLATFORM_ADMIN";
     },
   ): Promise<void> {
     const now =
@@ -366,6 +367,7 @@ export class UsersRepository {
           input.passwordHash,
 
         role:
+          input.role ??
           "ADMIN",
 
         customerType:

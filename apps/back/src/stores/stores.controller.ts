@@ -4,6 +4,7 @@ import {
   Get,
   Post,
   Query,
+  Req,
   UseGuards,
 } from "@nestjs/common";
 
@@ -28,6 +29,18 @@ import {
 } from "../common/authz/roles.guard.js";
 
 import {
+  TenantScopeService,
+} from "../common/authz/tenant-scope.service.js";
+
+import {
+  ApiHttpError,
+} from "../common/http/api-http.error.js";
+
+import type {
+  AuthenticatedRequest,
+} from "../common/http/authenticated-request.js";
+
+import {
   ZodValidationPipe,
 } from "../common/http/zod-validation.pipe.js";
 
@@ -47,10 +60,15 @@ export class StoresController {
   constructor(
     private readonly stores:
       StoresService,
+    private readonly scope:
+      TenantScopeService,
   ) {}
 
   @Get()
-  listStores(
+  async listStores(
+    @Req()
+    request:
+      AuthenticatedRequest,
     @Query(
       new ZodValidationPipe(
         listStoresQuerySchema,
@@ -59,6 +77,14 @@ export class StoresController {
     query:
       ListStoresQuery,
   ): Promise<StoreResponse[]> {
+    await this.scope
+      .requireCompany(
+        this.principal(
+          request,
+        ),
+        query.companyId,
+      );
+
     return this.stores
       .listStores(
         query.companyId,
@@ -66,7 +92,10 @@ export class StoresController {
   }
 
   @Post()
-  createStore(
+  async createStore(
+    @Req()
+    authenticated:
+      AuthenticatedRequest,
     @Body(
       new ZodValidationPipe(
         createStoreRequestSchema,
@@ -75,9 +104,33 @@ export class StoresController {
     request:
       CreateStoreRequest,
   ): Promise<StoreResponse> {
+    await this.scope
+      .requireCompany(
+        this.principal(
+          authenticated,
+        ),
+        request.companyId,
+      );
+
     return this.stores
       .createStore(
         request,
       );
+  }
+
+  private principal(
+    request:
+      AuthenticatedRequest,
+  ) {
+    if (
+      !request.authPrincipal
+    ) {
+      throw new ApiHttpError(
+        401,
+        "No autenticado.",
+      );
+    }
+
+    return request.authPrincipal;
   }
 }

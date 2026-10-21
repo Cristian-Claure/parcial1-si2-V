@@ -46,15 +46,19 @@ export class AuthService {
         .trim()
         .toLowerCase();
 
-    if (
+    const existing =
       await this.users
-        .emailExists(
+        .findByEmail(
           email,
-        )
-    ) {
+        );
+
+    if (existing) {
+      // Un correo = un rol (D7): una cuenta propietaria u operativa no puede reutilizarse para comprar.
       throw new ApiHttpError(
         409,
-        "Ya existe una cuenta con este correo.",
+        existing.role === "CUSTOMER"
+          ? "Ya existe una cuenta con este correo."
+          : "Este correo pertenece a una cuenta de propietario u operación de una tienda. Use otro correo para registrarse como cliente.",
       );
     }
 

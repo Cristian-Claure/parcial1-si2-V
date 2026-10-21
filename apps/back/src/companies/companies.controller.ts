@@ -19,7 +19,10 @@ export class PublicCompaniesController {
 @RequireRoles("ADMIN")
 export class AdminCompaniesController {
   constructor(private readonly companies: CompaniesService) {}
-  @Get() list(): Promise<CompanyResponse[]> { return this.companies.listAdmin(); }
+  @Get() list(@Req() request: AuthenticatedRequest): Promise<CompanyResponse[]> {
+    if (!request.authPrincipal) throw new ApiHttpError(401, "No autenticado.");
+    return this.companies.listAdmin(request.authPrincipal);
+  }
 }
 
 @Controller("api/manager/company")

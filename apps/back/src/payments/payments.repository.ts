@@ -34,6 +34,7 @@ import {
 import type {
   ActorAccessContext,
 } from "../common/authz/access-context.service.js";
+import { assertStoreAccess } from "../common/authz/tenant-scope.service.js";
 
 import {
   ApiHttpError,
@@ -1923,6 +1924,11 @@ export class PaymentsRepository {
       actor.role ===
       "ADMIN"
     ) {
+      assertStoreAccess(
+        actor,
+        orderStoreId,
+      );
+
       return;
     }
 

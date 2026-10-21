@@ -17,6 +17,7 @@ import type {
 import {
   AccessContextService,
 } from "../common/authz/access-context.service.js";
+import { assertCompanyAccess } from "../common/authz/tenant-scope.service.js";
 
 import {
   ApiHttpError,
@@ -640,6 +641,11 @@ export class ReportsService {
         "Compañía no encontrada.",
       );
     }
+
+    assertCompanyAccess(
+      actor,
+      company.id,
+    );
 
     if (
       !company.active

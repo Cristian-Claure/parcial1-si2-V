@@ -21,3 +21,21 @@ export const managerResponseSchema = userProfileSchema.extend({
   companyId: companyIdSchema,
 });
 export type ManagerResponse = z.infer<typeof managerResponseSchema>;
+
+/**
+ * Asigna o reemplaza el encargado de una sucursal (un encargado activo por sucursal).
+ * - `userId`: reasigna un encargado existente de la misma compañía.
+ * - datos de cuenta: crea un encargado nuevo.
+ * El encargado activo anterior pasa a INACTIVE en la misma transacción.
+ */
+export const assignStoreManagerRequestSchema = z.union([
+  z.object({ userId: z.string().regex(/^[0-9a-fA-F-]{36}$/, "Encargado inválido.") }),
+  createManagerRequestSchema.omit({ companyId: true, storeId: true }),
+]);
+export type AssignStoreManagerRequest = z.infer<typeof assignStoreManagerRequestSchema>;
+
+export const assignStoreManagerResponseSchema = z.object({
+  manager: managerResponseSchema,
+  replacedManagerId: z.string().nullable(),
+});
+export type AssignStoreManagerResponse = z.infer<typeof assignStoreManagerResponseSchema>;
