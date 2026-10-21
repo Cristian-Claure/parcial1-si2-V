@@ -465,3 +465,18 @@ Pendiente para fases siguientes: gráfico de ventas por categoría y comparació
 2. Web (Dexie v3, outbox genérica, motor único, formularios, centro, service worker).
 3. Móvil (SQLite `sync_outbox`, motor, modo operaciones, centro).
 4. `scripts/demo-offline.mjs` y guía manual de 3 minutos.
+
+## F2.6 Estado de la Fase 2 (bloques 1 a 4 implementados)
+
+| Bloque | Estado | Notas |
+|---|---|---|
+| 1 Backend | Hecho | V31; `POST /api/sync/push` y `GET /api/sync/pull` con alcance y límites; cursor xid8 (se entrega todo lo visible y el cursor queda en `xmin`, por lo que puede haber reenvíos idempotentes pero nunca pérdidas). |
+| 2 Web | Hecho | Dexie v3 (`syncOutbox`, espejo, cursor, imágenes); motor único; formularios offline; centro de sincronización; service worker con caché de lectura del catálogo e imágenes. |
+| 3 Móvil | Hecho | Motor de cola movido a `@velora/contracts` (compartido web/móvil); SQLite `sync_outbox`/`sync_mirror`/`sync_state`; modo operaciones para STORE_MANAGER. |
+| 4 Demo | Hecho | `scripts/demo-offline.mjs` (17 verificaciones) y `docs/FASE2_DEMO_OFFLINE.md`. |
+
+Pendiente o fuera de alcance:
+- **Imágenes offline en el móvil**: requieren `expo-image-picker`, que no está instalado y obligaría a un nuevo build nativo. En la web sí están.
+- **Edición offline**: solo de datos básicos de producto y cliente (con versión). Precios de variantes y stock se editan en línea.
+- **Lint de mobile**: no configurado; instalar `eslint-config-expo` exige reinstalar dependencias por la ubicación del *virtual store* de pnpm.
+- **Pedidos y POS offline existentes**: siguen en sus colas originales (no se migraron datos ya encolados en dispositivos), pero los procesa el mismo motor y se ven en el mismo centro.
