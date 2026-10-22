@@ -15,7 +15,7 @@ export const VELORA_DATABASE_BASELINE = {
     "postgresql",
 
   historicalMigrations:
-    32,
+    33,
 
   migrationPolicy:
     "preserve-v1-v25-incremental-v26+",
