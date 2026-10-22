@@ -1358,7 +1358,7 @@ export function ReportsPage() {
         <div className="report-ai-title">
           <div>
             <span className="eyebrow">
-              VÉLORA AI
+              Asistente IA
             </span>
             <h2>
               Consultar el reporte

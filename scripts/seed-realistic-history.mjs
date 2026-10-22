@@ -94,6 +94,20 @@ export const TENANTS = [
         products: 18, customers: 150, perDay: 3, growth: 0.04, ecommerce: 0.4, delivery: 0.3, start: "2026-09-11" },
     ],
   },
+  // Fase 4B · tiendas de la plataforma Trama creadas por scripts/seed-new-stores.mjs: solo historial de 90 días.
+  {
+    key: "trama-rodrigo", group: "trama", existing: true, ownerEmail: "rodrigo.salvatierra@trama.seed.local", passwordEnv: "VELORA_TRAMA_OWNER_PASSWORD", rewriteInitialStock: true,
+    companies: [
+      { key: "casa-montalvo", slug: "casa-montalvo", city: "La Paz", customers: 90, perDay: 4.2, growth: 0.03, ecommerce: 0.5, delivery: 0.45, start: "2026-07-23" },
+      { key: "impetu-sport", slug: "impetu-sport", city: "La Paz", customers: 85, perDay: 4.6, growth: 0.035, ecommerce: 0.55, delivery: 0.5, start: "2026-07-23" },
+    ],
+  },
+  {
+    key: "trama-daniela", group: "trama", existing: true, ownerEmail: "daniela.ferrufino@trama.seed.local", passwordEnv: "VELORA_TRAMA_OWNER_PASSWORD", rewriteInitialStock: true,
+    companies: [
+      { key: "solana", slug: "solana", city: "Santa Cruz", customers: 90, perDay: 4.4, growth: 0.04, ecommerce: 0.6, delivery: 0.5, start: "2026-07-23" },
+    ],
+  },
   {
     key: "velora", existing: true,
     companies: [
@@ -366,14 +380,21 @@ async function setupNewTenant(tenant, state) {
   return email;
 }
 
+/** Tiendas que ya existen (VÉLORA y, desde la Fase 4B, las de Trama): solo se preparan sucursales, cajas y catálogo. */
 async function setupVelora(tenant, state) {
-  const email = ENV.VELORA_SEED_OWNER_EMAIL; const password = ENV.VELORA_SEED_OWNER_PASSWORD;
-  if (!email || !password) { console.log("  · VÉLORA omitida: faltan VELORA_SEED_OWNER_EMAIL / VELORA_SEED_OWNER_PASSWORD en el .env local."); return null; }
+  const email = tenant.ownerEmail ?? ENV.VELORA_SEED_OWNER_EMAIL; const password = tenant.passwordEnv ? ENV[tenant.passwordEnv] : ENV.VELORA_SEED_OWNER_PASSWORD;
+  if (!email || !password) { console.log(`  · ${tenant.key} omitida: faltan sus credenciales en el .env local.`); return null; }
   tokens.set(email, { password });
-  const company = tenant.companies[0];
+  for (const company of tenant.companies) await setupExistingCompany(email, company, state);
+  return email;
+}
+
+async function setupExistingCompany(email, company, state) {
   state.companies[company.key] ??= {};
   const saved = state.companies[company.key];
-  const companyId = company.companyId;
+  const companyId = company.companyId ?? (await as(email, "GET", "/api/admin/companies")).find((candidate) => candidate.slug === company.slug)?.id;
+  if (!companyId) throw new Error(`No existe la tienda ${company.slug}: ejecuta antes scripts/seed-new-stores.mjs.`);
+  saved.companyId = companyId;
   const stores = await as(email, "GET", `/api/admin/stores?companyId=${companyId}`);
   const warehouses = await as(email, "GET", "/api/inventory/warehouses");
   const points = await as(email, "GET", `/api/admin/points-of-sale?companyId=${companyId}`);
@@ -386,7 +407,6 @@ async function setupVelora(tenant, state) {
     store.pointId = (await as(email, "POST", "/api/admin/points-of-sale", { body: { storeId: store.storeId, warehouseId: store.warehouseId, code: `CAJA-${store.storeId.slice(0, 4).toUpperCase()}`, name: `Caja ${store.name}` } })).id;
   }
   await loadCatalog(email, saved, companyId, company);
-  return email;
 }
 
 async function loadCatalog(email, saved, companyId, company) {
@@ -583,13 +603,13 @@ async function rewriteDates(client, orders, sessions, restockIds, day) {
 }
 
 /** El stock inicial de las tiendas nuevas queda fechado el día anterior a su primera venta. */
-async function rewriteInitialStockDates(client, saved, start) {
+async function rewriteInitialStockDates(client, saved, start, since = RUN_STARTED_AT) {
   const warehouses = saved.stores.map((store) => store.warehouseId);
   const at = new Date(Date.parse(`${addDays(start, -1)}T00:00:00Z`) + (8 + TZ_OFFSET_HOURS) * 3_600_000).toISOString();
   await client.query("BEGIN");
   await client.query("SET LOCAL session_replication_role = replica");
-  await client.query("update inventory_movements set created_at = $3 where reference_type = 'INITIAL_STOCK' and created_at >= $2::timestamptz and warehouse_id = any($1::uuid[])", [warehouses, RUN_STARTED_AT, at]);
-  await client.query("update inventory_stocks set created_at = $3 where created_at >= $2::timestamptz and warehouse_id = any($1::uuid[])", [warehouses, RUN_STARTED_AT, at]);
+  await client.query("update inventory_movements set created_at = $3 where reference_type = 'INITIAL_STOCK' and created_at >= $2::timestamptz and warehouse_id = any($1::uuid[])", [warehouses, since, at]);
+  await client.query("update inventory_stocks set created_at = $3 where created_at >= $2::timestamptz and warehouse_id = any($1::uuid[])", [warehouses, since, at]);
   await client.query("COMMIT");
 }
 
@@ -634,7 +654,7 @@ async function verify(client) {
 // ------------------------------------------------------------------ main
 
 async function main() {
-  const tenants = TENANTS.filter((tenant) => !ONLY || tenant.key === ONLY || tenant.companies.some((company) => company.key === ONLY));
+  const tenants = TENANTS.filter((tenant) => !ONLY || tenant.key === ONLY || tenant.group === ONLY || tenant.companies.some((company) => company.key === ONLY));
   const days = []; for (let day = START; day <= UNTIL; day = addDays(day, 1)) days.push(day);
 
   if (DRY_RUN) {
@@ -668,6 +688,8 @@ async function main() {
         await setupCustomers(company, saved);
         if (!saved.customerDatesDone) { await rewriteCustomerDates(client, saved.customers); saved.customerDatesDone = true; }
         if (!tenant.existing) await rewriteInitialStockDates(client, saved, company.start);
+        // Tiendas de Trama: su stock inicial lo creó seed-new-stores.mjs antes de esta corrida (almacenes exclusivos).
+        else if (tenant.rewriteInitialStock && !saved.initialStockDated) { await rewriteInitialStockDates(client, saved, company.start, "1970-01-01T00:00:00Z"); saved.initialStockDated = true; }
         active.push({ tenant, company, saved, ownerEmail, ledger: new Map() });
         saveProgress(progress);
         console.log(`  ✔ ${company.key}: ${saved.stores.length} sucursales, ${saved.variants.length} variantes, ${saved.customers.length} clientes`);

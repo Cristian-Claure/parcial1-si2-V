@@ -33,7 +33,7 @@ export default function StripeReturnScreen() {
   return (
     <CustomerShell>
       <Text style={commonStyles.eyebrow}>PAGO SEGURO</Text>
-      <Text style={commonStyles.heading}>Regresó a VÉLORA.</Text>
+      <Text style={commonStyles.heading}>Regresó a la tienda.</Text>
 
       {payment.isLoading ? <Loading label="Verificando pago…" /> : null}
 

@@ -15,6 +15,6 @@ export function TenantEntry() {
   const brand = useQuery({ queryKey: ["tenant-brand", tenantSlug], queryFn: () => veloraApi.companyBySlug(tenantSlug), retry: false });
   useEffect(() => { if (brand.data) enterTenant(brand.data); }, [brand.data, enterTenant]);
   if (brand.isLoading || (brand.data && current !== brand.data.companyId)) return <PageLoader />;
-  if (!brand.data) return <main className="page centered"><span className="eyebrow">TIENDA</span><h1>Tienda no encontrada</h1><p>El enlace /t/{tenantSlug} no corresponde a una tienda activa.</p><Link className="button primary" to="/">Ir a VÉLORA</Link></main>;
+  if (!brand.data) return <main className="page centered"><span className="eyebrow">TIENDA</span><h1>Tienda no encontrada</h1><p>El enlace /t/{tenantSlug} no corresponde a una tienda activa.</p><Link className="button primary" to="/tiendas">Ver tiendas</Link></main>;
   return <Outlet />;
 }

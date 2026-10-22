@@ -197,6 +197,16 @@ export const companies =
         )
           .$type<DatabaseCompanyContact>(),
 
+      // V34 · directorio público de la plataforma (Fase 4B).
+      listed:
+        boolean("listed")
+          .notNull()
+          .default(true),
+
+      segment:
+        varchar("segment", { length: 20 })
+          .$type<"MUJER" | "HOMBRE" | "DEPORTIVA" | "INFANTIL" | "UNISEX">(),
+
       active:
         boolean("active")
           .notNull()

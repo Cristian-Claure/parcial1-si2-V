@@ -160,12 +160,22 @@ export const companyBrandSchema = z.object({
 });
 export type CompanyBrand = z.infer<typeof companyBrandSchema>;
 
+/** Público objetivo de la tienda (directorio de la plataforma, V34). */
+export const companySegmentSchema = z.enum(["MUJER", "HOMBRE", "DEPORTIVA", "INFANTIL", "UNISEX"]);
+export type CompanySegment = z.infer<typeof companySegmentSchema>;
+
+export const COMPANY_SEGMENT_LABELS: Record<CompanySegment, string> = {
+  MUJER: "Moda mujer", HOMBRE: "Moda hombre", DEPORTIVA: "Deportiva", INFANTIL: "Infantil", UNISEX: "Unisex",
+};
+
 export const updateBrandingRequestSchema = z.object({
   displayName: z.string().trim().min(2, "Ingrese el nombre comercial.").max(160).optional(),
   slug: z.string().trim().toLowerCase().min(3).max(60).regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])$/, "Enlace inválido.").optional(),
   tagline: z.string().trim().max(200).nullable().optional(),
   palette: brandPaletteSchema.optional(),
   contact: companyContactSchema.nullable().optional(),
+  /** Fase 4B (aditivo): segmento para el directorio. */
+  segment: companySegmentSchema.nullable().optional(),
 });
 export type UpdateBrandingRequest = z.infer<typeof updateBrandingRequestSchema>;
 
@@ -180,7 +190,26 @@ export const adminBrandingResponseSchema = z.object({
     contact: companyContactSchema.nullable(),
     hasLogo: z.boolean(),
     hasBanner: z.boolean(),
+    segment: companySegmentSchema.nullable().optional(),
   }),
   allowed: z.array(z.enum(["displayName", "slug", "logo", "accent", "fullPalette", "tagline", "banner", "contact"])),
 });
 export type AdminBrandingResponse = z.infer<typeof adminBrandingResponseSchema>;
+
+/** Fase 4B · Directorio público de tiendas: SOLO campos de marca (sin ids de propietario, plan ni contacto). */
+export const directoryEntrySchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  tagline: z.string().nullable(),
+  segment: companySegmentSchema.nullable(),
+  logoUrl: z.string().nullable(),
+  bannerUrl: z.string().nullable(),
+  palette: resolvedBrandPaletteSchema,
+});
+export type DirectoryEntry = z.infer<typeof directoryEntrySchema>;
+
+export const directoryQuerySchema = z.object({
+  q: z.string().trim().max(80).optional(),
+  segment: companySegmentSchema.optional(),
+});
+export type DirectoryQuery = z.infer<typeof directoryQuerySchema>;

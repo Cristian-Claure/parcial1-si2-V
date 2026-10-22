@@ -5,16 +5,16 @@ import { Notice } from "../../shared/feedback/Notice";
 import { PageLoader } from "../../shared/ui/PageLoader";
 import { PLAN_ROWS, planHighlights, priceLabel } from "./planCopy";
 
-/** Comparación pública de planes (marca de la plataforma: VÉLORA). Los datos vienen de la tabla plans. */
+/** Comparación pública de planes (marca de la plataforma Trama). Los datos vienen de la tabla plans. */
 export function PlansPage() {
   const plans = useQuery({ queryKey: ["plans"], queryFn: veloraApi.plans });
   if (plans.isLoading) return <PageLoader />;
   if (plans.isError || !plans.data) return <section className="page"><Notice kind="error">No se pudieron cargar los planes.</Notice></section>;
   const featured = plans.data[Math.floor(plans.data.length / 2)]?.code;
-  return <section className="page">
-    <div className="plans-hero"><span className="eyebrow">VÉLORA PARA TU MARCA</span><h1>Tu tienda de moda, con tu marca</h1><p>Catálogo, inventario, POS, pedidos en línea, probador virtual y reportes en una sola plataforma. Empieza gratis y crece cuando lo necesites.</p></div>
+  return <section className="page platform-main">
+    <div className="plans-hero"><span className="eyebrow">TRAMA PARA TU MARCA</span><h1>Tu tienda de moda, lista en minutos</h1><p>Catálogo, inventario, POS, pedidos en línea, probador virtual y reportes en una sola plataforma. Empieza gratis y crece cuando lo necesites.</p></div>
     <div className="plan-grid">{plans.data.map((plan) => <article key={plan.code} className={plan.code === featured ? "plan-card featured" : "plan-card"}>
-      {plan.code === featured ? <span className="plan-ribbon">RECOMENDADO</span> : null}
+      {plan.code === featured ? <span className="plan-ribbon">MÁS POPULAR</span> : null}
       <span className="eyebrow">{plan.code}</span><h2>{plan.name}</h2>
       <div className="plan-price">{priceLabel(plan)}{plan.priceMonthly > 0 ? <small>/ mes</small> : null}</div>
       <p>{plan.description}</p>

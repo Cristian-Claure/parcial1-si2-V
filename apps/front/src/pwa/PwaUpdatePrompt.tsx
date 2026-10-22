@@ -6,10 +6,10 @@ export function PwaUpdatePrompt() {
     updateServiceWorker,
   } = useRegisterSW({
     onOfflineReady() {
-      console.info("[VÉLORA PWA] application shell listo offline.");
+      console.info("[Trama PWA] application shell listo offline.");
     },
     onRegisterError(error) {
-      console.error("[VÉLORA PWA] error de service worker.", error);
+      console.error("[Trama PWA] error de service worker.", error);
     },
   });
 
@@ -17,7 +17,7 @@ export function PwaUpdatePrompt() {
 
   return (
     <div className="pwa-update-banner" role="status">
-      <p>Hay una nueva versión de VÉLORA disponible.</p>
+      <p>Hay una nueva versión de Trama disponible.</p>
       <div className="pwa-update-actions">
         <button type="button" className="button small primary" onClick={() => void updateServiceWorker(true)}>
           Actualizar

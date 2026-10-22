@@ -1,4 +1,6 @@
 import type {
+  CompanyBrand,
+  DirectoryEntry,
   AddCartItemRequest,
   AuthResponse,
   CartResponse,
@@ -46,6 +48,13 @@ export const veloraApi = {
 
   companies: () =>
     apiRequest<CompanyResponse[]>("/api/companies", {}, false),
+
+  // Fase 4B · directorio público de tiendas (solo campos de marca) y marca por slug.
+  directory: () =>
+    apiRequest<DirectoryEntry[]>("/api/companies/directory", {}, false),
+
+  companyBySlug: (slug: string) =>
+    apiRequest<CompanyBrand>(`/api/companies/by-slug/${q(slug)}`, {}, false),
 
   managerCompany: () =>
     apiRequest<CompanyResponse>("/api/manager/company"),

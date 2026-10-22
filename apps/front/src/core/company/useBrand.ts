@@ -1,7 +1,7 @@
 import type { CompanyBrand } from "@velora/contracts";
 import { useCompanyStore } from "./companyStore";
 
-/** Marca de la tienda que el cliente está visitando (null → VÉLORA por defecto). */
+/** Marca de la tienda que el cliente está visitando (null → sin tienda elegida: se muestra la plataforma Trama). */
 export function useStorefrontBrand(): CompanyBrand | null {
   return useCompanyStore((state) => {
     const id = state.storefrontCompanyId;

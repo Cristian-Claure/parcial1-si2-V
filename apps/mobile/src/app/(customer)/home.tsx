@@ -32,7 +32,7 @@ export default function HomeScreen() {
             <Text style={commonStyles.eyebrow}>{company.brand.name.toUpperCase()} PARA USTED</Text>
           </View>
         ) : (
-          <Text style={commonStyles.eyebrow}>VÉLORA PARA USTED</Text>
+          <Text style={commonStyles.eyebrow}>{(company?.brand?.name ?? company?.name ?? "").toUpperCase()} PARA USTED</Text>
         )}
         <Text style={commonStyles.heading}>Hola, {user.firstName}.</Text>
         <Text style={commonStyles.body}>

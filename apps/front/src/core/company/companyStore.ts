@@ -4,6 +4,7 @@ import { veloraApi } from "../api/veloraApi";
 import { resolveCompanySelection } from "./companySelection";
 
 const STOREFRONT_KEY = "velora.storefront.company";
+const STOREFRONT_SLUG_KEY = "velora.storefront.slug";
 const ADMIN_KEY = "velora.admin.company";
 const MANAGER_KEY = "velora.manager.company";
 
@@ -11,7 +12,11 @@ const MANAGER_KEY = "velora.manager.company";
 function storedManagerCompany(): CompanyResponse | null {
   try { const raw = localStorage.getItem(MANAGER_KEY); return raw ? JSON.parse(raw) as CompanyResponse : null; } catch { return null; }
 }
-const configuredCompany = import.meta.env.VITE_STOREFRONT_COMPANY_ID?.trim() || null;
+
+/** Slug de la última tienda visitada (para volver a ella tras el login). Sin tienda fijada por defecto. */
+export function lastStoreSlug(): string | null {
+  try { return localStorage.getItem(STOREFRONT_SLUG_KEY); } catch { return null; }
+}
 
 interface CompanyState {
   companies: CompanyResponse[]; storefrontCompanyId: string | null; adminCompanyId: string | null;
@@ -23,15 +28,17 @@ interface CompanyState {
 }
 
 export const useCompanyStore = create<CompanyState>((set, get) => ({
-  companies: [], storefrontCompanyId: configuredCompany ?? localStorage.getItem(STOREFRONT_KEY),
+  companies: [], storefrontCompanyId: localStorage.getItem(STOREFRONT_KEY),
   adminCompanyId: localStorage.getItem(ADMIN_KEY), managerCompany: storedManagerCompany(), loading: false, tenantBrand: null,
-  enterTenant: (brand) => { localStorage.setItem(STOREFRONT_KEY, brand.companyId); set({ tenantBrand: brand, storefrontCompanyId: brand.companyId }); },
+  enterTenant: (brand) => { localStorage.setItem(STOREFRONT_KEY, brand.companyId); localStorage.setItem(STOREFRONT_SLUG_KEY, brand.slug); set({ tenantBrand: brand, storefrontCompanyId: brand.companyId }); },
   initializePublic: async () => {
     set({ loading: true });
     try {
       const companies = await veloraApi.companies();
-      const selected = resolveCompanySelection(companies, get().storefrontCompanyId);
-      if (selected) localStorage.setItem(STOREFRONT_KEY, selected);
+      // Fase 4B: nunca se elige una tienda por defecto; solo se conserva la última visitada si sigue activa.
+      const current = get().storefrontCompanyId;
+      const selected = current && companies.some((company) => company.id === current) ? current : null;
+      if (!selected) { localStorage.removeItem(STOREFRONT_KEY); localStorage.removeItem(STOREFRONT_SLUG_KEY); }
       set({ companies, storefrontCompanyId: selected, loading: false });
     } catch { set({ loading: false }); }
   },

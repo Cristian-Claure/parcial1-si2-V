@@ -133,7 +133,7 @@ class WebPushManager {
   private showForeground(payload: MessagePayload): void {
     if (Notification.permission !== "granted") return;
     const data = payload.data ?? {};
-    const title = data.title ?? payload.notification?.title ?? "VÉLORA";
+    const title = data.title ?? payload.notification?.title ?? "Trama";
     const body = data.body ?? payload.notification?.body ?? "Hay una actualización disponible.";
     try {
       const notification = new Notification(title, { body, data });

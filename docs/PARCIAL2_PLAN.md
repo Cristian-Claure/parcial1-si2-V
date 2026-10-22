@@ -639,7 +639,7 @@ Todas tienen "Entrenar de nuevo" con seguimiento del estado. Los gráficos son S
 
 ## F4.8 Estado
 
-Fase 4 completa (22-oct-2026) en la rama `feat/fase4-ml` (PR en borrador, sin mergear). Siguiente: **Fase 5** (pago QR).
+Fase 4 completa y mergeada (PR #31).
 
 | Bloque | Estado | Notas |
 |---|---|---|
@@ -653,3 +653,19 @@ Notas:
 - U2 pasó de escala log a raíz cuadrada con nivel local (iteración 1) porque los días casi en cero dominaban las anomalías.
 - `scipy` se fijó en 1.15.3 (dependencia transitiva compatible con scikit-learn 1.6.1).
 - Las demos seguidas superan el límite de login del backend (429): para la regresión, levanta el backend con `VELORA_AUTH_RATE_LIMIT_MAX_REQUESTS` alto.
+
+
+---
+
+# Fase 4B — Plataforma Trama, entrada neutral y tres tiendas nuevas
+
+Plan, decisiones, guía de 3 minutos y cuentas: `docs/FASE4B_PLATAFORMA.md`.
+
+Estado (22-oct-2026): **Fase 4B completa**.
+- Trama es la marca de la plataforma (`/` es el login neutral) y VÉLORA pasa a ser una tienda más en `/t/velora`.
+- Se agregaron el directorio `/tiendas`, el selector `/elegir-empresa` y el móvil mínimo.
+- Tres tiendas nuevas (Casa Montalvo, Ímpetu Sport y Solana) con 90 días de historial.
+
+**Siguiente:**
+1. Fase 5: pago por QR.
+2. Cierre del parcial y documento PDF.
