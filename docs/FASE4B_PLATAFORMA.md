@@ -60,13 +60,62 @@ Se elimina el fallback a VÉLORA: `VITE_STOREFRONT_COMPANY_ID` y la autoselecci�
 
 ## 4B.6 Estado
 
-| Bloque | Estado |
-|---|---|
-| 1 Backend | En curso |
-| 2 Web | Pendiente |
-| 3 Móvil | Pendiente |
-| 4 Tres tiendas | Pendiente |
-| 5 Historial (opcional) | Pendiente |
-| 6 Demo y guía | Pendiente |
+Fase 4B completa (22-oct-2026).
+
+| Bloque | Estado | Notas |
+|---|---|---|
+| 1 Backend | Hecho | V34 (`listed`, `segment`) y directorio público. 4 pruebas: datos privados, demos, búsqueda y A/B. |
+| 2 Web | Hecho | Entrada neutral, marca Trama, `/tiendas`, `/elegir-empresa`, `postLoginPath`, sin tienda por defecto y PWA Trama. 7 pruebas nuevas. |
+| 3 Móvil | Hecho | Marca Trama, selector desde el directorio y tienda activa en el encabezado; se respeta el pin. 3 pruebas nuevas. |
+| 4 Tres tiendas | Hecho | `seed-new-stores.mjs` (19 verificaciones) con 26, 26 y 27 productos y 740 variantes en total. |
+| 5 Historial | Hecho | 1.370 pedidos en 90 días (439, 480 y 451) y 71–78 clientes compradores por tienda, en unos 1,5 min. |
+| 6 Demo y guía | Hecho | `demo-plataforma.mjs` 17/17. Regresión: saas, offline, reportes, ML y plataforma en verde. |
+
+Desviaciones:
+- Solana (PLUS) no muestra tagline, banner ni contacto: su nivel de marca (`FULL_PALETTE`) no los incluye, así que se respetó el plan.
+- El arte de las prendas llevó 2 iteraciones. Las 9 imágenes ya subidas de vestidos y trajes de baño se repararon sobrescribiendo sus PNG en el almacenamiento local (`--repair-art`), sin SQL: no existe un endpoint para borrar imágenes.
+- `companies.segment` se agregó en V34 porque el directorio lo necesita y no existía.
 
 Nota de repositorio: las 52 imágenes de `apps/front/src/assets/products/` entraron por error al índice en `c0c3d1c` (Fase 4). Esta rama las vuelve a dejar sin versionar (`git rm --cached`; los archivos siguen en disco y en el respaldo `pre-plataforma`).
+
+## 4B.7 Guía de demostración (3 minutos)
+
+### Levantar en local
+
+```powershell
+. .\scripts\load-env.ps1
+pnpm build:packages
+pnpm dev:back            # API en :8080 (desde apps/back: encuentra logos e imágenes locales)
+pnpm dev:front           # web en :5173
+pnpm dev:ml              # opcional: Inteligencia (ML)
+node scripts/seed-new-stores.mjs --verify    # 19 verificaciones de las tiendas nuevas
+node scripts/demo-plataforma.mjs             # demo automática de la plataforma
+```
+
+Para recrear las tiendas desde cero: `node scripts/seed-new-stores.mjs` (idempotente; `--resume` y `--only <slug>`). El historial de 90 días: `node scripts/seed-realistic-history.mjs --only trama`.
+
+### Cuentas
+
+| Flujo | Correo | Contraseña |
+|---|---|---|
+| Cliente | `cliente.demo@trama.seed.local` | `SeedCliente2026` |
+| Dueño con 2 empresas (MAX) | `rodrigo.salvatierra@trama.seed.local` | `SeedPropietario2026` |
+| Dueña de 1 empresa (PLUS) | `daniela.ferrufino@trama.seed.local` | `SeedPropietario2026` |
+| Encargado | `encargado.casa-montalvo.calacoto@seed.local` (también `.equipetrol` y `.cala-cala`; `encargado.impetu-sport.sopocachi`/`.urubo`; `encargado.solana.equipetrol`/`.sopocachi`/`.zona-norte`) | `SeedEncargado2026` |
+| Plataforma | `BOOTSTRAP_PLATFORM_ADMIN_EMAIL` de tu `.env` local | la de tu `.env` |
+
+### Recorrido
+
+1. **`/`**: login neutral de Trama, sin fotos de tiendas ni VÉLORA, con el motivo de tejido. Muestra "Crear cuenta" (dos caminos: cliente o abrir mi tienda) y "Ver planes" ("Más popular" resaltado).
+2. **`/tiendas`**:
+   - directorio con buscador y filtro por segmento; cada tarjeta lleva los colores, el logo y el banner de su tienda;
+   - entra a **Casa Montalvo** (`/t/casa-montalvo`), **Ímpetu Sport** y **Solana**;
+   - VÉLORA sigue en `/t/velora` con su home editorial.
+3. **Cliente**: inicia sesión y vuelve a la última tienda visitada (o al directorio). Agrega una prenda a la bolsa.
+4. **Rodrigo (2 empresas)**:
+   - tras el login va a `/elegir-empresa` (logo, plan MAX, sucursales y "Entrar");
+   - en el menú, "Cambiar de empresa";
+   - Inventario muestra variantes críticas (≤3) y agotadas.
+5. **Daniela (1 empresa, PLUS)**: entra directo a `/admin`. Inteligencia aparece con candado MAX y una 4.ª sucursal da `PLAN_LIMIT_STORES`.
+6. **Encargado**: va directo a `/sucursal` de Calacoto.
+7. **Plataforma**: `/plataforma` con la marca Trama y todas las tiendas.
