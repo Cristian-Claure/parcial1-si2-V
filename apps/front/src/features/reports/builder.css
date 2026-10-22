@@ -1,0 +1,307 @@
+/* Constructor de reportes. Selectores compuestos (.builder-page …) para ganar a los estilos
+   globales de .chip/.panel sin !important. */
+
+.builder-page .builder-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.builder-page .builder-config {
+  display: grid;
+  gap: .9rem;
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding-right: .25rem;
+}
+
+.builder-page .builder-step {
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  display: grid;
+  gap: .7rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.builder-page .builder-step h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+}
+
+.builder-page .builder-step h2 > span {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: .8rem;
+  font-weight: 700;
+}
+
+.builder-page .builder-step h2 small {
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: .78rem;
+  color: var(--ink-soft);
+}
+
+.builder-page .builder-group h3 {
+  margin: 0 0 .35rem;
+  font-family: var(--font-body);
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.builder-page .builder-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.builder-page .builder-chips .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .4rem .7rem;
+  font-size: .85rem;
+}
+
+.builder-page .builder-chips .chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.builder-page .builder-chips .chip b {
+  display: inline-grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: var(--radius-full);
+  background: #fff;
+  color: var(--accent-deep);
+  font-size: .7rem;
+}
+
+.builder-page .builder-chips .chip:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.builder-page .builder-chips .chip.locked {
+  border-style: dashed;
+}
+
+.builder-page .builder-lock {
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  padding: .1rem .35rem;
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
+.builder-page .builder-dates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: .6rem;
+}
+
+.builder-page .builder-dates label {
+  display: grid;
+  gap: .25rem;
+  font-size: .82rem;
+  font-weight: 650;
+}
+
+.builder-page .builder-check {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  font-size: .88rem;
+}
+
+.builder-page .builder-options {
+  display: grid;
+  gap: .3rem;
+  max-height: 190px;
+  overflow-y: auto;
+  padding: .5rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+.builder-page .builder-active-filters {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: .35rem;
+}
+
+.builder-page .builder-active-filters li {
+  display: flex;
+  justify-content: space-between;
+  gap: .5rem;
+  align-items: center;
+  font-size: .84rem;
+  background: var(--accent-soft);
+  border-radius: var(--radius-md);
+  padding: .35rem .6rem;
+}
+
+.builder-page .builder-active-filters button {
+  border: 0;
+  background: transparent;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.builder-page .builder-save {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+
+.builder-page .builder-save input {
+  flex: 1 1 160px;
+}
+
+.builder-page .builder-preview {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.builder-page .builder-preview-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.builder-page .builder-preview-head h2 {
+  margin: .2rem 0;
+  font-size: 1.5rem;
+}
+
+.builder-page .builder-note {
+  margin: 0;
+  font-size: .85rem;
+  color: var(--ink-soft);
+  border-left: 3px solid var(--accent);
+  padding-left: .6rem;
+}
+
+.builder-page .builder-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: .75rem;
+}
+
+.builder-page .builder-table-wrap {
+  overflow-x: auto;
+  background: var(--paper-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+}
+
+.builder-page .builder-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .88rem;
+}
+
+.builder-page .builder-table th {
+  position: sticky;
+  top: 0;
+  background: var(--accent);
+  color: #fff;
+  text-align: left;
+  padding: .6rem .75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.builder-page .builder-table td {
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.builder-page .builder-table tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--accent-soft) 35%, transparent);
+}
+
+.builder-page .builder-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.builder-page .builder-table td small {
+  display: block;
+  font-size: .72rem;
+}
+
+.builder-page .builder-table td small.up { color: var(--success); }
+.builder-page .builder-table td small.down { color: var(--error); }
+
+.builder-page .builder-table tfoot td {
+  font-weight: 800;
+  background: var(--accent-soft);
+  border-top: 2px solid var(--ink);
+}
+
+.builder-page .builder-locked {
+  background: var(--paper-raised);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  display: grid;
+  gap: .8rem;
+  justify-items: start;
+  max-width: 640px;
+}
+
+.builder-page .builder-locked h2 { margin: 0; }
+.builder-page .builder-locked p { margin: 0; color: var(--ink-soft); }
+
+.builder-locked-badge,
+.report-export-locked {
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: .3rem .65rem;
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
+.report-heading .report-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+}
+
+@media (max-width: 960px) {
+  .builder-page .builder-layout { grid-template-columns: 1fr; }
+  .builder-page .builder-config { position: static; max-height: none; overflow: visible; }
+}
