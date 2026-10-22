@@ -7,7 +7,7 @@ export default function IndexRoute() {
   const role = useAuthStore((state) => state.user?.role);
 
   if (status === "checking") {
-    return <Loading label="Preparando VÉLORA…" />;
+    return <Loading label="Preparando Trama…" />;
   }
 
   return (

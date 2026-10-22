@@ -729,7 +729,7 @@ export default function TryOnScreen() {
                           : (
                               <View style={[styles.productThumbImage, styles.productThumbPlaceholder]}>
                                 <Text style={commonStyles.muted}>
-                                  VÉLORA
+                                  Sin imagen
                                 </Text>
                               </View>
                             )

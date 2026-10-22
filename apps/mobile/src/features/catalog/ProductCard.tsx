@@ -42,7 +42,7 @@ export function ProductCard({ product }: { product: ProductResponse }) {
         />
       ) : (
         <View style={[styles.image, styles.placeholder]}>
-          <Text style={commonStyles.muted}>VÉLORA</Text>
+          <Text style={commonStyles.muted}>Sin imagen</Text>
         </View>
       )}
 

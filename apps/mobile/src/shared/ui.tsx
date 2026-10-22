@@ -13,17 +13,60 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import brandMark from "@/assets/images/brand-mark.png";
+import { useCompanyStore } from "@/core/company/companyStore";
 import { colors, commonStyles } from "./theme";
+
+/** Plataforma Trama (Fase 4B): nombre y tagline. El tema por empresa en móvil sigue aplazado. */
+export const PLATFORM_NAME = "Trama";
+export const PLATFORM_TAGLINE = "Tu tienda de moda, lista en minutos.";
+const PLATFORM = { accent: "#4F46E5", deep: "#3730A3", paper: "#F7F6FB", ink: "#14142B" };
+
+/** Monograma "T" tejido de la plataforma (misma geometría que la web), dibujado con Views. */
+export function PlatformMark({ size = 30 }: { size?: number }) {
+  const u = size / 64;
+  const box = (left: number, top: number, width: number, height: number, color: string, radius: number, outline = false) => (
+    <View style={{ position: "absolute", left: left * u, top: top * u, width: width * u, height: height * u, backgroundColor: color, borderRadius: radius * u, borderWidth: outline ? 2.5 * u : 0, borderColor: PLATFORM.paper }} />
+  );
+  return (
+    <View style={{ width: size, height: size }} accessibilityLabel={PLATFORM_NAME}>
+      {box(8, 27, 48, 9, PLATFORM.accent, 4.5)}
+      {box(25, 13, 14, 43, PLATFORM.deep, 5, true)}
+      {box(8, 13, 48, 10, PLATFORM.accent, 5, true)}
+    </View>
+  );
+}
 
 export function Brand() {
   return (
     <View style={styles.brandRow}>
-      <Image source={brandMark} style={styles.brandMark} />
+      <PlatformMark />
       <View>
-        <Text style={commonStyles.brand}>VÉLORA</Text>
-        <Text style={commonStyles.brandTag}>More than fashion</Text>
+        <Text style={[commonStyles.brand, styles.platformWordmark]}>{PLATFORM_NAME}</Text>
+        <Text style={commonStyles.brandTag}>{PLATFORM_TAGLINE}</Text>
       </View>
+    </View>
+  );
+}
+
+/** Encabezado: nombre y logo de la tienda activa (o la marca Trama si aún no hay tienda). */
+export function StoreHeader() {
+  const companies = useCompanyStore((state) => state.companies);
+  const selected = useCompanyStore((state) => state.selectedCompanyId);
+  const pinned = useCompanyStore((state) => state.pinned);
+  const clear = useCompanyStore((state) => state.clear);
+  const company = companies.find((item) => item.id === selected);
+  if (!company) return <Brand />;
+  const name = company.brand?.name ?? company.name;
+  return (
+    <View style={[styles.brandRow, { justifyContent: "space-between" }]}>
+      <View style={styles.brandRow}>
+        {company.brand?.logoUrl ? <Image source={{ uri: company.brand.logoUrl }} style={styles.storeLogo} accessibilityLabel={name} /> : <View style={[styles.storeLogo, { backgroundColor: company.brand?.palette.primary ?? PLATFORM.accent, alignItems: "center", justifyContent: "center" }]}><Text style={{ color: "#fff", fontFamily: "PlayfairDisplay_700Bold", fontSize: 18 }}>{name.slice(0, 1)}</Text></View>}
+        <View>
+          <Text style={[commonStyles.brand, { letterSpacing: 0.5, fontSize: 18 }]} numberOfLines={1}>{name}</Text>
+          <Text style={commonStyles.brandTag}>en {PLATFORM_NAME}</Text>
+        </View>
+      </View>
+      {!pinned ? <Pressable onPress={() => void clear()} accessibilityRole="button"><Text style={styles.switchStore}>Cambiar</Text></Pressable> : null}
     </View>
   );
 }
@@ -181,7 +224,7 @@ export function CustomerShell({
   return (
     <SafeAreaView style={commonStyles.page} edges={["top", "left", "right"]}>
       <View style={styles.header}>
-        <Brand />
+        <StoreHeader />
       </View>
       <View style={{ flex: 1 }}>{content}</View>
       {active ? (
@@ -248,10 +291,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  brandMark: {
-    width: 28,
-    height: 28,
-    resizeMode: "contain",
+  platformWordmark: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    letterSpacing: 0.5,
+    color: PLATFORM.ink,
+  },
+  storeLogo: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+  },
+  switchStore: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
+    color: PLATFORM.deep,
+    textDecorationLine: "underline",
   },
   notice: {
     borderRadius: 14,

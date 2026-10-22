@@ -140,7 +140,7 @@ export default function ProductDetailScreen() {
         />
       ) : (
         <View style={[styles.hero, styles.placeholder]}>
-          <Text style={commonStyles.muted}>VÉLORA</Text>
+          <Text style={commonStyles.muted}>Sin imagen</Text>
         </View>
       )}
 
