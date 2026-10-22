@@ -639,9 +639,17 @@ Todas tienen "Entrenar de nuevo" con seguimiento del estado. Los gráficos son S
 
 ## F4.8 Estado
 
-| Bloque | Estado |
-|---|---|
-| 1 Servicio ML y modelos | En curso |
-| 2 Backend | Pendiente |
-| 3 Web | Pendiente |
-| 4 Demo y documentación | Pendiente |
+Fase 4 completa (22-oct-2026) en la rama `feat/fase4-ml` (PR en borrador, sin mergear). Siguiente: **Fase 5** (pago QR).
+
+| Bloque | Estado | Notas |
+|---|---|---|
+| 1 Servicio ML y modelos | Hecho | Hay 4 modelos y 15 pruebas pytest. Cada empresa entrena en unos 25 s. S1 y S2 superan a sus referencias (ver `docs/ML_MODELOS.md`); U2 detecta 2 de 5 fechas fuertes en Urbano (limitación explicada). |
+| 2 Backend | Hecho | 7 rutas `admin/ml/*` para ADMIN y PLATFORM_ADMIN, solo MAX. El back pasa de 173 a 180 pruebas: plan, A/B, ciclo con un doble del cliente, 409 y servicio caído. |
+| 3 Web | Hecho | `/admin/ml` ("Inteligencia") con 4 pestañas, gráficos SVG propios y estados vacíos y de `INSUFFICIENT_DATA`. 3 pruebas de componentes. |
+| 4 Demo y documentación | Hecho | `scripts/demo-ml.mjs` (13 verificaciones con un entrenamiento real), `docs/FASE4_DEMO_ML.md` y `docs/ML_MODELOS.md`. Regresión: saas 32/32, offline 17/17 y reportes 16/16. |
+
+Notas:
+- U1 eligió k = 2 con la silhouette pura. Se adoptó, antes de comparar con lo sembrado, la regla "codo estable con silhouette ≥ 90 % de la mejor" (iteración 1).
+- U2 pasó de escala log a raíz cuadrada con nivel local (iteración 1) porque los días casi en cero dominaban las anomalías.
+- `scipy` se fijó en 1.15.3 (dependencia transitiva compatible con scikit-learn 1.6.1).
+- Las demos seguidas superan el límite de login del backend (429): para la regresión, levanta el backend con `VELORA_AUTH_RATE_LIMIT_MAX_REQUESTS` alto.
