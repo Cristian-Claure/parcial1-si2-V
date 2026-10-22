@@ -223,6 +223,28 @@ async function stock(store, email, companyId, state) {
   save();
 }
 
+/**
+ * Mantiene 2–3 variantes agotadas (disponible 0 en todas las sucursales) para que Inventario muestre ese
+ * estado aunque el historial haya repuesto stock: ajustes de SALIDA por el endpoint real (idempotente).
+ */
+async function ensureSoldOut(store, email, companyId, state) {
+  const rows = (await Promise.all(state.branches.map((branch) => as(email, "GET", `/api/inventory/warehouses/${branch.warehouseId}/stock`)))).flat();
+  const products = await as(email, "GET", `/api/catalog/manage/products?companyId=${companyId}`);
+  const variants = (await Promise.all(products.map((product) => as(email, "GET", `/api/catalog/manage/products/${product.id}?companyId=${companyId}`)))).flatMap((product) => product.variants);
+  const available = (variantId) => rows.filter((row) => row.variantId === variantId).reduce((sum, row) => sum + row.availableQuantity, 0);
+  const soldOut = variants.filter((variant) => available(variant.id) === 0);
+  if (soldOut.length >= 2) return;
+  // Las de menor disponible y sin reservas pendientes (lo comprometido no se puede ajustar).
+  const candidates = variants.filter((variant) => available(variant.id) > 0 && rows.filter((row) => row.variantId === variant.id).every((row) => row.committedQuantity === 0))
+    .sort((a, b) => available(a.id) - available(b.id) || a.sku.localeCompare(b.sku)).slice(0, 3 - soldOut.length);
+  for (const variant of candidates) {
+    for (const row of rows.filter((candidate) => candidate.variantId === variant.id && candidate.availableQuantity > 0)) {
+      await as(email, "POST", "/api/inventory/movements", { body: { warehouseId: row.warehouseId, variantId: variant.id, movementType: "ADJUSTMENT_OUT", quantity: row.availableQuantity, reason: "Quiebre de stock (agotado)", referenceType: "MANUAL_ADJUSTMENT" } });
+    }
+  }
+  console.log(`  · agotadas: ${soldOut.length} + ${candidates.length} ajustadas a 0`);
+}
+
 async function setupStore(store) {
   console.log(`\n${store.name} (${store.slug})`);
   const state = progress.stores[store.slug] ??= {};
@@ -233,6 +255,7 @@ async function setupStore(store) {
   await branches(store, email, state.companyId, state);
   if (!state.catalog) await catalog(store, email, state.companyId, state);
   await stock(store, email, state.companyId, state);
+  await ensureSoldOut(store, email, state.companyId, state);
 }
 
 async function ensureCustomer() {
@@ -271,9 +294,9 @@ async function verify(stores) {
     const rows = (await Promise.all(warehouses.map((warehouse) => as(email, "GET", `/api/inventory/warehouses/${warehouse.id}/stock`)))).flat();
     const negative = rows.filter((row) => row.physicalQuantity < 0 || row.availableQuantity < 0).length;
     const low = rows.filter((row) => row.availableQuantity > 0 && row.availableQuantity <= 3).length;
-    const stocked = new Set(rows.filter((row) => row.physicalQuantity > 0).map((row) => row.variantId));
-    const soldOut = details.flatMap((product) => product.variants).filter((variant) => !stocked.has(variant.id)).length;
-    check(`${store.name}: stock nunca negativo, con críticos y agotados`, negative === 0 && low > 0 && soldOut >= 2 && soldOut <= 3, `${branchesList.length} sucursales · ${rows.length} filas de stock · ${low} críticas (≤3) · ${soldOut} variantes agotadas`);
+    const withAvailable = new Set(rows.filter((row) => row.availableQuantity > 0).map((row) => row.variantId));
+    const soldOut = details.flatMap((product) => product.variants).filter((variant) => !withAvailable.has(variant.id)).length;
+    check(`${store.name}: stock nunca negativo, con críticos y agotados`, negative === 0 && low > 0 && soldOut >= 2, `${branchesList.length} sucursales · ${rows.length} filas de stock · ${low} críticas (≤3) · ${soldOut} variantes agotadas`);
 
     const managers = await as(email, "GET", `/api/admin/users/managers?companyId=${companyId}`);
     check(`${store.name}: un encargado por sucursal`, branchesList.every((branch) => managers.some((manager) => manager.storeId === branch.id && manager.status === "ACTIVE")), `${managers.length} encargados`);
