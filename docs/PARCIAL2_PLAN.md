@@ -506,6 +506,14 @@ Pendiente o fuera de alcance:
 - `POST admin|manager/reports/query`: `{ companyId, dimensions[≤3], measures[], filters[], sort, limit, compareWithPrevious }` → filas, totales y gráfico sugerido.
 - `GET|POST|PUT|DELETE admin/reports/definitions`: definiciones guardadas por empresa.
 - `POST admin|manager/reports/query/export?format=xlsx|pdf` y `GET admin|manager/reports/overview/export?format=…`: archivos generados en el backend desde STANDARD.
+- **Contratos** en `@velora/contracts/report-builder.ts` (aditivos): `REPORT_DIMENSIONS`/`REPORT_MEASURES` (ids, etiquetas, `minTier`), `reportBuilderDefinitionSchema` (`.strict()`: un campo extra como `sql` da 400) y los resultados.
+- **Decisiones del bloque 3**:
+  - el constructor, la exportación y las definiciones responden **403** `PLAN_LIMIT_REPORT_FEATURE` para FREE (la IA y la voz conservan el 402 histórico);
+  - las dimensiones Día de la semana, Hora y Cliente y las medidas Clientes nuevos y recurrentes son ADVANCED (MAX);
+  - **venta neta** sale de `report-facts.ts` (`paymentEventsSql`), la misma fuente que usan los widgets; con dimensiones de producto cada pago se reparte entre los ítems por subtotal, sin cambiar los totales;
+  - el valor de inventario es la foto actual y solo se combina con sucursal y atributos de producto;
+  - las consultas corren en una transacción de solo lectura con `statement_timeout` de 10 s y un tope de 500 filas;
+  - fuentes PDF: Helvetica y Times estándar (WinAnsi: tildes, ñ, ü, ¿ y ¡) sin incrustar TTF.
 
 ## F3.4 Pantallas
 
@@ -519,17 +527,17 @@ Pendiente o fuera de alcance:
 3. **Constructor dinámico y exportación** XLSX/PDF.
 4. **Pruebas, demo y guía**.
 
-## F3.6 Estado (cierre del 21-oct-2026)
+## F3.6 Estado (cierre del 22-oct-2026)
 
 - **En `main`**: Fase 1 (PR #28) y Fase 2 (PR #29), mergeadas.
-- **Rama `feat/fase3-reportes`** (PR #30 en borrador, sin mergear): bloques 1 y 2 hechos; en pausa para revisión.
+- **Rama `feat/fase3-reportes`** (PR #30 en borrador, sin mergear): **Fase 3 completa** (bloques 1-4). Siguiente: **Fase 4 · ML local en Python**.
 
 | Bloque | Estado | Notas |
 |---|---|---|
 | 1 Datos realistas | Hecho | `scripts/seed-realistic-history.mjs` reemplaza a `seed-historical-orders.mjs`; 10.986 pedidos (jul-2025 → 21-oct-2026) en Urbano Boutique y Urbano Outlet (MAX), Andina Moda (PLUS), Primer Paso (FREE) y VÉLORA. Patrones y verificación en `docs/DATOS_SINTETICOS.md`. |
 | 2 Reportes por nivel | Hecho | Widgets STANDARD (cancelación, unidades, categorías, tipo de entrega, inventario crítico, comparación con el período anterior) y ADVANCED (recompra, crecimiento, clientes nuevos, tendencia de 12 meses, mapa de calor día × hora, comparativa de sucursales); el backend solo calcula lo permitido. Pruebas por nivel, ventana de historial y cifras contra una referencia independiente. |
-| 3 Constructor dinámico y exportación | Siguiente | Capa semántica, `report_definitions` (V32), exportación XLSX/PDF en el backend. |
-| 4 Pruebas, demo y guía | Pendiente | `scripts/demo-reportes.mjs` y `docs/FASE3_DEMO_REPORTES.md`. |
+| 3 Constructor dinámico y exportación | Hecho | Capa semántica con lista blanca (18 dimensiones, 12 medidas), `report_definitions` (V32), exportación XLSX/PDF en el backend del constructor y del resumen, y UI `/admin|sucursal/reportes/constructor`. Pruebas: 9 combinaciones contra SQL de referencia sobre los datos reales, suite HTTP (niveles, historial, entradas maliciosas, exportaciones y definiciones) y aislamiento A/B de las 8 rutas nuevas. |
+| 4 Pruebas, demo y guía | Hecho | `scripts/demo-reportes.mjs` (16 verificaciones) y `docs/FASE3_DEMO_REPORTES.md`. Regresión: `demo-saas` 32/32 y `demo-offline` 17/17. |
 
 Notas:
 - El lint del móvil ya está configurado (`eslint-config-expo`), lo que cierra ese pendiente de la Fase 2.

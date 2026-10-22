@@ -298,21 +298,23 @@ export class ReportExportService {
     const widths = textWeight.map((weight) => weight * unit);
     const rowHeight = 16;
     const drawRow = (cells: string[], options: { header?: boolean; total?: boolean; zebra?: boolean }) => {
-      if (doc.y + rowHeight > bottom()) { doc.addPage(); drawHeader(); }
+      // Encabezados en hasta dos líneas (p. ej. "Venta neta (anterior)"); filas de una línea.
+      const height = options.header ? rowHeight * 1.75 : rowHeight;
+      if (doc.y + height > bottom()) { doc.addPage(); drawHeader(); }
       const y = doc.y;
-      if (options.header) doc.rect(left, y, width, rowHeight).fill(brand.accent);
-      else if (options.total) doc.rect(left, y, width, rowHeight).fill(brand.soft);
-      else if (options.zebra) doc.rect(left, y, width, rowHeight).fill("#F6F5F3");
+      if (options.header) doc.rect(left, y, width, height).fill(brand.accent);
+      else if (options.total) doc.rect(left, y, width, height).fill(brand.soft);
+      else if (options.zebra) doc.rect(left, y, width, height).fill("#F6F5F3");
       let x = left;
       cells.forEach((cell, index) => {
         const numeric = table.columns[index]!.format !== "TEXT";
         doc.font(options.header || options.total ? "Helvetica-Bold" : "Helvetica").fontSize(count > 9 ? 6.5 : 8)
           .fillColor(options.header ? "#FFFFFF" : brand.ink)
-          .text(pdfSafe(cell), x + 3, y + 4, { width: widths[index]! - 6, height: rowHeight - 4, align: numeric && !options.header ? "right" : "left", lineBreak: false, ellipsis: true });
+          .text(pdfSafe(cell), x + 3, y + 4, { width: widths[index]! - 6, height: height - 4, align: numeric ? "right" : "left", lineBreak: Boolean(options.header), ellipsis: true });
         x += widths[index]!;
       });
       if (options.total) doc.moveTo(left, y).lineTo(left + width, y).lineWidth(0.8).strokeColor(brand.ink).stroke();
-      doc.y = y + rowHeight;
+      doc.y = y + height;
       doc.x = left;
     };
     const drawHeader = () => drawRow(table.columns.map((column) => column.label), { header: true });
