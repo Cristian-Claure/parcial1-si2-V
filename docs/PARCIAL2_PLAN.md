@@ -543,3 +543,105 @@ Notas:
 - El lint del móvil ya está configurado (`eslint-config-expo`), lo que cierra ese pendiente de la Fase 2.
 - Los respaldos locales de la base y de los recursos están fuera del repositorio, en la carpeta de respaldos del equipo de desarrollo.
 - Las credenciales de VÉLORA para el generador se leen del `.env` local (`VELORA_SEED_OWNER_EMAIL` / `VELORA_SEED_OWNER_PASSWORD`), que no está versionado.
+
+---
+
+# Fase 4 — Machine Learning local
+
+Requisito 5 del examen: modelos supervisados y no supervisados, entrenados con el historial y mostrados en dashboards. **Solo plan MAX** (`report_tier` ADVANCED).
+
+## F4.1 Auditoría
+
+| Tema | Hallazgo |
+|---|---|
+| Python | 3.13.14 de Microsoft Store (`python`); no hay lanzador `py`. Cumple 3.11+. El venv se crea con `python -m venv apps/ml/.venv` y siempre se invoca por ruta. |
+| Datos | 10.986 pedidos (jul-2025 → 21-oct-2026) en 5 empresas. Respaldo previo: `backups-velora/2026-10-22-pre-fase4` (9,9 MB, 32 tablas). |
+| Etiquetas sembradas | `scripts/.seed-progress/seed-20251001-all.json` guarda el segmento de cada cliente (`LOYAL_HIGH`, `OCCASIONAL`, `ONE_TIME`, `CHURN_RISK`). Permite calcular el ARI de U1 sin cambiar el generador. |
+| Venta neta | Misma definición que el bloque 3 (`report-facts.ts`): Σ cobros PAID/REFUNDED por `paid_at` − Σ reembolsos por `refunded_at`, por día de Bolivia. Python replica ese SQL y una prueba compara sus cifras con las del backend. |
+| Workspace | `apps/ml` **no** tiene `package.json`: pnpm, `postinstall`, EAS y Azure no lo tocan. |
+
+## F4.2 Arquitectura
+
+- **`apps/ml`** (Python 3.11+, venv `apps/ml/.venv`, `requirements.txt` con versiones fijadas: scikit-learn, pandas, numpy, psycopg[binary], joblib, fastapi, uvicorn, pytest). Sin TensorFlow, torch ni prophet.
+- El mismo paquete sirve por **CLI** (`python -m velora_ml train --company <slug|id>`) y como **API FastAPI** local en `127.0.0.1:8090`, con el token `X-Velora-ML-Token` (`VELORA_ML_TOKEN`). Solo admite un entrenamiento a la vez (lock en el proceso; si hay otro en curso, 409).
+- **Flujo de una corrida**:
+  1. El backend valida el alcance (`TenantScopeService`) y el plan (`PlanLimitsService`, `ML_DASHBOARDS`).
+  2. Crea las corridas `QUEUED` en `ml_runs` y llama a `POST /train` con sus ids.
+  3. Python las pasa a `RUNNING` y escribe los resultados y el estado final.
+- Python **lee** las tablas operativas y **escribe solo `ml_*`**. Para garantizarlo, el rol local opcional `velora_ml` tiene mínimo privilegio: `SELECT` sobre las tablas que lee y DML solo sobre `ml_*`. Lo crea `pnpm ml:db-role` y guarda `VELORA_ML_DATABASE_URL` en `.env`. Es barato y demuestra la frontera; sin ese rol, usa `DATABASE_URL`.
+- Todas las consultas del ML filtran por `company_id`. Si no hay datos suficientes, la corrida termina en `INSUFFICIENT_DATA` con un mensaje, sin fallar.
+- Los artefactos (`joblib`) van a `apps/ml/artifacts/<company>/<model>/<run>.joblib` (no versionados). Se conservan las **últimas 5 corridas** por empresa y modelo; las anteriores se borran junto con sus resultados (cascada).
+- **Scripts pnpm**:
+  - `ml:setup` (crea el venv e instala);
+  - `dev:ml` (API);
+  - `ml:train` (CLI);
+  - `ml:test` (pytest);
+  - `ml:db-role`.
+
+  Todos pasan por `scripts/ml.mjs`, que resuelve el Python del venv por ruta.
+
+## F4.3 Esquema (V33)
+
+- **`ml_runs`**:
+  - `id`, `company_id`, `model_key` (`SALES_FORECAST`, `CANCEL_RISK`, `CUSTOMER_SEGMENTS`, `SALES_ANOMALIES`);
+  - `status` (`QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `INSUFFICIENT_DATA`), `rows_used`, `data_from`, `data_to`;
+  - `params`, `metrics` (JSONB: modelo frente a referencias, importancias y perfiles);
+  - `artifact_version`, `requested_by`, `error`, `created_at`, `started_at`, `finished_at`.
+- **Tablas de resultados** (todas con `company_id` y `run_id` en cascada, e índice por `(company_id, run_id)`):
+  - `ml_forecasts`: día, `kind` (`BACKTEST`/`FORECAST`), real, predicho e intervalo inferior y superior;
+  - `ml_customer_segments`: cliente, segmento, nombre, R, F, M y la proyección PCA (x, y);
+  - `ml_anomalies`: día, real, esperado, z, dirección y explicación del calendario;
+  - `ml_order_risk`: pedido abierto, probabilidad, nivel y variables de entrada.
+
+## F4.4 Modelos
+
+| Clave | Tipo | Objetivo | Validación | Referencias |
+|---|---|---|---|---|
+| `SALES_FORECAST` (S1) | Regresión | Venta neta diaria y pronóstico a 30 días con bandas | Walk-forward con ventana creciente: 3 pliegues de validación de 30 días y prueba final de 90 días; pronóstico recursivo en bloques de 30 días | Ingenuo, ingenuo estacional (7 días) y promedio móvil de 28 días |
+| `CANCEL_RISK` (S2) | Clasificación | `CANCELLED` frente a `FULFILLED` en pedidos ECOMMERCE | Partición temporal 80/20; umbral elegido en validación interna (último 20 % del entrenamiento) | Clase mayoritaria y regresión logística |
+| `CUSTOMER_SEGMENTS` (U1) | Clustering | RFM a la fecha de corte (log + estandarización), KMeans | k entre 2 y 8: silhouette, codo y estabilidad (ARI con 5 semillas); ARI frente a las etiquetas sembradas | — |
+| `SALES_ANOMALIES` (U2) | Anomalías | z-score robusto (MAD) de los residuos en log frente a un modelo de demanda "normal" sin calendario especial | Recuperación de las fechas sembradas y falsos positivos | — |
+
+Detalles adicionales:
+- **S1**: grilla de hasta 20 combinaciones evaluada solo en los pliegues de validación.
+- **S2**:
+  - momento de puntuación = creación del pedido en el checkout, con el método de pago elegido (el primer pago creado);
+  - la consulta nunca lee `cancelled_at`, `paid_at`, `fulfilled_at`, el estado del pago ni el historial, y una prueba lo verifica;
+  - el desbalance se maneja con `class_weight`.
+- **U1**: los nombres de segmento (Leales, Ocasionales, En riesgo, Una sola compra) salen de reglas explícitas sobre los centroides frente a la mediana.
+
+## F4.5 Endpoints y contratos (`@velora/contracts/ml.ts`, aditivos)
+
+Rutas `admin/ml/*` para ADMIN y PLATFORM_ADMIN (el STORE_MANAGER no entra), todas con `?companyId=`:
+- `GET overview`: estado del servicio, última corrida por modelo e indicador de entrenamiento en curso;
+- `POST runs`: devuelve **202** `{ runIds }`, o **409** si ya hay una corrida activa en la empresa o en el servicio;
+- `GET runs/:id`;
+- `GET forecast`, `GET segments`, `GET cancel-risk` y `GET anomalies`: resultados de la última corrida exitosa (o de `INSUFFICIENT_DATA`).
+
+FREE y PLUS reciben **403** `PLAN_LIMIT_REPORT_FEATURE`. Si el servicio está caído, `POST runs` responde **503** `ML_SERVICE_UNAVAILABLE` y las lecturas siguen mostrando lo guardado. Todas las rutas entran en la suite A/B.
+
+## F4.6 Pantallas
+
+`/admin/ml` (menú "Inteligencia", bloqueado con "Disponible en MAX" fuera de ese plan) con 4 pestañas:
+- **Pronóstico**: serie real frente a predicha con banda, métricas frente a referencias e importancias;
+- **Segmentos**: dispersión PCA, tarjetas de perfil y tabla;
+- **Riesgo de cancelación**: métricas, matriz de confusión, importancias y pedidos abiertos de mayor riesgo;
+- **Anomalías**: serie con marcadores y tabla explicada.
+
+Todas tienen "Entrenar de nuevo" con seguimiento del estado. Los gráficos son SVG propios y no hay narración IA.
+
+## F4.7 Bloques
+
+1. `apps/ml`, V33, los cuatro modelos escribiendo en `ml_*` y pruebas pytest. Entrenamiento de VÉLORA y Urbano Boutique.
+2. Backend: cliente ML, ciclo de corridas, endpoints, control de plan y pruebas (MAX, A/B, doble del cliente ML, 409 y servicio caído).
+3. Web: dashboards.
+4. `scripts/demo-ml.mjs`, `docs/FASE4_DEMO_ML.md`, `docs/ML_MODELOS.md` y estado.
+
+## F4.8 Estado
+
+| Bloque | Estado |
+|---|---|
+| 1 Servicio ML y modelos | En curso |
+| 2 Backend | Pendiente |
+| 3 Web | Pendiente |
+| 4 Demo y documentación | Pendiente |
