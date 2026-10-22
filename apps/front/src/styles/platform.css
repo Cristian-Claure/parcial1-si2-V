@@ -1,0 +1,131 @@
+/* Plataforma Trama (Fase 4B). Los tokens viven en el contenedor [data-platform]; el selector
+   compuesto evita pelear especificidad con :root (paleta de las tiendas) y con [data-tenant]. */
+
+[data-platform][data-platform] {
+  --paper: #F7F6FB;
+  --paper-raised: #FFFFFF;
+  --ink: #14142B;
+  --ink-soft: #5B5B75;
+  --hairline: #E4E3EF;
+  --accent: #4F46E5;
+  --accent-deep: #3730A3;
+  --accent-soft: #E8E7FB;
+  --highlight: #F2B544;
+  --success: #1F7A5A;
+  --error: #B42318;
+  --terracotta: #B54708;
+  --shadow-sm: 0 1px 2px rgba(20, 20, 43, .06);
+  --shadow-md: 0 10px 30px rgba(20, 20, 43, .08);
+  --shadow-lg: 0 30px 80px rgba(55, 48, 163, .18);
+  color: var(--ink);
+  background: var(--paper);
+  min-height: 100vh;
+}
+
+[data-platform] .button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+[data-platform] .button.primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+[data-platform] .button.secondary { background: var(--paper-raised); color: var(--accent-deep); border-color: var(--hairline); }
+[data-platform] .eyebrow { color: var(--accent); letter-spacing: .14em; }
+[data-platform] a { color: inherit; }
+
+/* Marca */
+.platform-brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; }
+.platform-brand-text { display: grid; line-height: 1.1; }
+.platform-wordmark { font-family: var(--font-display); font-weight: 700; font-size: 1.45rem; letter-spacing: .01em; color: var(--ink); }
+.platform-brand.dark .platform-wordmark { color: #fff; }
+.platform-tagline { font-size: .74rem; color: var(--ink-soft); }
+.platform-brand.dark .platform-tagline { color: rgba(255, 255, 255, .78); }
+.weave-motif { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Header y footer públicos */
+[data-platform] .platform-header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem clamp(1rem, 4vw, 3rem); background: color-mix(in srgb, var(--paper-raised) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--hairline); }
+[data-platform] .platform-nav { display: flex; align-items: center; gap: .3rem 1.1rem; flex-wrap: wrap; }
+[data-platform] .platform-nav a { font-weight: 600; color: var(--ink-soft); text-decoration: none; }
+[data-platform] .platform-nav a.active, [data-platform] .platform-nav a:hover { color: var(--accent-deep); }
+[data-platform] .platform-header .header-actions { display: flex; gap: .5rem; align-items: center; }
+[data-platform] .platform-footer { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 1.4rem clamp(1rem, 4vw, 3rem); border-top: 1px solid var(--hairline); color: var(--ink-soft); font-size: .88rem; }
+[data-platform] .platform-footer nav { display: flex; gap: 1rem; }
+[data-platform] .platform-main { padding: clamp(1.25rem, 3vw, 2.5rem) clamp(1rem, 4vw, 3rem); }
+
+/* Entrada neutral (login / registro) */
+[data-platform] .platform-auth { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr); min-height: calc(100vh - 66px); }
+[data-platform] .platform-hero { position: relative; overflow: hidden; color: #fff; display: grid; align-content: end; padding: clamp(2rem, 5vw, 4rem); background: var(--accent-deep); }
+[data-platform] .platform-hero .weave-motif { opacity: .55; }
+[data-platform] .platform-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20, 20, 43, 0) 25%, rgba(20, 20, 43, .78) 100%); }
+[data-platform] .platform-hero > * { position: relative; z-index: 1; }
+[data-platform] .platform-hero h1 { font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.08; margin: 1.1rem 0 .7rem; color: #fff; }
+[data-platform] .platform-hero p { max-width: 34rem; color: rgba(255, 255, 255, .86); font-size: 1.05rem; }
+[data-platform] .platform-hero ul { list-style: none; padding: 0; margin: 1.2rem 0 1.6rem; display: grid; gap: .45rem; }
+[data-platform] .platform-hero li { display: flex; gap: .55rem; align-items: center; color: rgba(255, 255, 255, .92); }
+[data-platform] .platform-hero li::before { content: ""; width: .55rem; height: .55rem; border-radius: 2px; background: var(--highlight); transform: rotate(45deg); }
+[data-platform] .platform-hero .actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+[data-platform] .platform-hero .button.secondary { background: rgba(255, 255, 255, .12); color: #fff; border-color: rgba(255, 255, 255, .35); }
+[data-platform] .platform-form-side { display: grid; place-items: center; padding: clamp(1.5rem, 4vw, 3rem); }
+[data-platform] .platform-card { width: min(100%, 440px); display: grid; gap: .95rem; background: var(--paper-raised); border: 1px solid var(--hairline); border-radius: var(--radius-lg); padding: clamp(1.4rem, 3vw, 2.2rem); box-shadow: var(--shadow-md); }
+[data-platform] .platform-card.wide { width: min(100%, 620px); }
+[data-platform] .platform-card h1 { margin: 0; font-size: 1.9rem; }
+[data-platform] .platform-card p { margin: 0; color: var(--ink-soft); }
+[data-platform] .platform-card label { display: grid; gap: .35rem; font-weight: 600; font-size: .9rem; }
+[data-platform] .platform-card input { border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: .75rem .85rem; font: inherit; background: var(--paper); }
+[data-platform] .platform-card input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+[data-platform] .platform-card .auth-switch { text-align: center; font-size: .92rem; }
+[data-platform] .platform-card .auth-switch a { color: var(--accent-deep); font-weight: 700; }
+[data-platform] .platform-divider { display: flex; align-items: center; gap: .7rem; color: var(--ink-soft); font-size: .82rem; }
+[data-platform] .platform-divider::before, [data-platform] .platform-divider::after { content: ""; flex: 1; height: 1px; background: var(--hairline); }
+[data-platform] .platform-ctas { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+
+/* Elección de camino (registro) */
+[data-platform] .path-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .9rem; }
+[data-platform] .path-card { display: grid; gap: .5rem; text-align: left; text-decoration: none; padding: 1.2rem; border-radius: var(--radius-lg); border: 1px solid var(--hairline); background: var(--paper); transition: border-color .15s ease, transform .15s ease; }
+[data-platform] .path-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+[data-platform] .path-card .path-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-deep); }
+[data-platform] .path-card strong { font-family: var(--font-display); font-size: 1.2rem; }
+[data-platform] .path-card span { color: var(--ink-soft); font-size: .9rem; }
+
+/* Directorio de tiendas */
+[data-platform] .directory-head { display: grid; gap: .6rem; max-width: 46rem; margin-bottom: 1.4rem; }
+[data-platform] .directory-head h1 { margin: 0; font-size: clamp(2rem, 4vw, 2.8rem); }
+[data-platform] .directory-tools { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; margin-bottom: 1.4rem; }
+[data-platform] .directory-tools input { flex: 1 1 260px; border: 1px solid var(--hairline); border-radius: var(--radius-full); padding: .75rem 1.1rem; font: inherit; background: var(--paper-raised); }
+[data-platform] .directory-tools .chip { border: 1px solid var(--hairline); background: var(--paper-raised); border-radius: var(--radius-full); padding: .5rem .9rem; font: inherit; cursor: pointer; color: var(--ink); }
+[data-platform] .directory-tools .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+[data-platform] .store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.1rem; }
+[data-platform] .store-card { display: grid; grid-template-rows: 120px auto; overflow: hidden; border-radius: var(--radius-lg); border: 1px solid var(--hairline); background: var(--store-paper, var(--paper-raised)); color: var(--store-ink, var(--ink)); text-decoration: none; box-shadow: var(--shadow-sm); transition: transform .15s ease, box-shadow .15s ease; }
+[data-platform] .store-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+[data-platform] .store-card .store-banner { background: linear-gradient(135deg, var(--store-primary), var(--store-accent)); background-size: cover; background-position: center; }
+[data-platform] .store-card .store-body { display: grid; gap: .45rem; padding: 0 1.1rem 1.1rem; }
+[data-platform] .store-card .store-logo { width: 64px; height: 64px; margin-top: -32px; border-radius: 18px; background: var(--store-paper, #fff); border: 3px solid var(--store-paper, #fff); box-shadow: var(--shadow-sm); display: grid; place-items: center; overflow: hidden; font-family: var(--font-display); font-size: 1.6rem; color: var(--store-primary); }
+[data-platform] .store-card .store-logo img { width: 100%; height: 100%; object-fit: cover; }
+[data-platform] .store-card strong { font-family: var(--font-display); font-size: 1.25rem; }
+[data-platform] .store-card small { color: color-mix(in srgb, var(--store-ink, var(--ink)) 70%, transparent); }
+[data-platform] .store-card .store-segment { justify-self: start; font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: .2rem .6rem; border-radius: var(--radius-full); background: color-mix(in srgb, var(--store-accent) 14%, transparent); color: var(--store-accent); }
+[data-platform] .store-card .store-enter { color: var(--store-accent); font-weight: 700; font-size: .9rem; }
+
+/* Elegir empresa */
+[data-platform] .choose-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-top: 1.2rem; }
+[data-platform] .choose-card { display: grid; gap: .55rem; padding: 1.2rem; border-radius: var(--radius-lg); background: var(--paper-raised); border: 1px solid var(--hairline); box-shadow: var(--shadow-sm); }
+[data-platform] .choose-card.last { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+[data-platform] .choose-card header { display: flex; align-items: center; gap: .8rem; }
+[data-platform] .choose-card .store-logo { width: 52px; height: 52px; border-radius: 14px; overflow: hidden; display: grid; place-items: center; font-family: var(--font-display); font-size: 1.4rem; color: #fff; }
+[data-platform] .choose-card .store-logo img { width: 100%; height: 100%; object-fit: cover; }
+[data-platform] .choose-card dl { display: grid; grid-template-columns: auto 1fr; gap: .25rem .8rem; margin: 0; font-size: .9rem; }
+[data-platform] .choose-card dt { color: var(--ink-soft); }
+[data-platform] .choose-card dd { margin: 0; font-weight: 600; }
+[data-platform] .plan-pill { font-size: .72rem; font-weight: 800; letter-spacing: .06em; padding: .15rem .55rem; border-radius: var(--radius-full); background: var(--accent-soft); color: var(--accent-deep); }
+
+/* Planes: "Más popular" con highlight y texto ink */
+[data-platform] .plan-card.featured { border-color: var(--accent); box-shadow: var(--shadow-lg); }
+[data-platform] .plan-ribbon { background: var(--highlight); color: var(--ink); font-weight: 800; }
+
+/* Menú de operación: "Cambiar de empresa" */
+.sidebar .switch-company { font-size: .8rem; color: rgba(255, 255, 255, .78); text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 900px) {
+  [data-platform] .platform-auth { grid-template-columns: 1fr; }
+  [data-platform] .platform-hero { min-height: 340px; }
+}
+
+@media (max-width: 560px) {
+  [data-platform] .platform-header { flex-wrap: wrap; }
+  [data-platform] .platform-ctas { grid-template-columns: 1fr; }
+}

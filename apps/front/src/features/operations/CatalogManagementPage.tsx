@@ -365,9 +365,9 @@ export function CatalogManagementPage() {
               data.get(
                 "brand",
               ) ??
-              "VÉLORA",
+              "",
             ) ||
-            "VÉLORA",
+            null,
           composition:
             String(
               data.get(
@@ -788,7 +788,7 @@ export function CatalogManagementPage() {
           </label>
           <label>
             Marca
-            <input name="brand" defaultValue="VÉLORA" />
+            <input name="brand" placeholder="Marca de la prenda (opcional)" />
           </label>
           <label>
             Descripción

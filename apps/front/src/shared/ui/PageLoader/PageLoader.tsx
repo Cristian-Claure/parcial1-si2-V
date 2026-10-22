@@ -3,9 +3,9 @@ export function PageLoader() {
     <div
       className="page-loading page-loader"
       role="status"
-      aria-label="Cargando VÉLORA"
+      aria-label="Cargando"
     >
-      <strong>VÉLORA</strong>
+      <strong>Trama</strong>
       <span>Preparando experiencia…</span>
     </div>
   );

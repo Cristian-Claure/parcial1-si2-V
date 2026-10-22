@@ -45,7 +45,7 @@ function OrderCard({ order }: { order: OrderResponse }) {
   const active = payments.data?.find((payment) => payment.status === "PENDING" || payment.status === "PAID") ?? null;
   const create = useMutation({ mutationFn: async () => {
     if (method === "WEB") { const checkout = await veloraApi.stripeCheckout(order.id); globalThis.location.assign(checkout.checkoutUrl); return null; }
-    return veloraApi.createPayment(order.id, { method, notes: `Pago ${method} iniciado desde React Web VÉLORA.` });
+    return veloraApi.createPayment(order.id, { method, notes: `Pago ${method} iniciado desde la web de la tienda.` });
   }, onSuccess: async (payment) => { if (payment) setMessage("Pago registrado correctamente."); await client.invalidateQueries({ queryKey: ["payments", order.id] }); } });
   const cancelPayment = useMutation({ mutationFn: (payment: PaymentResponse) => veloraApi.cancelPayment(payment.id, { reason: "Pago cancelado por el cliente desde React Web." }), onSuccess: () => client.invalidateQueries({ queryKey: ["payments", order.id] }) });
   const cancelOrder = useMutation({ mutationFn: () => veloraApi.cancelOrder(order.id), onSuccess: async () => { await client.invalidateQueries({ queryKey: ["orders"] }); setMessage("Pedido cancelado; el inventario reservado fue liberado."); } });

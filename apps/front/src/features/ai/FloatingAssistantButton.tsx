@@ -56,7 +56,7 @@ export function FloatingAssistantButton() {
         ref={triggerRef}
         type="button"
         className="assistant-fab"
-        aria-label={open ? "Cerrar asistente VÉLORA" : "Abrir asistente VÉLORA"}
+        aria-label={open ? "Cerrar asistente de la tienda" : "Abrir asistente de la tienda"}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
@@ -73,7 +73,7 @@ export function FloatingAssistantButton() {
             className="assistant-overlay-card"
             role="dialog"
             aria-modal="false"
-            aria-label="Asistente de productos VÉLORA"
+            aria-label="Asistente de productos de la tienda"
           >
             <button
               ref={closeRef}

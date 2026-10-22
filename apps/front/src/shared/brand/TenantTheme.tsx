@@ -4,7 +4,7 @@ import { tenantStyle } from "./tenantStyle";
 
 /**
  * Aplica la paleta de la empresa con estilos inline en un contenedor data-tenant (sin pelear
- * especificidad con :root). VÉLORA (marca de la plataforma) no necesita contenedor.
+ * especificidad con :root). VÉLORA usa los tokens de :root (su paleta editorial original) y no necesita contenedor.
  */
 export function TenantTheme({ brand, children }: { brand: CompanyBrand | null; children: ReactNode }) {
   if (!brand || brand.isPlatformBrand) return <>{children}</>;

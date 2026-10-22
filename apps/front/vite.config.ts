@@ -7,16 +7,16 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icons/*.png"],
+      includeAssets: ["icons/*.png", "trama-mark.svg"],
       manifest: {
-        name: "VÉLORA",
-        short_name: "VÉLORA",
-        description: "VÉLORA · comercio omnicanal",
+        name: "Trama",
+        short_name: "Trama",
+        description: "Trama · Tu tienda de moda, lista en minutos.",
         display: "standalone",
         scope: "/",
         start_url: "/",
-        background_color: "#FAF6F0",
-        theme_color: "#17130F",
+        background_color: "#F7F6FB",
+        theme_color: "#14142B",
         icons: [
           { src: "/icons/icon-72x72.png", sizes: "72x72", type: "image/png", purpose: "maskable any" },
           { src: "/icons/icon-96x96.png", sizes: "96x96", type: "image/png", purpose: "maskable any" },

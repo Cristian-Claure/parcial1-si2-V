@@ -1,4 +1,6 @@
 import type {
+  CompanySegment,
+  DirectoryEntry,
   PlatformAdjustSubscriptionRequest,
   PlatformCompany,
   PlatformOwner,
@@ -91,6 +93,14 @@ export const veloraApi = {
   slugAvailability: (slug: string) => apiRequest<SlugAvailabilityResponse>(`/api/onboarding/slug-availability?slug=${q(slug)}`, {}, false),
   registerStore: (body: RegisterOwnerStoreRequest) => apiRequest<OnboardingResponse>("/api/onboarding/store", { method: "POST", body: jsonBody(body) }, false),
   companyBySlug: (slug: string) => apiRequest<CompanyBrand>(`/api/companies/by-slug/${q(slug)}`, {}, false),
+  // Fase 4B · directorio público de la plataforma (solo campos de marca).
+  directory: (query: { q?: string; segment?: CompanySegment | null } = {}) => {
+    const params = new URLSearchParams();
+    if (query.q?.trim()) params.set("q", query.q.trim());
+    if (query.segment) params.set("segment", query.segment);
+    const search = params.toString();
+    return apiRequest<DirectoryEntry[]>(`/api/companies/directory${search ? `?${search}` : ""}`, {}, false);
+  },
   adminBranding: (companyId: string) => apiRequest<AdminBrandingResponse>(`/api/admin/companies/${q(companyId)}/branding`),
   updateBranding: (companyId: string, body: UpdateBrandingRequest) => apiRequest<AdminBrandingResponse>(`/api/admin/companies/${q(companyId)}/branding`, { method: "PATCH", body: jsonBody(body) }),
   uploadBrandAsset: (companyId: string, kind: "logo" | "banner", file: File) => { const form = new FormData(); form.append("file", file); return apiRequest<AdminBrandingResponse>(`/api/admin/companies/${q(companyId)}/branding/${kind}`, { method: "POST", body: form }); },
