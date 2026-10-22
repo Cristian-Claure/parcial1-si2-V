@@ -51,3 +51,6 @@ apps/ml/artifacts/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Fotos de producto locales de VÉLORA (no se versionan; respaldadas en backups-velora)
+apps/front/src/assets/products/
