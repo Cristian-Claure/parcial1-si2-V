@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { and, eq, ne, or } from "drizzle-orm";
+import { and, asc, eq, ilike, ne, notLike, or, type SQL } from "drizzle-orm";
 import { companies, type DatabaseBrandPalette, type DatabaseCompanyContact } from "@velora/database";
 import {
   brandingAllows, companyContactSchema, resolveBrandPalette, validateBrandPalette,
-  type AdminBrandingResponse, type BrandingField, type BrandingTier, type CompanyBrand, type UpdateBrandingRequest,
+  type AdminBrandingResponse, type BrandingField, type BrandingTier, type CompanyBrand, type CompanySegment, type DirectoryEntry, type DirectoryQuery, type UpdateBrandingRequest,
 } from "@velora/contracts";
 import { assertCompanyAccess, type ActorAccessContext } from "../common/authz/tenant-scope.service.js";
 import { RuntimeConfigService } from "../common/config/runtime-config.service.js";
@@ -14,7 +14,7 @@ import { PlanLimitsService } from "../plans/plan-limits.service.js";
 import { ManagedAssetStorageService, type LoadedManagedAsset } from "../storage/managed-asset-storage.service.js";
 
 export const PLATFORM_BRAND_CODE = "VELORA";
-const RESERVED_SLUGS = new Set(["admin", "api", "planes", "crear-tienda", "plataforma", "sucursal", "login", "registro", "t"]);
+const RESERVED_SLUGS = new Set(["admin", "api", "planes", "crear-tienda", "plataforma", "sucursal", "login", "registro", "t", "tiendas", "elegir-empresa"]);
 const FIELD_LABEL: Record<BrandingField, string> = {
   displayName: "el nombre comercial", slug: "el enlace", logo: "el logo", accent: "el color de acento", fullPalette: "la paleta completa",
   tagline: "la frase de marca", banner: "el banner", contact: "los datos de contacto y redes",
@@ -27,9 +27,9 @@ export interface BrandUploadedFile { buffer: Buffer; mimetype: string; originaln
 const brandSelection = {
   id: companies.id, code: companies.code, name: companies.name, slug: companies.slug, active: companies.active,
   displayName: companies.displayName, tagline: companies.tagline, logoStorageKey: companies.logoStorageKey,
-  bannerStorageKey: companies.bannerStorageKey, brandPalette: companies.brandPalette, contact: companies.contact,
+  bannerStorageKey: companies.bannerStorageKey, brandPalette: companies.brandPalette, contact: companies.contact, segment: companies.segment, listed: companies.listed,
 };
-type BrandRow = { id: string; code: string; name: string; slug: string; active: boolean; displayName: string | null; tagline: string | null; logoStorageKey: string | null; bannerStorageKey: string | null; brandPalette: DatabaseBrandPalette | null; contact: DatabaseCompanyContact | null };
+type BrandRow = { id: string; code: string; name: string; slug: string; active: boolean; displayName: string | null; tagline: string | null; logoStorageKey: string | null; bannerStorageKey: string | null; brandPalette: DatabaseBrandPalette | null; contact: DatabaseCompanyContact | null; segment: CompanySegment | null; listed: boolean };
 
 /**
  * Marca por compañía. Lo guardado no se borra al bajar de plan: la marca PÚBLICA se
@@ -63,7 +63,7 @@ export class BrandingService {
       brand: this.toBrand(row, tier),
       stored: {
         displayName: row.displayName, slug: row.slug, tagline: row.tagline, palette: row.brandPalette, contact: row.contact,
-        hasLogo: row.logoStorageKey !== null, hasBanner: row.bannerStorageKey !== null,
+        hasLogo: row.logoStorageKey !== null, hasBanner: row.bannerStorageKey !== null, segment: row.segment,
       },
       allowed: (["displayName", "slug", "logo", "accent", "fullPalette", "tagline", "banner", "contact"] as const).filter((field) => brandingAllows(tier, field)),
     };
@@ -102,6 +102,8 @@ export class BrandingService {
       ...(request.tagline !== undefined ? { tagline: request.tagline?.trim() || null } : {}),
       ...(request.contact !== undefined ? { contact: request.contact ? (companyContactSchema.parse(request.contact) as DatabaseCompanyContact) : null } : {}),
       ...(palette ? { brandPalette: nextPalette } : {}),
+      // El segmento no depende del nivel de marca: solo clasifica la tienda en el directorio.
+      ...(request.segment !== undefined ? { segment: request.segment } : {}),
       updatedAt: new Date(),
     }).where(eq(companies.id, companyId));
     return this.adminBranding(actor, companyId);
@@ -137,6 +139,25 @@ export class BrandingService {
       .where(or(eq(companies.logoStorageKey, storageKey), eq(companies.bannerStorageKey, storageKey))).limit(1);
     if (referenced.length === 0) throw new ApiHttpError(404, "Asset no encontrado.");
     try { return await this.storage.load(storageKey); } catch { throw new ApiHttpError(404, "Asset no encontrado."); }
+  }
+
+  /**
+   * Directorio público (Fase 4B): tiendas activas y listadas, sin las de las demos automáticas
+   * (`demo-*`). Solo campos de marca, filtrados por el nivel de marca vigente de cada tienda.
+   */
+  async directory(query: DirectoryQuery): Promise<DirectoryEntry[]> {
+    const conditions: SQL[] = [eq(companies.active, true), eq(companies.listed, true), notLike(companies.slug, "demo-%")];
+    if (query.segment) conditions.push(eq(companies.segment, query.segment));
+    if (query.q) {
+      // Los comodines del usuario (% _ \) se escapan: la búsqueda es literal.
+      const pattern = `%${query.q.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
+      conditions.push(or(ilike(companies.name, pattern), ilike(companies.displayName, pattern), ilike(companies.tagline, pattern), ilike(companies.slug, pattern))!);
+    }
+    const rows = await this.database.db.select(brandSelection).from(companies).where(and(...conditions)).orderBy(asc(companies.name)).limit(100) as BrandRow[];
+    return Promise.all(rows.map(async (row) => {
+      const brand = this.toBrand(row, await this.limits.brandingTier(row.id));
+      return { slug: brand.slug, name: brand.name, tagline: brand.tagline, segment: row.segment, logoUrl: brand.logoUrl, bannerUrl: brand.bannerUrl, palette: brand.palette };
+    }));
   }
 
   /** Bytes del logo para documentos exportados (PDF); null si no hay logo o no se puede leer. */

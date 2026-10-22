@@ -15,9 +15,8 @@ Este plan reemplaza la decisión anterior de que la marca de plataforma fuera V�
 
 - `companies.listed BOOLEAN NOT NULL DEFAULT true`. Backfill: `false` para los slugs `demo-%` (tiendas de las demos automáticas).
 - `companies.segment VARCHAR(20) NULL` con check `MUJER | HOMBRE | DEPORTIVA | INFANTIL | UNISEX`. Lo necesita el filtro por segmento del directorio y no existía. Backfill de las tiendas de muestra:
-  - VÉLORA y Andina Moda: `MUJER`;
-  - Urbano Boutique y Urbano Outlet: `UNISEX`;
-  - Primer Paso: `INFANTIL`.
+  - VÉLORA: `MUJER` (moda femenina);
+  - Urbano Boutique, Urbano Outlet, Andina Moda y Primer Paso: `UNISEX` (sus catálogos sintéticos tienen ropa de hombre y de mujer).
 - Índice parcial `idx_companies_directory (active, listed)`.
 
 ## 4B.3 Endpoints y contratos (aditivos)

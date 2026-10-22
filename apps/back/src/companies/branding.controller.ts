@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors, HttpStatus } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, Res, UploadedFile, UseGuards, UseInterceptors, HttpStatus } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { updateBrandingRequestSchema, type AdminBrandingResponse, type CompanyBrand, type UpdateBrandingRequest } from "@velora/contracts";
+import { directoryQuerySchema, updateBrandingRequestSchema, type AdminBrandingResponse, type CompanyBrand, type DirectoryEntry, type DirectoryQuery, type UpdateBrandingRequest } from "@velora/contracts";
 import { BearerAuthGuard } from "../auth/bearer-auth.guard.js";
 import { RequireRoles } from "../common/authz/roles.decorator.js";
 import { RolesGuard } from "../common/authz/roles.guard.js";
@@ -21,6 +21,11 @@ function assetKind(value: string): BrandAssetKind {
 @Controller("api/companies")
 export class PublicBrandingController {
   constructor(private readonly branding: BrandingService) {}
+
+  /** Directorio público de la plataforma (/tiendas): solo campos de marca. */
+  @Get("directory") directory(@Query(new ZodValidationPipe(directoryQuerySchema)) query: DirectoryQuery): Promise<DirectoryEntry[]> {
+    return this.branding.directory(query);
+  }
 
   /** /t/:slug → marca efectiva pública de la tienda. */
   @Get("by-slug/:slug") bySlug(@Param("slug") slug: string): Promise<CompanyBrand> {
