@@ -44,3 +44,10 @@ logs/
 Thumbs.db
 desktop.ini
 scripts/.seed-progress/
+
+# Fase 4 · servicio ML local
+apps/ml/.venv/
+apps/ml/artifacts/
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -28,6 +28,7 @@ import { InventoryPage } from "../../features/operations/InventoryPage";
 import { OperationalOrdersPage } from "../../features/operations/OperationalOrdersPage";
 const PosPage = lazy(() => import("../../features/operations/PosPage").then((module) => ({ default: module.PosPage })));
 const ReportsPage = lazy(() => import("../../features/reports/ReportsPage").then((module) => ({ default: module.ReportsPage })));
+const MlPage = lazy(() => import("../../features/ml/MlPage").then((module) => ({ default: module.MlPage })));
 const ReportBuilderPage = lazy(() => import("../../features/reports/ReportBuilderPage").then((module) => ({ default: module.ReportBuilderPage })));
 import { AuditPage } from "../../features/audit/AuditPage";
 const PlansPage = lazyNamed(() => import("../../features/saas/PlansPage"), "PlansPage");
@@ -75,6 +76,7 @@ export function AppRouter() {
       <Route path="admin/pos" element={<PosPage />} />
       <Route path="admin/reportes" element={<ReportsPage />} />
       <Route path="admin/reportes/constructor" element={<ReportBuilderPage />} />
+      <Route path="admin/ml" element={<MlPage />} />
       <Route path="admin/auditoria" element={<AuditPage />} />
       <Route path="admin/mi-plan" element={<MyPlanPage />} />
       <Route path="admin/empresas" element={<CompaniesPage />} />

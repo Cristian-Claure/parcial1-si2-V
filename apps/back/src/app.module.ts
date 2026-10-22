@@ -16,6 +16,7 @@ import { OrdersModule } from "./orders/orders.module.js";
 import { PaymentsModule } from "./payments/payments.module.js";
 import { PosModule } from "./pos/pos.module.js";
 import { ReportsModule } from "./reports/reports.module.js";
+import { MlModule } from "./ml/ml.module.js";
 import { StorageModule } from "./storage/storage.module.js";
 import { StoresModule } from "./stores/stores.module.js";
 import { TryOnModule } from "./try-on/try-on.module.js";
@@ -53,6 +54,7 @@ import { SyncModule } from "./sync/sync.module.js";
     PushModule,
     AiModule,
     ReportsModule,
+    MlModule,
     AuditModule,
   ],
 })

@@ -236,6 +236,15 @@ export const serverRuntimeConfigSchema =
     OPENAI_API_KEY:
       optionalStringFromEnv(),
 
+    // Fase 4 · servicio ML local (apps/ml). Opcionales: sin token, el entrenamiento responde 503.
+    VELORA_ML_URL:
+      httpUrlFromEnv(
+        "http://127.0.0.1:8090",
+      ),
+
+    VELORA_ML_TOKEN:
+      optionalStringFromEnv(),
+
     VELORA_AI_MODEL:
       z.preprocess(
         (value) =>

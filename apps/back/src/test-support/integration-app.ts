@@ -37,6 +37,9 @@ export async function startTestApp(db: TestDatabase, env: Record<string, string>
     OPENAI_API_KEY: "",
     STRIPE_SECRET_KEY: "",
     STRIPE_WEBHOOK_SECRET: "",
+    // Servicio ML apagado por defecto (puerto sin escuchar): las pruebas usan un doble de MlClient.
+    VELORA_ML_URL: "http://127.0.0.1:9",
+    VELORA_ML_TOKEN: "",
     ...env,
   });
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true, logger: false });

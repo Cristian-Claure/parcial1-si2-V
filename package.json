@@ -11,6 +11,7 @@
     "dev:back": "pnpm --filter @velora/back dev",
     "dev:front": "pnpm --filter @velora/front dev",
     "dev:mobile": "pnpm --filter @velora/mobile start",
+    "dev:ml": "node scripts/ml.mjs serve",
     "postinstall": "pnpm build:packages",
     "build": "corepack enable && corepack prepare pnpm@11.24.0 --activate && pnpm install && pnpm build:azure:back",
     "build:back": "pnpm --filter @velora/back build",
@@ -23,7 +24,11 @@
     "start:azure:back": "pnpm --filter @velora/back start",
     "build:azure:front": "pnpm --filter @velora/contracts build && pnpm --filter @velora/front build",
     "db:migrate:fresh": "pnpm --filter @velora/database migrate:fresh",
-    "db:migrate:up": "pnpm --filter @velora/database migrate:up"
+    "db:migrate:up": "pnpm --filter @velora/database migrate:up",
+    "ml:setup": "node scripts/ml.mjs setup",
+    "ml:train": "node scripts/ml.mjs train",
+    "ml:test": "node scripts/ml.mjs test",
+    "ml:db-role": "node scripts/ml.mjs db-role"
   },
   "devDependencies": {
     "prettier": "3.8.1",

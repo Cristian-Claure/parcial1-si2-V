@@ -14,6 +14,7 @@ export * from "./pos.js";
 export * from "./try-on.js";
 export * from "./reports.js";
 export * from "./report-builder.js";
+export * from "./ml.js";
 export * from "./audit.js";
 export * from "./push.js";
 export * from "./plans.js";
