@@ -170,6 +170,7 @@ export async function apiRequest<T>(
 
 export async function apiBlobRequest(
   path: string,
+  init: RequestInit = {},
 ): Promise<Blob> {
   let response: Response;
 
@@ -177,8 +178,9 @@ export async function apiBlobRequest(
     response = await fetch(
       `${apiBaseUrl}${path}`,
       {
+        ...init,
         headers:
-          authHeaders(),
+          authHeaders(init.headers),
       },
     );
   }

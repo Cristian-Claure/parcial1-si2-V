@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import type { OutboxEntry, SyncConflictOption, SyncProductCreate } from "@velora/contracts";
 import { useAuthStore } from "@/core/auth/authStore";
@@ -31,8 +31,12 @@ export default function SyncCenterScreen() {
   const [adjusting, setAdjusting] = useState<{ id: string; value: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => { if (company) setEntries(await sqliteOutbox.pending(company.id, user.id)); }, [company, user.id]);
-  useEffect(() => { void load(); }, [load, version]);
+  useEffect(() => {
+    if (!company) return undefined;
+    let active = true;
+    void sqliteOutbox.pending(company.id, user.id).then((rows) => { if (active) setEntries(rows); });
+    return () => { active = false; };
+  }, [company, user.id, version]);
 
   const act = async (work: () => Promise<void>) => {
     setError(null);

@@ -171,11 +171,12 @@ export class PlanLimitsService {
     return this.requiredPlanFor((plan) => REPORT_TIER_RANK[plan.reportTier] >= REPORT_TIER_RANK[tier]);
   }
 
-  async assertReportFeature(companyId: string, feature: ReportFeature): Promise<void> {
+  /** `status`: 402 histórico (IA, voz, filtros); el constructor y la exportación responden 403. */
+  async assertReportFeature(companyId: string, feature: ReportFeature, status: 402 | 403 = 402): Promise<void> {
     const plan = (await this.resolveForCompany(companyId)).effective;
     if (plan[FEATURE_FLAG[feature]] === true) return;
     const requiredPlan = await this.requiredPlanFor((candidate) => candidate[FEATURE_FLAG[feature]] === true);
-    throw ApiHttpError.coded(402, "PLAN_LIMIT_REPORT_FEATURE", `Tu plan ${plan.name} no incluye ${FEATURE_LABEL[feature]}.${requiredPlan ? ` Disponible en ${requiredPlan}.` : ""}`, { feature, requiredPlan });
+    throw ApiHttpError.coded(status, "PLAN_LIMIT_REPORT_FEATURE", `Tu plan ${plan.name} no incluye ${FEATURE_LABEL[feature]}.${requiredPlan ? ` Disponible en ${requiredPlan}.` : ""}`, { feature, requiredPlan });
   }
 
   // -------------------------------------------------------------------------

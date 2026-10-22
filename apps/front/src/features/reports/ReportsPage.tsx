@@ -42,6 +42,11 @@ import {
 import "./reports.css";
 
 import { LockedWidgets } from "./LockedWidgets";
+import { HeatmapChart } from "./HeatmapChart";
+import { Link } from "react-router-dom";
+import type { ReportExportFormat } from "@velora/contracts";
+import { saveBlob } from "./reportsApi";
+import "./builder.css";
 type PeriodPreset =
   "7D" |
   "30D" |
@@ -87,8 +92,22 @@ function formatMetric(
     number,
   format:
     "CURRENCY" |
-    "COUNT",
+    "COUNT" |
+    "PERCENT",
 ): string {
+  if (
+    format ===
+    "PERCENT"
+  ) {
+    return `${value.toLocaleString(
+      "es-BO",
+      {
+        maximumFractionDigits:
+          1,
+      },
+    )} %`;
+  }
+
   if (
     format ===
     "CURRENCY"
@@ -375,6 +394,16 @@ export function ReportsPage() {
       enabled:
         reportsEnabled,
     });
+
+  const [exportError, setExportError] = useState<string | null>(null);
+  const exporter = useMutation({
+    mutationFn: async (format: ReportExportFormat) => {
+      const blob = await reportsApi.exportOverview(role, { companyId, storeId: effectiveStoreId || null, from: fromDate || null, to: toDate || null }, format);
+      saveBlob(blob, `resumen ${overview.data?.scopeLabel ?? ""}`, format);
+    },
+    onMutate: () => setExportError(null),
+    onError: (error) => setExportError(error instanceof Error ? error.message : "No fue posible exportar."),
+  });
 
   const ai =
     useMutation({
@@ -920,25 +949,37 @@ export function ReportsPage() {
             Datos calculados por el backend. La IA interpreta y explica, pero no inventa KPIs.
           </p>
         </div>
-        <button
-          className="button"
-          type="button"
-          onClick={
-            () => {
-              setAiReport(
-                null,
-              );
-              void overview
-                .refetch();
+        <div className="report-heading-actions">
+          {overview.data?.policy?.canExport ? (
+            <>
+              <Link className="button small" to={role === "ADMIN" ? "/admin/reportes/constructor" : "/sucursal/reportes/constructor"}>Constructor</Link>
+              <button className="button small" type="button" disabled={exporter.isPending || !overview.data} onClick={() => exporter.mutate("xlsx")}>Excel</button>
+              <button className="button small" type="button" disabled={exporter.isPending || !overview.data} onClick={() => exporter.mutate("pdf")}>PDF</button>
+            </>
+          ) : overview.data ? (
+            <span className="report-export-locked" title="Constructor dinámico y exportación a Excel/PDF">Constructor y exportación · Disponible en PLUS/MAX</span>
+          ) : null}
+          <button
+            className="button"
+            type="button"
+            onClick={
+              () => {
+                setAiReport(
+                  null,
+                );
+                void overview
+                  .refetch();
+              }
             }
-          }
-          disabled={
-            overview.isFetching
-          }
-        >
-          Actualizar
-        </button>
+            disabled={
+              overview.isFetching
+            }
+          >
+            Actualizar
+          </button>
+        </div>
       </div>
+      {exportError ? <Notice kind="error">{exportError}</Notice> : null}
 
       <div className="report-controls-bar">
       {role ===
@@ -1153,6 +1194,19 @@ export function ReportsPage() {
                       kpi.format,
                     )}
                   </strong>
+                  {kpi.changePct !== null &&
+                  kpi.changePct !== undefined ? (
+                    <em
+                      className={
+                        kpi.changePct >= 0
+                          ? "report-kpi-change up"
+                          : "report-kpi-change down"
+                      }
+                    >
+                      {kpi.changePct >= 0 ? "▲" : "▼"}{" "}
+                      {Math.abs(kpi.changePct).toLocaleString("es-BO", { maximumFractionDigits: 1 })} % vs período anterior
+                    </em>
+                  ) : null}
                   <small>
                     {kpi.helper}
                   </small>
@@ -1170,16 +1224,27 @@ export function ReportsPage() {
             {display.charts.map(
               (
                 chart,
-              ) => (
-                <ReportChartCard
-                  key={
-                    chart.id
-                  }
-                  chart={
-                    chart
-                  }
-                />
-              ),
+              ) =>
+                chart.type ===
+                "HEATMAP" ? (
+                  <HeatmapChart
+                    key={
+                      chart.id
+                    }
+                    chart={
+                      chart
+                    }
+                  />
+                ) : (
+                  <ReportChartCard
+                    key={
+                      chart.id
+                    }
+                    chart={
+                      chart
+                    }
+                  />
+                ),
             )}
           </div>
 

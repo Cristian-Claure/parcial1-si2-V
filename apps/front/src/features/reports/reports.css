@@ -311,3 +311,13 @@
     align-self: center;
   }
 }
+
+/* ---------- Fase 3: comparación y mapa de calor ---------- */
+.report-kpi .report-kpi-change { font-style: normal; font-size: .78rem; font-weight: 700; }
+.report-kpi .report-kpi-change.up { color: var(--success); }
+.report-kpi .report-kpi-change.down { color: var(--error); }
+.report-heatmap-scroll { overflow-x: auto; }
+.report-heatmap svg { min-width: 560px; width: 100%; height: auto; display: block; }
+.report-heatmap .report-heatmap-cell { fill: var(--accent); }
+.report-heatmap .report-heatmap-axis { font-family: var(--font-body); font-size: 10px; fill: var(--ink-soft); }
+.report-heatmap .report-heatmap-note { font-size: .85rem; color: var(--ink-soft); margin: .6rem 0 0; }

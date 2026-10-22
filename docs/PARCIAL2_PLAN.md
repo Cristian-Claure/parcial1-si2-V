@@ -480,3 +480,66 @@ Pendiente o fuera de alcance:
 - **Edición offline**: solo de datos básicos de producto y cliente (con versión). Precios de variantes y stock se editan en línea.
 - **Lint de mobile**: no configurado; instalar `eslint-config-expo` exige reinstalar dependencias por la ubicación del *virtual store* de pnpm.
 - **Pedidos y POS offline existentes**: siguen en sus colas originales (no se migraron datos ya encolados en dispositivos), pero los procesa el mismo motor y se ven en el mismo centro.
+
+---
+
+# Fase 3 — Datos realistas y reportes
+
+## F3.1 Auditoría
+
+| Tema | Hallazgo |
+|---|---|
+| Reportes actuales | `GET admin\|manager/reports/{overview,period-bounds}` + IA (`ai-query`, `ai-narrative`, `voice-transcribe`). `overview` arma 10 KPIs, 5 gráficos (`sales-daily`, `sales-store`, `orders-channel`, `payments-method`, `inventory-store`) y la tabla `top-products`, filtrados por nivel con `applyReportTier` (Fase 1). No hay exportación. |
+| Columnas de fecha | Ventas = `payments.paid_at` (y `refunded_at` para reembolsos); pedidos = `orders.created_at` / `fulfilled_at` / `cancelled_at`; inventario = foto actual de `inventory_stocks` (sin fecha) y `inventory_movements.created_at` en el historial; caja = `cash_sessions.opened_at/closed_at` y `cash_movements.created_at`. Zona horaria de negocio: `America/La_Paz` (UTC-4). |
+| Exportación | No había librerías. Se instalan **exceljs 4.4** (XLSX con estilos, encabezado fijo y autofiltro; JS puro) y **pdfkit 0.17** (PDF vectorial con fuentes estándar, imágenes PNG/JPG y paginado; ~2 MB, sin Chromium). Se descarta Puppeteer por memoria. |
+| Datos de VÉLORA | 1085 pedidos de jun-2025 a sep-2026, creciendo de ~28 a ~130 por mes; **ningún pedido en oct-2026** (hueco hasta hoy); 32 clientes. Las tiendas `demo-*` no tienen pedidos. |
+| Scripts | `seed-historical-orders.mjs` usa una cuenta de scripts con un ADMIN global (§10): se reemplaza por `seed-realistic-history.mjs`. |
+
+## F3.2 Esquema (V32+)
+
+- **V32 `report_definitions`**: `id`, `company_id` (FK), `created_by` (FK app_users), `name`, `definition JSONB` (solo identificadores del catálogo semántico), `created_at`, `updated_at`, con nombre único por empresa. Sin SQL guardado.
+
+## F3.3 Endpoints y contratos (`@velora/contracts/reports.ts`, aditivos)
+
+- `GET admin|manager/reports/overview`: catálogo completo de widgets con `id`, `minTier` y `locked[]`; comparación contra el periodo anterior (`previous` por KPI) desde STANDARD.
+- `GET admin|manager/reports/semantic-catalog`: dimensiones, medidas y filtros permitidos por el nivel.
+- `POST admin|manager/reports/query`: `{ companyId, dimensions[≤3], measures[], filters[], sort, limit, compareWithPrevious }` → filas, totales y gráfico sugerido.
+- `GET|POST|PUT|DELETE admin/reports/definitions`: definiciones guardadas por empresa.
+- `POST admin|manager/reports/query/export?format=xlsx|pdf` y `GET admin|manager/reports/overview/export?format=…`: archivos generados en el backend desde STANDARD.
+- **Contratos** en `@velora/contracts/report-builder.ts` (aditivos): `REPORT_DIMENSIONS`/`REPORT_MEASURES` (ids, etiquetas, `minTier`), `reportBuilderDefinitionSchema` (`.strict()`: un campo extra como `sql` da 400) y los resultados.
+- **Decisiones del bloque 3**:
+  - el constructor, la exportación y las definiciones responden **403** `PLAN_LIMIT_REPORT_FEATURE` para FREE (la IA y la voz conservan el 402 histórico);
+  - las dimensiones Día de la semana, Hora y Cliente y las medidas Clientes nuevos y recurrentes son ADVANCED (MAX);
+  - **venta neta** sale de `report-facts.ts` (`paymentEventsSql`), la misma fuente que usan los widgets; con dimensiones de producto cada pago se reparte entre los ítems por subtotal, sin cambiar los totales;
+  - el valor de inventario es la foto actual y solo se combina con sucursal y atributos de producto;
+  - las consultas corren en una transacción de solo lectura con `statement_timeout` de 10 s y un tope de 500 filas;
+  - fuentes PDF: Helvetica y Times estándar (WinAnsi: tildes, ñ, ü, ¿ y ¡) sin incrustar TTF.
+
+## F3.4 Pantallas
+
+- **Reportes**: secciones por nivel con gráficos SVG propios (barras, líneas con periodo anterior, mapa de calor día/hora, comparativa de sucursales) y tarjetas bloqueadas.
+- **Constructor** (`/admin/reportes/constructor`, `/sucursal/reportes/constructor`): selección guiada, vista previa en vivo, guardar y exportar.
+
+## F3.5 Bloques
+
+1. **Datos realistas**: generador HTTP reproducible y reanudable con patrones documentados en `docs/DATOS_SINTETICOS.md`, verificación estadística y respaldo.
+2. **Reportes por nivel**: catálogo completo de widgets y pruebas contra SQL de referencia. Al terminar, pausa para revisión.
+3. **Constructor dinámico y exportación** XLSX/PDF.
+4. **Pruebas, demo y guía**.
+
+## F3.6 Estado (cierre del 22-oct-2026)
+
+- **En `main`**: Fase 1 (PR #28) y Fase 2 (PR #29), mergeadas.
+- **Rama `feat/fase3-reportes`** (PR #30 en borrador, sin mergear): **Fase 3 completa** (bloques 1-4). Siguiente: **Fase 4 · ML local en Python**.
+
+| Bloque | Estado | Notas |
+|---|---|---|
+| 1 Datos realistas | Hecho | `scripts/seed-realistic-history.mjs` reemplaza a `seed-historical-orders.mjs`; 10.986 pedidos (jul-2025 → 21-oct-2026) en Urbano Boutique y Urbano Outlet (MAX), Andina Moda (PLUS), Primer Paso (FREE) y VÉLORA. Patrones y verificación en `docs/DATOS_SINTETICOS.md`. |
+| 2 Reportes por nivel | Hecho | Widgets STANDARD (cancelación, unidades, categorías, tipo de entrega, inventario crítico, comparación con el período anterior) y ADVANCED (recompra, crecimiento, clientes nuevos, tendencia de 12 meses, mapa de calor día × hora, comparativa de sucursales); el backend solo calcula lo permitido. Pruebas por nivel, ventana de historial y cifras contra una referencia independiente. |
+| 3 Constructor dinámico y exportación | Hecho | Capa semántica con lista blanca (18 dimensiones, 12 medidas), `report_definitions` (V32), exportación XLSX/PDF en el backend del constructor y del resumen, y UI `/admin|sucursal/reportes/constructor`. Pruebas: 9 combinaciones contra SQL de referencia sobre los datos reales, suite HTTP (niveles, historial, entradas maliciosas, exportaciones y definiciones) y aislamiento A/B de las 8 rutas nuevas. |
+| 4 Pruebas, demo y guía | Hecho | `scripts/demo-reportes.mjs` (16 verificaciones) y `docs/FASE3_DEMO_REPORTES.md`. Regresión: `demo-saas` 32/32 y `demo-offline` 17/17. |
+
+Notas:
+- El lint del móvil ya está configurado (`eslint-config-expo`), lo que cierra ese pendiente de la Fase 2.
+- Los respaldos locales de la base y de los recursos están fuera del repositorio, en la carpeta de respaldos del equipo de desarrollo.
+- Las credenciales de VÉLORA para el generador se leen del `.env` local (`VELORA_SEED_OWNER_EMAIL` / `VELORA_SEED_OWNER_PASSWORD`), que no está versionado.

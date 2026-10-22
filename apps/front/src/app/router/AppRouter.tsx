@@ -28,6 +28,7 @@ import { InventoryPage } from "../../features/operations/InventoryPage";
 import { OperationalOrdersPage } from "../../features/operations/OperationalOrdersPage";
 const PosPage = lazy(() => import("../../features/operations/PosPage").then((module) => ({ default: module.PosPage })));
 const ReportsPage = lazy(() => import("../../features/reports/ReportsPage").then((module) => ({ default: module.ReportsPage })));
+const ReportBuilderPage = lazy(() => import("../../features/reports/ReportBuilderPage").then((module) => ({ default: module.ReportBuilderPage })));
 import { AuditPage } from "../../features/audit/AuditPage";
 const PlansPage = lazyNamed(() => import("../../features/saas/PlansPage"), "PlansPage");
 const CreateStorePage = lazyNamed(() => import("../../features/saas/CreateStorePage"), "CreateStorePage");
@@ -73,6 +74,7 @@ export function AppRouter() {
       <Route path="admin/pedidos" element={<OperationalOrdersPage />} />
       <Route path="admin/pos" element={<PosPage />} />
       <Route path="admin/reportes" element={<ReportsPage />} />
+      <Route path="admin/reportes/constructor" element={<ReportBuilderPage />} />
       <Route path="admin/auditoria" element={<AuditPage />} />
       <Route path="admin/mi-plan" element={<MyPlanPage />} />
       <Route path="admin/empresas" element={<CompaniesPage />} />
@@ -87,6 +89,7 @@ export function AppRouter() {
       <Route path="sucursal/pedidos" element={<OperationalOrdersPage />} />
       <Route path="sucursal/pos" element={<PosPage />} />
       <Route path="sucursal/reportes" element={<ReportsPage />} />
+      <Route path="sucursal/reportes/constructor" element={<ReportBuilderPage />} />
       <Route path="sucursal/registro" element={<OfflineRegistryPage />} />
       <Route path="sucursal/sincronizacion" element={<SyncCenterPage />} />
     </Route>
