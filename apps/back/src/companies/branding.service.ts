@@ -139,6 +139,18 @@ export class BrandingService {
     try { return await this.storage.load(storageKey); } catch { throw new ApiHttpError(404, "Asset no encontrado."); }
   }
 
+  /** Bytes del logo para documentos exportados (PDF); null si no hay logo o no se puede leer. */
+  async logoAsset(companyId: string): Promise<{ bytes: Buffer; contentType: string } | null> {
+    const row = await this.row(eq(companies.id, companyId));
+    if (!row?.logoStorageKey) return null;
+    try {
+      const asset = await this.storage.load(row.logoStorageKey);
+      return { bytes: asset.bytes, contentType: asset.contentType };
+    } catch {
+      return null;
+    }
+  }
+
   toBrand(row: BrandRow, tier: BrandingTier): CompanyBrand {
     const stored = row.brandPalette;
     const palette = resolveBrandPalette(stored ? (brandingAllows(tier, "fullPalette") ? stored : { accent: stored.accent }) : null);

@@ -56,7 +56,7 @@ export interface ReportStoreOption {
     string;
 }
 
-interface ReportPeriod {
+export interface ReportPeriod {
   from:
     string;
   to:
@@ -765,6 +765,27 @@ export class ReportsService {
           .listActiveStores(
             scope.companyId,
           ),
+    };
+  }
+
+  /**
+   * Alcance (TenantScope), política del plan y período recortado a la ventana de historial.
+   * Lo comparten el resumen y el constructor dinámico: el recorte lo hace siempre el backend.
+   */
+  async reportContext(
+    principal: AuthPrincipal,
+    companyId: string | null,
+    storeId: string | null,
+    requestedFrom: string | null,
+    requestedTo: string | null,
+  ) {
+    const scope = await this.resolveScope(principal, companyId, storeId);
+    const policy = await this.limits.reportPolicy(scope.companyId);
+    const { period, clamped } = this.periodWithinHistory(requestedFrom, requestedTo, policy.historyDays);
+    const earliestDay = policy.historyDays ? this.shiftDate(this.today(), -(policy.historyDays - 1)) : null;
+    return {
+      scope, policy, period, clamped, today: this.today(),
+      earliestAllowed: earliestDay ? new Date(`${earliestDay}T00:00:00-04:00`) : null,
     };
   }
 

@@ -24,6 +24,7 @@ interface Fixtures {
   posPaymentId: string;
   orderId: string;
   orderPaymentId: string;
+  definitionId: string;
 }
 
 interface Ctx { A: SeededTenant; B: SeededTenant; b: Fixtures }
@@ -68,6 +69,17 @@ const ATTACKS: Record<string, (ctx: Ctx) => Attack[]> = {
   "POST pos/sales/payments/:paymentId/fail": ({ b }) => [{ path: `@/pos/sales/payments/${b.posPaymentId}/fail`, body: {}, expect: "DENIED" }],
   "POST pos/sales/payments/:paymentId/cancel": ({ b }) => [{ path: `@/pos/sales/payments/${b.posPaymentId}/cancel`, body: {}, expect: "DENIED" }],
   "GET reports/overview": ({ B }) => [{ path: `/api/admin/reports/overview?companyId=${B.companyId}`, expect: "DENIED" }],
+  "GET reports/semantic-catalog": ({ B }) => [{ path: `/api/admin/reports/semantic-catalog?companyId=${B.companyId}`, expect: "DENIED" }],
+  "POST reports/query": ({ B }) => [
+    { path: "/api/admin/reports/query", body: { companyId: B.companyId, dimensions: ["STORE"], measures: ["NET_SALES"] }, expect: "DENIED" },
+    { path: "@/reports/query", body: { dimensions: ["STORE"], measures: ["NET_SALES"], filters: [{ dimension: "STORE", values: [B.storeId] }] }, expect: "SELF" },
+  ],
+  "POST reports/query/export": ({ B }) => [{ path: "/api/admin/reports/query/export?format=pdf", body: { companyId: B.companyId, dimensions: ["STORE"], measures: ["NET_SALES"] }, expect: "DENIED" }],
+  "GET reports/overview/export": ({ B }) => [{ path: `/api/admin/reports/overview/export?companyId=${B.companyId}&format=xlsx`, expect: "DENIED" }],
+  "GET reports/definitions": ({ B }) => [{ path: `/api/admin/reports/definitions?companyId=${B.companyId}`, expect: "DENIED" }],
+  "POST reports/definitions": ({ B }) => [{ path: "/api/admin/reports/definitions", body: { companyId: B.companyId, name: "Intruso", definition: { dimensions: [], measures: ["NET_SALES"] } }, expect: "DENIED" }],
+  "PUT reports/definitions/:id": ({ b }) => [{ path: `/api/admin/reports/definitions/${b.definitionId}`, body: { name: "Hackeado" }, expect: "DENIED" }],
+  "DELETE reports/definitions/:id": ({ b }) => [{ path: `/api/admin/reports/definitions/${b.definitionId}`, expect: "DENIED" }],
   "GET reports/period-bounds": ({ B }) => [{ path: `/api/admin/reports/period-bounds?companyId=${B.companyId}`, expect: "DENIED" }],
   "POST reports/ai-query": ({ B }) => [{ path: "/api/admin/reports/ai-query", body: valid(adminReportAiQueryRequestSchema, { companyId: B.companyId, question: "ventas del mes" }), expect: "DENIED" }],
   "POST reports/ai-narrative": ({ B }) => [{ path: "/api/admin/reports/ai-narrative", body: valid(adminReportAiNarrativeRequestSchema, { companyId: B.companyId, question: "resumen" }), expect: "DENIED" }],
@@ -147,8 +159,9 @@ describe.skipIf(!available)("aislamiento multi-tenant A/B (integración)", () =>
       if (created.status < 300) { orderPaymentId = created.body.id; break; }
     }
     if (!orderPaymentId) throw new Error("No se pudo crear un pago de pedido para B.");
-    ctx = { A, B, b: { pointOfSaleId: point.id, cashSessionId: session.id, posPaymentId: sale.paymentId, orderId: order.id, orderPaymentId } };
-    markers = [B.companyId, B.storeId, B.warehouseId, B.productId, B.variantId, B.categoryId, B.managerId, B.ownerId, point.id, session.id, order.id, orderPaymentId, B.ownerEmail, B.managerEmail, "Compania B", "Sucursal B"];
+    const definition = await call<{ id: string }>(tokens.ownerB!, "POST", "/api/admin/reports/definitions", { companyId: B.companyId, name: "Reporte B", definition: { dimensions: ["STORE"], measures: ["NET_SALES"] } });
+    ctx = { A, B, b: { pointOfSaleId: point.id, cashSessionId: session.id, posPaymentId: sale.paymentId, orderId: order.id, orderPaymentId, definitionId: definition.id } };
+    markers = [B.companyId, B.storeId, B.warehouseId, B.productId, B.variantId, B.categoryId, B.managerId, B.ownerId, point.id, session.id, order.id, orderPaymentId, definition.id, "Reporte B", B.ownerEmail, B.managerEmail, "Compania B", "Sucursal B"];
   });
 
   afterAll(async () => {
@@ -201,6 +214,9 @@ describe.skipIf(!available)("aislamiento multi-tenant A/B (integración)", () =>
       ["GET", `/api/admin/points-of-sale/${ctx.b.pointOfSaleId}`],
       ["GET", `/api/admin/reports/period-bounds?companyId=${ctx.B.companyId}`],
       ["GET", `/api/admin/reports/overview?companyId=${ctx.B.companyId}`],
+      ["GET", `/api/admin/reports/semantic-catalog?companyId=${ctx.B.companyId}`],
+      ["GET", `/api/admin/reports/definitions?companyId=${ctx.B.companyId}`],
+      ["GET", `/api/admin/reports/overview/export?companyId=${ctx.B.companyId}&format=pdf`],
       ["GET", `/api/catalog/manage/products?companyId=${ctx.B.companyId}`],
       ["GET", `/api/catalog/manage/products/${ctx.B.productId}?companyId=${ctx.B.companyId}`],
       ["GET", `/api/inventory/warehouses/${ctx.B.warehouseId}/stock`],

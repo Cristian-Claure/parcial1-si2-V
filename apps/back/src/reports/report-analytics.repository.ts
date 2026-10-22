@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { sql, type SQL } from "drizzle-orm";
 import { DatabaseService } from "../database/database.service.js";
+import { paymentEventsSql, signedAmountSql, storeScopeSql } from "./report-facts.js";
 
 /** Ventana de consulta en UTC (inicio inclusivo, fin exclusivo) ya alineada al día de Bolivia. */
 export interface AnalyticsWindow { start: Date; endExclusive: Date }
@@ -34,29 +35,20 @@ export class ReportAnalyticsRepository {
    * (REFUNDED por refunded_at), igual que la serie diaria del resumen.
    */
   private netEvents(scope: AnalyticsScope): SQL {
-    return sql`(
-      select s.id store_id, s.name store_name, p.paid_at at_ts, p.amount amount
-      from payments p join orders o on o.id = p.order_id join warehouses w on w.id = o.warehouse_id join stores s on s.id = w.store_id
-      where ${this.scopeOf(scope)} and p.status in ('PAID', 'REFUNDED') and p.paid_at is not null
-      union all
-      select s.id, s.name, p.refunded_at, -p.amount
-      from payments p join orders o on o.id = p.order_id join warehouses w on w.id = o.warehouse_id join stores s on s.id = w.store_id
-      where ${this.scopeOf(scope)} and p.status = 'REFUNDED' and p.refunded_at is not null
-    )`;
+    return sql`(select e.store_id, e.store_name, e.ts at_ts, ${signedAmountSql("e")} amount from ${paymentEventsSql(scope)} e)`;
   }
 
   private scopeOf(scope: AnalyticsScope): SQL {
-    return scope.storeId ? sql`s.company_id = ${scope.companyId}::uuid and s.id = ${scope.storeId}::uuid` : sql`s.company_id = ${scope.companyId}::uuid`;
+    return storeScopeSql(scope);
   }
 
   async kpis(scope: AnalyticsScope, window: AnalyticsWindow): Promise<PeriodKpis> {
     const where = this.scopeOf(scope);
     const [payments] = await this.rows(sql`
-      select coalesce(sum(p.amount) filter (where p.paid_at >= ${window.start} and p.paid_at < ${window.endExclusive} and p.status in ('PAID', 'REFUNDED')), 0) gross,
-             coalesce(sum(p.amount) filter (where p.refunded_at >= ${window.start} and p.refunded_at < ${window.endExclusive} and p.status = 'REFUNDED'), 0) refunds,
-             count(distinct p.order_id) filter (where p.paid_at >= ${window.start} and p.paid_at < ${window.endExclusive} and p.status in ('PAID', 'REFUNDED')) paid_orders
-      from payments p join orders o on o.id = p.order_id join warehouses w on w.id = o.warehouse_id join stores s on s.id = w.store_id
-      where ${where}`);
+      select coalesce(sum(e.amount) filter (where e.kind = 'SALE'), 0) gross,
+             coalesce(sum(e.amount) filter (where e.kind = 'REFUND'), 0) refunds,
+             count(distinct e.order_id) filter (where e.kind = 'SALE') paid_orders
+      from ${paymentEventsSql(scope)} e where e.ts >= ${window.start} and e.ts < ${window.endExclusive}`);
     const [orders] = await this.rows(sql`
       select count(*) filter (where o.created_at >= ${window.start} and o.created_at < ${window.endExclusive}) created,
              count(*) filter (where o.fulfilled_at >= ${window.start} and o.fulfilled_at < ${window.endExclusive}) fulfilled,

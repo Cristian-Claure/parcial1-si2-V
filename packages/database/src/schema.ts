@@ -5113,3 +5113,19 @@ export const syncOperations = pgTable("sync_operations", {
   result: jsonb("result").$type<Record<string, unknown>>().notNull(),
   appliedAt: timestamp("applied_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
 });
+
+/** V32 · Definiciones guardadas del constructor de reportes (solo identificadores del catálogo). */
+export const reportDefinitions = pgTable("report_definitions", {
+  id: uuid("id").primaryKey(),
+  companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by").notNull().references(() => appUsers.id),
+  name: varchar("name", { length: 80 }).notNull(),
+  definition: jsonb("definition").$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("uq_report_definitions_company_name").on(table.companyId, sql`lower(${table.name})`),
+  index("idx_report_definitions_created_by").on(table.createdBy),
+]);
+
+export type ReportDefinitionRow = typeof reportDefinitions.$inferSelect;

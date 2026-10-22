@@ -46,6 +46,13 @@ import {
   ReportsService,
 } from "./reports.service.js";
 
+import { CompaniesModule } from "../companies/companies.module.js";
+import { ReportBuilderController } from "./builder/report-builder.controller.js";
+import { ReportBuilderService } from "./builder/report-builder.service.js";
+import { ReportDefinitionsService } from "./builder/report-definitions.service.js";
+import { SemanticQueryRepository } from "./builder/semantic-query.repository.js";
+import { ReportExportService } from "./export/report-export.service.js";
+
 @Module({
   imports: [
     DatabaseModule,
@@ -53,11 +60,17 @@ import {
     AuthorizationModule,
     PlansModule,
     RuntimeConfigModule,
+    CompaniesModule,
   ],
   controllers: [
     ReportsController,
+    ReportBuilderController,
   ],
   providers: [
+    SemanticQueryRepository,
+    ReportBuilderService,
+    ReportDefinitionsService,
+    ReportExportService,
     ReportAnalyticsRepository,
     ReportExtensionsService,
     ReportsRepository,
