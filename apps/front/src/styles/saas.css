@@ -85,7 +85,10 @@
 
 /* ---------- Home genérico de empresa ---------- */
 .tenant-hero { padding: clamp(3rem, 8vw, 6.5rem) clamp(1rem, 6vw, 5rem); background: linear-gradient(135deg, var(--accent-soft), var(--paper)); border-bottom: 1px solid var(--hairline); }
-.tenant-hero.with-banner { background-size: cover; background-position: center; color: var(--on-accent); position: relative; }
+.tenant-hero.with-banner { background-size: cover; background-position: center; color: var(--sidebar-ink); position: relative; }
+/* Sobre el banner (oscurecido) el texto y el botón secundario van claros, sea cual sea el acento. */
+.tenant-hero.with-banner .button.secondary { color: var(--sidebar-ink); border-color: color-mix(in srgb, var(--sidebar-ink) 55%, transparent); background: rgba(var(--shadow-rgb), .2); }
+.tenant-hero.with-banner .eyebrow { color: var(--sidebar-ink); }
 .tenant-hero.with-banner::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(var(--shadow-rgb), .55), rgba(var(--shadow-rgb), .1)); }
 .tenant-hero > * { position: relative; max-width: 720px; }
 .tenant-hero p { font-size: 1.1rem; line-height: 1.7; opacity: .85; }
