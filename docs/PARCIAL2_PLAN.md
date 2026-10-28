@@ -681,6 +681,11 @@ Estado (28-oct-2026): **Fase 4C completa**.
 - Móvil: tema por empresa con las funciones de `@velora/contracts`, marca Trama, cliente completo y panel del propietario y del encargado.
 - Un endpoint aditivo: disponibilidad pública por variante (solo nivel), con prueba A/B.
 
-**Siguiente:**
+## Estado general (28-oct-2026)
+
+Las Fases 1, 2, 3, 4, 4B y 4C están mergeadas en `main` (PRs #28, #29, #30, #31, #32 y #34).
+
+**Pendiente:**
 1. Fase 5: pago por QR.
-2. Cierre del parcial y documento PDF.
+2. Los 7 hallazgos P3 de `docs/UX_AUDIT.md` (pulido web).
+3. Cierre: regresión final (pruebas y demos) y PDF de defensa.
