@@ -683,11 +683,12 @@ Estado (28-oct-2026): **Fase 4C completa**.
 
 ## Estado general (28-oct-2026)
 
-Las Fases 1, 2, 3, 4, 4B y 4C están mergeadas en `main` (PRs #28, #29, #30, #31, #32 y #34).
+Las Fases 1, 2, 3, 4, 4B y 4C y la mejora de tema por tienda están mergeadas en `main` (PRs #28, #29, #30, #31, #32, #34 y #36).
 
-**Mejora "tema por tienda" (rama `feat/tema-por-tienda`, PR en borrador):** la web aplica en todo el documento el tema derivado de los 4 colores de cada tienda (`deriveTheme`, barra lateral incluida) y ya no queda ningún color fijo fuera de los tokens. Las paletas de muestra tienen identidad propia, el editor de marca trae una vista previa completa y 8 paletas sugeridas, y hay un paquete para compartir la BD (`docs/TEMA_WEB.md`, `docs/TEMA_PALETAS.md`, `docs/COMPARTIR_BD.md`).
+**Mejora "tema por tienda" (PR #36, en `main`):** la web aplica en todo el documento el tema derivado de los 4 colores de cada tienda (`deriveTheme`, barra lateral incluida) y ya no queda ningún color fijo fuera de los tokens. Las paletas de muestra tienen identidad propia, el editor de marca trae una vista previa completa y 8 paletas sugeridas, y hay un paquete para compartir la BD (`docs/TEMA_WEB.md`, `docs/TEMA_PALETAS.md`, `docs/COMPARTIR_BD.md`).
 
 **Pendiente:**
 1. Fase 5: pago por QR.
 2. Los 7 hallazgos P3 de `docs/UX_AUDIT.md` (pulido web).
 3. Cierre: regresión final (pruebas y demos) y PDF de defensa.
+4. Menor: regenerar los logos y banners de Urbano Boutique, Urbano Outlet y Primer Paso con sus colores nuevos (hoy son imágenes de la paleta anterior; se suben desde `/admin/marca`).
