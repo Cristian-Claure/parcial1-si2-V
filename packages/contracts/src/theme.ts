@@ -226,3 +226,39 @@ export function hueDistance(a: string, b: string): number {
   const diff = Math.abs(hexToHsl(a).h - hexToHsl(b).h) % 360;
   return diff > 180 ? 360 - diff : diff;
 }
+
+/** Paletas armónicas sugeridas en el editor de marca (todas cumplen AA con deriveTheme). */
+export const SUGGESTED_PALETTES: readonly { id: string; name: string; description: string; palette: { paper: string; ink: string; primary: string; accent: string } }[] = [
+  { id: "sastreria", name: "Sastrería", description: "Azul medianoche y dorado viejo", palette: { paper: "#F3F1EC", ink: "#1A1C22", primary: "#1F2A3A", accent: "#8A6A2F" } },
+  { id: "deportivo", name: "Deportivo", description: "Marino profundo y naranja", palette: { paper: "#F2F5F8", ink: "#0C1220", primary: "#0F1B2D", accent: "#B93A0B" } },
+  { id: "verano", name: "Verano", description: "Arena clara, turquesa y coral", palette: { paper: "#FFF9F2", ink: "#2B1E16", primary: "#0E5E6F", accent: "#C03A2B" } },
+  { id: "minimal", name: "Minimal", description: "Blanco, negro y grafito", palette: { paper: "#FAFAFA", ink: "#111111", primary: "#18181B", accent: "#3F3F46" } },
+  { id: "bosque", name: "Bosque", description: "Verde musgo y salvia", palette: { paper: "#F1F5F1", ink: "#102016", primary: "#1B3B26", accent: "#2F7D4A" } },
+  { id: "vino", name: "Vino", description: "Burdeos y rosa empolvado", palette: { paper: "#F8F1F2", ink: "#26121A", primary: "#4A1525", accent: "#8E1B3D" } },
+  { id: "oceano", name: "Océano", description: "Petróleo y turquesa", palette: { paper: "#F0F6F8", ink: "#0B1F2A", primary: "#0B3B4F", accent: "#0E7490" } },
+  { id: "terracota", name: "Terracota", description: "Barro cocido y crema", palette: { paper: "#FBF4EE", ink: "#2A1A12", primary: "#5A2A17", accent: "#B4532A" } },
+];
+
+export interface ThemeCheck { id: "ink" | "inkSoft" | "button" | "primary" | "sidebar"; label: string; ratio: number; minimum: number; ok: boolean; fix: Partial<ThemeInput> | null }
+
+/**
+ * Contrastes que muestra el editor de marca y la corrección propuesta para cada color que no
+ * cumple AA (texto más oscuro, acento más oscuro o primario más oscuro, conservando el matiz).
+ */
+export function themeChecks(input: ThemeInput): ThemeCheck[] {
+  const theme = deriveTheme(input);
+  const paper = theme.paper;
+  const darker = (hex: string, background: string, minimum = WCAG_AA_TEXT) => adjustLightness(hex, background, minimum, "darker");
+  const rawInk = (input.ink ?? theme.ink).toUpperCase();
+  const inkRatio = contrastRatio(rawInk, paper);
+  const buttonRatio = contrastRatio(WHITE, input.accent) >= contrastRatio(theme.ink, input.accent) ? contrastRatio(WHITE, input.accent) : contrastRatio(theme.ink, input.accent);
+  const rawPrimary = input.primary ? input.primary.toUpperCase() : null;
+  const primaryRatio = rawPrimary ? contrastRatio(rawPrimary, paper) : 21;
+  return [
+    { id: "ink", label: "Texto sobre el fondo", ratio: inkRatio, minimum: WCAG_AA_TEXT, ok: inkRatio >= WCAG_AA_TEXT, fix: inkRatio >= WCAG_AA_TEXT ? null : { ink: darker(rawInk, paper) } },
+    { id: "inkSoft", label: "Texto secundario (derivado)", ratio: contrastRatio(theme.inkSoft, paper), minimum: WCAG_AA_TEXT, ok: contrastRatio(theme.inkSoft, paper) >= WCAG_AA_TEXT, fix: null },
+    { id: "button", label: "Texto de los botones sobre el acento", ratio: buttonRatio, minimum: WCAG_AA_TEXT, ok: buttonRatio >= WCAG_AA_TEXT, fix: buttonRatio >= WCAG_AA_TEXT ? null : { accent: darker(input.accent.toUpperCase(), WHITE) } },
+    { id: "primary", label: "Primario sobre el fondo", ratio: primaryRatio, minimum: WCAG_AA_TEXT, ok: primaryRatio >= WCAG_AA_TEXT, fix: primaryRatio >= WCAG_AA_TEXT || !rawPrimary ? null : { primary: darker(rawPrimary, paper) } },
+    { id: "sidebar", label: "Texto de la barra lateral", ratio: contrastRatio(theme.sidebarInk, theme.sidebarActive), minimum: WCAG_AA_TEXT, ok: contrastRatio(theme.sidebarInk, theme.sidebarActive) >= WCAG_AA_TEXT, fix: null },
+  ];
+}

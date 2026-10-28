@@ -82,3 +82,28 @@ describe("deriveTheme", () => {
     expect(tokens).toMatchSnapshot();
   });
 });
+
+describe("paletas sugeridas y correcciones del editor", () => {
+  it("las 8 paletas sugeridas pasan la validación del backend y no tienen avisos de contraste", async () => {
+    const { SUGGESTED_PALETTES, themeChecks } = await import("./theme.js");
+    const { validateBrandPalette } = await import("./branding.js");
+    expect(SUGGESTED_PALETTES).toHaveLength(8);
+    for (const suggestion of SUGGESTED_PALETTES) {
+      expect(validateBrandPalette(suggestion.palette), suggestion.id).toEqual([]);
+      expect(themeChecks(suggestion.palette).filter((check) => !check.ok).map((check) => check.id), suggestion.id).toEqual([]);
+      expect(themeChecks({ accent: suggestion.palette.accent }).every((check) => check.ok), `${suggestion.id} FREE`).toBe(true);
+    }
+  });
+
+  it("propone una corrección que sí cumple AA", async () => {
+    const { themeChecks } = await import("./theme.js");
+    const checks = themeChecks({ paper: "#FFFFFF", ink: "#9CA3AF", primary: "#A5B4FC", accent: "#FACC15" });
+    const ink = checks.find((check) => check.id === "ink")!;
+    expect(ink.ok).toBe(false);
+    expect(contrastRatio(ink.fix!.ink!, "#FFFFFF")).toBeGreaterThanOrEqual(4.5);
+    const primary = checks.find((check) => check.id === "primary")!;
+    expect(contrastRatio(primary.fix!.primary!, "#FFFFFF")).toBeGreaterThanOrEqual(4.5);
+    const fixed = themeChecks({ paper: "#FFFFFF", ink: ink.fix!.ink!, primary: primary.fix!.primary!, accent: "#FACC15" });
+    expect(fixed.filter((check) => ["ink", "primary"].includes(check.id)).every((check) => check.ok)).toBe(true);
+  });
+});
