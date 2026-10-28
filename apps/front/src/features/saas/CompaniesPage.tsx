@@ -1,3 +1,4 @@
+import { DEFAULT_BRAND_PALETTE } from "@velora/contracts";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { validateBrandPalette } from "@velora/contracts";
@@ -13,7 +14,7 @@ export function CompaniesPage() {
   const client = useQueryClient();
   const companies = useCompanyStore((state) => state.companies); const adminCompanyId = useCompanyStore((state) => state.adminCompanyId);
   const loadAdmin = useCompanyStore((state) => state.loadAdmin); const selectAdmin = useCompanyStore((state) => state.selectAdmin);
-  const [draft, setDraft] = useState({ name: "", slug: "", tagline: "", accentColor: "#8B6A34" });
+  const [draft, setDraft] = useState({ name: "", slug: "", tagline: "", accentColor: DEFAULT_BRAND_PALETTE.accent as string });
   const [message, setMessage] = useState<string | null>(null);
   const availability = useSlugAvailability(draft.slug);
   const issues = validateBrandPalette({ accent: draft.accentColor });
@@ -21,7 +22,7 @@ export function CompaniesPage() {
 
   const createCompany = useMutation({
     mutationFn: () => veloraApi.createCompany({ name: draft.name, slug: draft.slug, tagline: draft.tagline || null, accentColor: draft.accentColor }),
-    onSuccess: async (company) => { setMessage(`Tienda ${company.name} creada con su sucursal principal, almacén y categorías base.`); setDraft({ name: "", slug: "", tagline: "", accentColor: "#8B6A34" }); await loadAdmin(); selectAdmin(company.id); await client.invalidateQueries({ queryKey: ["admin-plan"] }); },
+    onSuccess: async (company) => { setMessage(`Tienda ${company.name} creada con su sucursal principal, almacén y categorías base.`); setDraft({ name: "", slug: "", tagline: "", accentColor: DEFAULT_BRAND_PALETTE.accent as string }); await loadAdmin(); selectAdmin(company.id); await client.invalidateQueries({ queryKey: ["admin-plan"] }); },
   });
   const createStore = useMutation({
     mutationFn: veloraApi.createStore,

@@ -878,7 +878,7 @@ export function CatalogManagementPage() {
             </label>
             <label>
               Color HEX
-              <input name="colorHex" placeholder="#000000" />
+              <input name="colorHex" placeholder="#RRGGBB" />
             </label>
             <label>
               Precio

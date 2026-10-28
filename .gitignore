@@ -54,3 +54,13 @@ __pycache__/
 
 # Fotos de producto locales de VÉLORA (no se versionan; respaldadas en backups-velora)
 apps/front/src/assets/products/
+
+# Respaldos y paquetes locales (contienen datos personales: correos y hashes de contraseñas)
+*.dump
+*.backup
+storage-assets.zip
+front-products.zip
+backups/
+backups-velora/
+paquete-companero*/
+apps/back/storage/assets/

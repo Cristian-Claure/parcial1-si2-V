@@ -685,6 +685,8 @@ Estado (28-oct-2026): **Fase 4C completa**.
 
 Las Fases 1, 2, 3, 4, 4B y 4C están mergeadas en `main` (PRs #28, #29, #30, #31, #32 y #34).
 
+**Mejora "tema por tienda" (rama `feat/tema-por-tienda`, PR en borrador):** la web aplica en todo el documento el tema derivado de los 4 colores de cada tienda (`deriveTheme`, barra lateral incluida) y ya no queda ningún color fijo fuera de los tokens. Las paletas de muestra tienen identidad propia, el editor de marca trae una vista previa completa y 8 paletas sugeridas, y hay un paquete para compartir la BD (`docs/TEMA_WEB.md`, `docs/TEMA_PALETAS.md`, `docs/COMPARTIR_BD.md`).
+
 **Pendiente:**
 1. Fase 5: pago por QR.
 2. Los 7 hallazgos P3 de `docs/UX_AUDIT.md` (pulido web).

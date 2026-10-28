@@ -1,18 +1,18 @@
 import { useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  brandingAllows, contrastRatio, resolveBrandPalette, validateBrandPalette,
-  type AdminBrandingResponse, type BrandPalette, type BrandingField, type CompanyBrand, type CompanyContact, type UpdateBrandingRequest,
+  brandingAllows, DEFAULT_BRAND_PALETTE, deriveTheme, resolveBrandPalette, SUGGESTED_PALETTES, themeChecks, themeCssVariables, validateBrandPalette,
+  type AdminBrandingResponse, type BrandPalette, type BrandingField, type CompanyBrand, type CompanyContact, type ThemeInput, type UpdateBrandingRequest,
 } from "@velora/contracts";
+import type { CSSProperties } from "react";
 import { veloraApi } from "../../core/api/veloraApi";
 import { useCompanyStore } from "../../core/company/companyStore";
 import { Brand } from "../../shared/brand";
-import { tenantStyle } from "../../shared/brand/tenantStyle";
 import { Notice } from "../../shared/feedback/Notice";
 import { PageLoader } from "../../shared/ui/PageLoader";
 import { PlanErrorNotice } from "./PlanErrorNotice";
 
-const DEFAULT_ACCENT = "#8B6A34";
+const DEFAULT_ACCENT = DEFAULT_BRAND_PALETTE.accent;
 const REQUIRED_PLAN: Partial<Record<BrandingField, string>> = { fullPalette: "PLUS", tagline: "MAX", banner: "MAX", contact: "MAX" };
 
 interface Draft { displayName: string; slug: string; tagline: string; palette: { accent: string; primary: string; paper: string; ink: string }; contact: { phone: string; email: string; address: string; instagram: string; facebook: string; whatsapp: string } }
@@ -74,11 +74,12 @@ function BrandEditorForm({ companyId, data, onSaved }: { companyId: string; data
   const preview: CompanyBrand = { ...brand, name: draft.displayName || brand.name, slug: draft.slug, tagline: can("tagline") ? draft.tagline || null : null, palette: resolved, isPlatformBrand: false };
   const setPalette = (key: keyof Draft["palette"]) => (value: string) => { setSaved(false); setDraft({ ...draft, palette: { ...draft.palette, [key]: value } }); };
   const setContact = (key: keyof Draft["contact"]) => (value: string) => { setSaved(false); setDraft({ ...draft, contact: { ...draft.contact, [key]: value } }); };
-  const checks = [
-    { label: "Texto sobre fondo", ratio: contrastRatio(resolved.ink, resolved.paper) },
-    { label: "Texto del botón sobre el acento", ratio: contrastRatio(resolved.onAccent, resolved.accent) },
-    { label: "Superficies oscuras (fondo sobre texto)", ratio: contrastRatio(resolved.paper, resolved.ink) },
-  ];
+  // Vista previa con el tema derivado completo (el mismo que aplica la web a la tienda).
+  const themeInput: ThemeInput = validHex ? (can("fullPalette") ? draft.palette : { accent: draft.palette.accent }) : { accent: DEFAULT_ACCENT };
+  const previewVars = themeCssVariables(deriveTheme(themeInput)) as CSSProperties;
+  const checks = themeChecks(themeInput);
+  const applyFix = (fix: Partial<ThemeInput>) => { setSaved(false); setDraft({ ...draft, palette: { ...draft.palette, ...Object.fromEntries(Object.entries(fix).filter(([, value]) => typeof value === "string")) } }); };
+  const applySuggestion = (palette: (typeof SUGGESTED_PALETTES)[number]["palette"]) => { setSaved(false); setDraft({ ...draft, palette: can("fullPalette") ? { ...palette } : { ...draft.palette, accent: palette.accent } }); };
   const pickFile = (kind: "logo" | "banner") => (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (file) upload.mutate({ kind, file }); event.target.value = ""; };
 
   return <section className="page">
@@ -94,6 +95,15 @@ function BrandEditorForm({ companyId, data, onSaved }: { companyId: string; data
         <div className="asset-drop">{brand.logoUrl ? <img src={brand.logoUrl} alt="Logo actual" /> : null}<label className="button secondary small">Subir logo<input type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={pickFile("logo")} /></label>{brand.logoUrl ? <button type="button" className="text-button" onClick={() => remove.mutate("logo")}>Quitar</button> : null}</div>
         <div className="asset-drop">{brand.bannerUrl ? <img src={brand.bannerUrl} alt="Banner actual" /> : null}<label className={can("banner") ? "button secondary small" : "button secondary small disabled"} aria-disabled={!can("banner")}>Subir banner<input type="file" accept="image/png,image/jpeg,image/webp" hidden disabled={!can("banner")} onChange={pickFile("banner")} /></label>{brand.bannerUrl ? <button type="button" className="text-button" onClick={() => remove.mutate("banner")}>Quitar</button> : null}<Locked field="banner" allowed={can("banner")} /></div>
         <h2>Colores</h2>
+        <fieldset className="palette-suggestions">
+          <legend>Paletas sugeridas{can("fullPalette") ? "" : " (tu plan usa solo el acento)"}</legend>
+          <div className="palette-grid">{SUGGESTED_PALETTES.map((suggestion) => (
+            <button key={suggestion.id} type="button" className="palette-option" onClick={() => applySuggestion(suggestion.palette)} aria-label={`Usar la paleta ${suggestion.name}: ${suggestion.description}`}>
+              <span className="palette-swatches" aria-hidden="true">{(can("fullPalette") ? [suggestion.palette.paper, suggestion.palette.primary, suggestion.palette.accent, suggestion.palette.ink] : [suggestion.palette.accent]).map((color, index) => <i key={index} style={{ background: color }} />)}</span>
+              <strong>{suggestion.name}</strong><small>{suggestion.description}</small>
+            </button>
+          ))}</div>
+        </fieldset>
         <ColorField label="Acento" value={draft.palette.accent} onChange={setPalette("accent")} disabled={false} />
         <div className="form-grid">
           <ColorField label="Primario" value={draft.palette.primary} onChange={setPalette("primary")} disabled={!can("fullPalette")} />
@@ -101,7 +111,10 @@ function BrandEditorForm({ companyId, data, onSaved }: { companyId: string; data
           <ColorField label="Texto" value={draft.palette.ink} onChange={setPalette("ink")} disabled={!can("fullPalette")} />
         </div>
         <Locked field="fullPalette" allowed={can("fullPalette")} />
-        <ul className="contrast-list">{checks.map((check) => <li key={check.label} className={check.ratio >= 4.5 ? "ok" : "bad"}>{check.ratio >= 4.5 ? "✓" : "✕"} {check.label}: {check.ratio}:1 {check.ratio >= 4.5 ? "(AA)" : "(mínimo 4.5:1)"}</li>)}</ul>
+        <ul className="contrast-list" aria-live="polite">{checks.map((check) => <li key={check.id} className={check.ok ? "ok" : "bad"}>
+          {check.ok ? "✓" : "✕"} {check.label}: {check.ratio}:1 {check.ok ? "(AA)" : `(mínimo ${check.minimum}:1)`}
+          {!check.ok && check.fix ? <button type="button" className="text-link fix-button" onClick={() => applyFix(check.fix!)}>Aplicar corrección {Object.values(check.fix)[0]}</button> : null}
+        </li>)}</ul>
         <h2>Contacto y redes</h2>
         <div className="form-grid">
           <label>Teléfono<input value={draft.contact.phone} onChange={(event) => setContact("phone")(event.target.value)} disabled={!can("contact")} /></label>
@@ -114,11 +127,18 @@ function BrandEditorForm({ companyId, data, onSaved }: { companyId: string; data
         {issues.length ? <Notice kind="error">{issues[0]!.message}</Notice> : null}
         <button className="button primary" disabled={save.isPending || issues.length > 0}>{save.isPending ? "Guardando…" : "Guardar marca"}</button>
       </form>
-      <aside className="brand-preview" data-tenant={preview.slug} style={tenantStyle(preview)} aria-label="Vista previa de la tienda">
+      <aside className="brand-preview" data-tenant={preview.slug} style={previewVars} aria-label="Vista previa de la tienda y del panel">
         <div className="brand-preview-header"><Brand variant="lockup" brand={preview} showTagline /><span className="field-hint">Vista previa</span></div>
-        <div className={preview.bannerUrl ? "brand-preview-hero with-banner" : "brand-preview-hero"} style={preview.bannerUrl ? { backgroundImage: `linear-gradient(90deg, rgba(0,0,0,.55), rgba(0,0,0,.1)), url(${preview.bannerUrl})` } : undefined}><span className="eyebrow">{preview.name.toUpperCase()}</span><h3>{preview.tagline ?? `Bienvenida a ${preview.name}`}</h3><button type="button" className="brand-accent-button">Ver catálogo</button></div>
-        <div className="brand-preview-body">{["Vestido", "Blazer"].map((name) => <div key={name} className="brand-preview-card"><div className="brand-preview-swatch" /><strong>{name}</strong><p className="field-hint">Desde 249 BOB</p></div>)}</div>
-        <div className="brand-preview-dark">Superficie oscura con el texto de tu marca</div>
+        <div className={preview.bannerUrl ? "brand-preview-hero with-banner" : "brand-preview-hero"} style={preview.bannerUrl ? { backgroundImage: `linear-gradient(90deg, rgba(var(--shadow-rgb), .55), rgba(var(--shadow-rgb), .1)), url(${preview.bannerUrl})` } : undefined}><span className="eyebrow">{preview.name.toUpperCase()}</span><h3>{preview.tagline ?? `Bienvenida a ${preview.name}`}</h3><button type="button" className="brand-accent-button">Ver catálogo</button></div>
+        <div className="brand-preview-panel">
+          <div className="preview-sidebar" aria-hidden="true"><strong>{preview.name}</strong><span className="preview-nav active">Resumen</span><span className="preview-nav">Pedidos</span><span className="preview-nav">Inventario</span><span className="preview-nav">Reportes</span></div>
+          <div className="preview-main">
+            <div className="brand-preview-card"><div className="brand-preview-swatch" /><strong>Vestido lino</strong><p className="field-hint">Desde Bs 249,00</p></div>
+            <div className="preview-buttons"><button type="button" className="button primary small">Primario</button><button type="button" className="button secondary small">Secundario</button><button type="button" className="brand-accent-button">Acento</button></div>
+            <div className="preview-states"><span className="status-pill status-paid">Pagado</span><span className="status-pill status-bajo">Stock bajo</span><span className="status-pill status-agotado">Agotado</span></div>
+            <div className="preview-chart" aria-hidden="true">{[62, 80, 45, 92, 70, 55].map((height, index) => <i key={index} style={{ height: `${height}%`, background: `var(--chart-${index + 1})` }} />)}</div>
+          </div>
+        </div>
       </aside>
     </div>
   </section>;

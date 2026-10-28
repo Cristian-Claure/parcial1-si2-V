@@ -106,7 +106,7 @@
 .ml-page .ml-locked h2 { margin: 0; }
 .ml-page .ml-locked p { margin: 0; color: var(--ink-soft); }
 
-.nav-link .nav-lock { margin-left: .4rem; font-size: .62rem; font-weight: 800; letter-spacing: .06em; padding: .1rem .4rem; border-radius: var(--radius-full); background: rgba(255,255,255,.14); }
+.nav-link .nav-lock { margin-left: .4rem; font-size: .62rem; font-weight: 800; letter-spacing: .06em; padding: .1rem .4rem; border-radius: var(--radius-full); background: color-mix(in srgb, var(--sidebar-ink) 14%, transparent); }
 
 @media (max-width: 720px) {
   .ml-page .ml-bars li { grid-template-columns: 1fr; }
