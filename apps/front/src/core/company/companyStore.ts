@@ -25,6 +25,8 @@ interface CompanyState {
   tenantBrand: CompanyBrand | null; enterTenant: (brand: CompanyBrand) => void;
   initializePublic: () => Promise<void>; loadAdmin: () => Promise<void>; loadManager: () => Promise<void>;
   selectStorefront: (id: string) => void; selectAdmin: (id: string) => void;
+  /** Logout: olvida empresa del panel y tienda activa (el tema vuelve a Trama). */
+  reset: () => void;
 }
 
 export const useCompanyStore = create<CompanyState>((set, get) => ({
@@ -54,4 +56,9 @@ export const useCompanyStore = create<CompanyState>((set, get) => ({
   },
   selectStorefront: (id) => { localStorage.setItem(STOREFRONT_KEY, id); set({ storefrontCompanyId: id }); },
   selectAdmin: (id) => { localStorage.setItem(ADMIN_KEY, id); set({ adminCompanyId: id }); },
+  reset: () => {
+    // Se conserva solo el slug de la última tienda visitada (para volver a ella tras el próximo login).
+    for (const key of [STOREFRONT_KEY, ADMIN_KEY, MANAGER_KEY]) localStorage.removeItem(key);
+    set({ storefrontCompanyId: null, adminCompanyId: null, managerCompany: null, tenantBrand: null });
+  },
 }));

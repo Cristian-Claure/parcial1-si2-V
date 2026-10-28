@@ -109,6 +109,10 @@ async function responseError(
   );
 }
 
+/** Sesión vencida (401 en una solicitud autenticada): la registra el authStore. */
+let unauthorizedHandler: (() => void) | null = null;
+export function onUnauthorized(handler: (() => void) | null): void { unauthorizedHandler = handler; }
+
 export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
@@ -148,6 +152,7 @@ export async function apiRequest<T>(
   }
 
   if (!response.ok) {
+    if (response.status === 401 && auth && storedAccessToken()) unauthorizedHandler?.();
     throw await responseError(
       response,
     );

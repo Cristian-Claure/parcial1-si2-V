@@ -1,3 +1,4 @@
+import { formatMoney } from "@velora/contracts";
 import { useCallback, useEffect, useState } from "react";
 import type { SyncConflictOption, SyncProductCreate } from "@velora/contracts";
 import { useAuthStore } from "../../core/auth/authStore";
@@ -88,7 +89,7 @@ export function SyncCenterPage() {
       </article>)}</div>}
     </div>
     {posSales.length > 0 ? <div className="panel"><h2>Ventas POS sin conexión ({posSales.length})</h2><div className="sync-list">{posSales.map((sale) => <article key={sale.id} className="sync-item" data-status={sale.status}>
-      <header><strong>Venta {sale.total.toFixed(2)} {sale.currency}</strong><span className="sync-status">{STATUS_LABEL[sale.status]}</span></header>
+      <header><strong>Venta {formatMoney(sale.total, sale.currency)}</strong><span className="sync-status">{STATUS_LABEL[sale.status]}</span></header>
       {sale.errorMessage ? <p className="sync-error">{sale.errorMessage}</p> : null}
       {sale.status !== "PENDING" ? <div className="actions"><button type="button" className="button secondary small" onClick={() => void act(async () => { await offlineCache.retryPosSale(sale.id); await load(); })}>Reintentar</button><button type="button" className="button danger-outline small" onClick={() => void act(async () => { await offlineCache.discardPosSale(sale.id); await load(); })}>Descartar</button></div> : null}
     </article>)}</div></div> : null}
