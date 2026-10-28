@@ -23,6 +23,6 @@ export default function OperationsLayout() {
 
   if (status === "checking") return <Loading label="Validando sesión…" />;
   if (status !== "authenticated" || !user) return <Redirect href={"/login" as never} />;
-  if (user.role !== "STORE_MANAGER") return <Redirect href={"/home" as never} />;
+  if (user.role !== "STORE_MANAGER") return <Redirect href={"/" as never} />;
   return <Stack screenOptions={{ headerShown: false }} />;
 }

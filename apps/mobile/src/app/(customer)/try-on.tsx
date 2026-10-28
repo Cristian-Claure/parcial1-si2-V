@@ -7,7 +7,6 @@ import {
 import {
   Image,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -52,10 +51,7 @@ import {
   primaryImage,
 } from "@/shared/lib/productImages";
 
-import {
-  colors,
-  commonStyles,
-} from "@/shared/theme";
+import { makeStyles, useCommonStyles } from "@/shared/theme";
 
 import {
   Button,
@@ -76,6 +72,7 @@ const terminal =
     status === "CANCELLED";
 
 export default function TryOnScreen() {
+  const styles = useStyles(); const commonStyles = useCommonStyles();
   const companyId =
     useCompanyStore(
       (
@@ -995,6 +992,7 @@ function Choice({
   active: boolean;
   onPress: () => void;
 }) {
+  const commonStyles = useCommonStyles();
   return (
     <Pressable
       onPress={onPress}
@@ -1017,7 +1015,7 @@ function Choice({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   productHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1038,4 +1036,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-});
+}));

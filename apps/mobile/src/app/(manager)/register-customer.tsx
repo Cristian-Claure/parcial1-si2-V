@@ -6,12 +6,13 @@ import { enqueueOperation, newId, runOperationsSync } from "@/core/sync/syncEngi
 import { buildCustomerOperation, type CustomerDraft } from "@/features/operations/operationBuilders";
 import { OperationsShell } from "@/features/operations/OperationsShell";
 import { useManagerCompany } from "@/features/operations/useManagerCompany";
-import { commonStyles } from "@/shared/theme";
+import { useCommonStyles } from "@/shared/theme";
 import { Button, Field, Notice } from "@/shared/ui";
 
 const empty: CustomerDraft = { firstName: "", lastName: "", phone: "", email: "", taxId: "", customerType: "B2C", businessName: "" };
 
 export default function RegisterCustomerScreen() {
+  const commonStyles = useCommonStyles();
   const user = useAuthStore((state) => state.user)!;
   const isConnected = useNetworkStore((state) => state.isConnected);
   const company = useManagerCompany();

@@ -8,6 +8,9 @@ import {
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useAuthStore } from "@/core/auth/authStore";
 import { useCompanyStore } from "@/core/company/companyStore";
+import { useOwnerStore } from "@/core/company/ownerStore";
+import { useLoadedManagerCompany } from "@/features/operations/useManagerCompany";
+import { StoreThemeProvider } from "@/shared/theme";
 import {
   deriveIsConnected,
   networkReady,
@@ -33,11 +36,26 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <Bootstrap />
-        {children}
+        <ActiveTheme>{children}</ActiveTheme>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
 }
+
+/**
+ * Tema activo según quién usa la app: el cliente ve la paleta de la tienda elegida, el
+ * propietario la de su empresa activa y el encargado la de su empresa. Sin empresa → Trama.
+ * Las pantallas de plataforma fuerzan Trama con <PlatformTheme>.
+ */
+function ActiveTheme({ children }: { children: ReactNode }) {
+  const role = useAuthStore((state) => state.user?.role);
+  const storefront = useCompanyStore((state) => state.companies.find((company) => company.id === state.selectedCompanyId) ?? null);
+  const owner = useOwnerStore((state) => state.companies.find((company) => company.id === state.selectedCompanyId) ?? null);
+  const manager = useLoadedManagerCompany();
+  const company = role === "ADMIN" ? owner : role === "STORE_MANAGER" ? manager : role === "PLATFORM_ADMIN" ? null : storefront;
+  return <StoreThemeProvider palette={company?.brand?.palette ?? null} brandKey={company?.id ?? null}>{children}</StoreThemeProvider>;
+}
+
 
 function Bootstrap() {
   const client = useQueryClient();

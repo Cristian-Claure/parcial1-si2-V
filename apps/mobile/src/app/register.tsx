@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { router, Redirect } from "expo-router";
 import { registerRequestSchema } from "@velora/contracts";
 import { useAuthStore } from "@/core/auth/authStore";
-import { colors, commonStyles } from "@/shared/theme";
-import { Brand, Button, Field, Notice } from "@/shared/ui";
+import { useCommonStyles, PlatformTheme } from "@/shared/theme";
+import { Brand, Button, Field, Notice, Screen } from "@/shared/ui";
 
+/** Registro de cliente (pantalla de plataforma: siempre con la marca Trama). */
 export default function RegisterScreen() {
+  return <PlatformTheme><RegisterContent /></PlatformTheme>;
+}
+
+function RegisterContent() {
+  const commonStyles = useCommonStyles();
   const status = useAuthStore((state) => state.status);
   const register = useAuthStore((state) => state.register);
   const [firstName, setFirstName] = useState("");
@@ -17,7 +23,7 @@ export default function RegisterScreen() {
   const [error, setError] = useState<string | null>(null);
 
   if (status === "authenticated") {
-    return <Redirect href={"/home" as never} />;
+    return <Redirect href={"/" as never} />;
   }
 
   const submit = async () => {
@@ -38,7 +44,7 @@ export default function RegisterScreen() {
 
     try {
       await register(parsed.data);
-      router.replace("/home" as never);
+      router.replace("/" as never);
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -51,19 +57,8 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={[
-        commonStyles.page,
-        {
-          paddingHorizontal: 24,
-          paddingTop: 48,
-          gap: 16,
-          backgroundColor: colors.surface,
-        },
-      ]}
-    >
-      <Brand />
+    <Screen>
+      <View style={{ paddingTop: 24 }}><Brand /></View>
       <View style={{ gap: 8 }}>
         <Text style={commonStyles.eyebrow}>NUEVA CUENTA</Text>
         <Text style={commonStyles.heading}>Su experiencia comienza aquí.</Text>
@@ -90,15 +85,15 @@ export default function RegisterScreen() {
       </View>
 
       <Button
-        title={busy ? "CREANDO…" : "CREAR CUENTA"}
+        title={busy ? "Creando…" : "Crear cuenta"}
         onPress={() => void submit()}
         disabled={busy}
       />
       <Button
-        title="VOLVER A INICIAR SESIÓN"
+        title="Ya tengo cuenta"
         variant="secondary"
         onPress={() => router.back()}
       />
-    </KeyboardAvoidingView>
+    </Screen>
   );
 }

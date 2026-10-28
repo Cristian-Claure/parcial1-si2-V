@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
   useMutation,
@@ -23,7 +23,7 @@ import {
   saveCache,
 } from "@/core/offline/mobileDb";
 import { buildOfflineOrder, createClientOperationId } from "@/core/offline/offlineOrder";
-import { colors, commonStyles } from "@/shared/theme";
+import { makeStyles, useCommonStyles } from "@/shared/theme";
 import {
   Button,
   CustomerShell,
@@ -40,6 +40,7 @@ interface CheckoutData {
 }
 
 export default function CheckoutScreen() {
+  const styles = useStyles(); const commonStyles = useCommonStyles();
   const user = useAuthStore((state) => state.user)!;
   const companyId = useCompanyStore((state) => state.selectedCompanyId);
   const connected = useNetworkStore((state) => state.isConnected);
@@ -339,6 +340,7 @@ function Choice({
   active: boolean;
   onPress: () => void;
 }) {
+  const styles = useStyles(); const commonStyles = useCommonStyles();
   return (
     <Pressable
       onPress={onPress}
@@ -354,7 +356,7 @@ function Choice({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   choiceRow: {
     flexDirection: "row",
     gap: 10,
@@ -371,4 +373,4 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     fontSize: 20,
   },
-});
+}));

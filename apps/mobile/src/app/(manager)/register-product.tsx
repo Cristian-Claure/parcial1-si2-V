@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import type { MirrorRecord } from "@velora/contracts";
 import { useAuthStore } from "@/core/auth/authStore";
 import { useNetworkStore } from "@/core/network/networkStore";
@@ -8,13 +8,14 @@ import { enqueueOperation, newId, runOperationsSync, useOperationsSync } from "@
 import { buildProductOperation, type ProductDraft, type VariantDraft } from "@/features/operations/operationBuilders";
 import { OperationsShell } from "@/features/operations/OperationsShell";
 import { useManagerCompany } from "@/features/operations/useManagerCompany";
-import { colors, commonStyles } from "@/shared/theme";
+import { makeStyles, useCommonStyles } from "@/shared/theme";
 import { Button, Field, Notice } from "@/shared/ui";
 
 const emptyVariant = (): VariantDraft => ({ size: "", color: "", sku: "", price: "", stock: "" });
 const emptyProduct = (): ProductDraft => ({ name: "", categoryId: "", description: "", warehouseId: "", variants: [emptyVariant()] });
 
 function Chips({ options, value, onChange, allowNone }: { options: { id: string; label: string }[]; value: string; onChange: (id: string) => void; allowNone?: string }) {
+  const styles = useStyles();
   return (
     <View style={styles.chips}>
       {allowNone ? <Pressable onPress={() => onChange("")} style={[styles.chip, value === "" && styles.chipActive]}><Text style={styles.chipText}>{allowNone}</Text></Pressable> : null}
@@ -28,6 +29,7 @@ function Chips({ options, value, onChange, allowNone }: { options: { id: string;
 }
 
 export default function RegisterProductScreen() {
+  const commonStyles = useCommonStyles();
   const user = useAuthStore((state) => state.user)!;
   const isConnected = useNetworkStore((state) => state.isConnected);
   const company = useManagerCompany();
@@ -93,9 +95,9 @@ export default function RegisterProductScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: { borderWidth: 1, borderColor: colors.hairline, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: colors.card },
   chipActive: { borderColor: colors.ink, backgroundColor: colors.accentSoft },
   chipText: { color: colors.ink, fontSize: 13, fontWeight: "600" },
-});
+}));

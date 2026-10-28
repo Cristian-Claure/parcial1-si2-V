@@ -32,3 +32,8 @@ export function useManagerCompany(): CompanyResponse | null {
   useEffect(() => { if (!company) void loadManagerCompany(isConnected); }, [company, isConnected]);
   return company;
 }
+
+/** Empresa del encargado ya cargada (sin disparar la carga): la usa el tema activo. */
+export function useLoadedManagerCompany(): CompanyResponse | null {
+  return useManagerCompanyStore((state) => state.company);
+}

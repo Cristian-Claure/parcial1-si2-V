@@ -10,7 +10,7 @@ import { useAuthStore } from "@/core/auth/authStore";
 import { cachedFetch } from "@/core/offline/cachedFetch";
 import { CompanyGate } from "@/features/company/CompanyGate";
 import { ProductCard } from "@/features/catalog/ProductCard";
-import { commonStyles } from "@/shared/theme";
+import { useCommonStyles } from "@/shared/theme";
 import { CustomerShell, EmptyState, Loading, Notice } from "@/shared/ui";
 
 interface FavoriteData {
@@ -19,6 +19,7 @@ interface FavoriteData {
 }
 
 export default function FavoritesScreen() {
+  const commonStyles = useCommonStyles();
   const companyId = useCompanyStore((state) => state.selectedCompanyId);
   const user = useAuthStore((state) => state.user)!;
 

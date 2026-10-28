@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,7 +15,7 @@ import { cachedFetch } from "@/core/offline/cachedFetch";
 import { CompanyGate } from "@/features/company/CompanyGate";
 import { saveCache } from "@/core/offline/mobileDb";
 import { primaryImage } from "@/shared/lib/productImages";
-import { colors, commonStyles } from "@/shared/theme";
+import { makeStyles, useCommonStyles, useTheme } from "@/shared/theme";
 import {
   Button,
   CustomerShell,
@@ -25,6 +25,7 @@ import {
 } from "@/shared/ui";
 
 export default function ProductDetailScreen() {
+  const styles = useStyles(); const { colors } = useTheme(); const commonStyles = useCommonStyles();
   const params = useLocalSearchParams<{ id?: string }>();
   const productId = typeof params.id === "string" ? params.id : "";
   const companyId = useCompanyStore((state) => state.selectedCompanyId);
@@ -225,7 +226,7 @@ export default function ProductDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   hero: {
     width: "100%",
     aspectRatio: 0.82,
@@ -242,4 +243,4 @@ const styles = StyleSheet.create({
   variant: {
     gap: 4,
   },
-});
+}));

@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNetworkStore } from "@/core/network/networkStore";
 import { useOperationsSync } from "@/core/sync/syncEngine";
-import { colors, commonStyles } from "@/shared/theme";
+import { makeStyles, useCommonStyles } from "@/shared/theme";
 import { useManagerCompany } from "./useManagerCompany";
 
 export type OperationsNavKey = "home" | "customer" | "product" | "sync";
@@ -18,6 +18,7 @@ const items: { key: OperationsNavKey; label: string; href: string }[] = [
 
 /** Shell del modo operaciones (solo STORE_MANAGER): empresa, estado de red y cola. */
 export function OperationsShell({ active, children }: { active: OperationsNavKey; children: ReactNode }) {
+  const styles = useStyles(); const commonStyles = useCommonStyles();
   const isConnected = useNetworkStore((state) => state.isConnected);
   const counts = useOperationsSync((state) => state.counts);
   const company = useManagerCompany();
@@ -46,17 +47,17 @@ export function OperationsShell({ active, children }: { active: OperationsNavKey
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.hairline, backgroundColor: colors.surface },
   company: { fontSize: 20, color: colors.ink, fontWeight: "700" },
   pill: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   pillOk: { backgroundColor: colors.accentSoft },
-  pillWarn: { backgroundColor: "#F3DDD3" },
-  pillOffline: { backgroundColor: "#EBD9D7" },
+  pillWarn: { backgroundColor: colors.warningSoft },
+  pillOffline: { backgroundColor: colors.errorSoft },
   pillText: { fontSize: 12, fontWeight: "700", color: colors.ink },
   nav: { flexDirection: "row", borderTopWidth: 1, borderTopColor: colors.hairline, backgroundColor: colors.card },
-  navItem: { flex: 1, paddingVertical: 14, alignItems: "center" },
+  navItem: { flex: 1, minHeight: 48, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
   navItemActive: { borderTopWidth: 2, borderTopColor: colors.accent },
   navText: { fontSize: 13, color: colors.inkSoft, fontWeight: "600" },
   navTextActive: { color: colors.ink },
-});
+}));

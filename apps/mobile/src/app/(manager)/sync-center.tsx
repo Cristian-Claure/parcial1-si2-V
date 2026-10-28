@@ -7,7 +7,7 @@ import { sqliteOutbox } from "@/core/sync/syncDb";
 import { resolveEntry, retryEntry, runOperationsSync, useOperationsSync } from "@/core/sync/syncEngine";
 import { OperationsShell } from "@/features/operations/OperationsShell";
 import { useManagerCompany } from "@/features/operations/useManagerCompany";
-import { commonStyles } from "@/shared/theme";
+import { useCommonStyles } from "@/shared/theme";
 import { Button, EmptyState, Field, Notice } from "@/shared/ui";
 
 const STATUS = { PENDING: "En cola", SYNCING: "Sincronizando", CONFLICT: "Conflicto", FAILED: "Error" } as const;
@@ -23,6 +23,7 @@ function adjustment(entry: OutboxEntry, value: string): Record<string, unknown> 
 }
 
 export default function SyncCenterScreen() {
+  const commonStyles = useCommonStyles();
   const user = useAuthStore((state) => state.user)!;
   const isConnected = useNetworkStore((state) => state.isConnected);
   const company = useManagerCompany();

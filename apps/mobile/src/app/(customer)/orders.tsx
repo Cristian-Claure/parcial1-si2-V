@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import {
   useMutation,
@@ -26,7 +26,7 @@ import {
   paymentMethodLabel,
   paymentMethodsForOrder,
 } from "@/core/payments/paymentRules";
-import { colors, commonStyles } from "@/shared/theme";
+import { makeStyles, useCommonStyles, useTheme } from "@/shared/theme";
 import {
   Button,
   CustomerShell,
@@ -36,6 +36,7 @@ import {
 } from "@/shared/ui";
 
 export default function OrdersScreen() {
+  const styles = useStyles(); const commonStyles = useCommonStyles();
   const user = useAuthStore((state) => state.user)!;
   const connected = useNetworkStore((state) => state.isConnected);
   const client = useQueryClient();
@@ -153,6 +154,7 @@ function OfflineOrderCard({
   entry: OfflineOrderEntry;
   onChanged: () => Promise<unknown> | void;
 }) {
+  const styles = useStyles(); const commonStyles = useCommonStyles();
   return (
     <View style={commonStyles.card}>
       <View style={commonStyles.rowBetween}>
@@ -208,6 +210,7 @@ function OfflineOrderCard({
 }
 
 function OrderCard({ order }: { order: OrderResponse }) {
+  const styles = useStyles(); const { colors } = useTheme(); const commonStyles = useCommonStyles();
   const client = useQueryClient();
   const connected = useNetworkStore((state) => state.isConnected);
   const [method, setMethod] = useState<PaymentMethod>(
@@ -410,7 +413,7 @@ function OrderCard({ order }: { order: OrderResponse }) {
 }
 
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   status: {
     color: colors.terracotta,
     fontSize: 11,
@@ -439,4 +442,4 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
-});
+}));

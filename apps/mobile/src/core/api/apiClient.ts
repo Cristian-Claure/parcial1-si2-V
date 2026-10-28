@@ -34,6 +34,10 @@ export const apiBaseUrl = (
   process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || defaultBaseUrl
 ).replace(/\/$/, "");
 
+/** Sesión vencida (401 en una solicitud autenticada): la registra el authStore. */
+let unauthorizedHandler: (() => void) | null = null;
+export function onUnauthorized(handler: (() => void) | null): void { unauthorizedHandler = handler; }
+
 export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
@@ -80,6 +84,7 @@ export async function apiRequest<T>(
     : await response.text();
 
   if (!response.ok) {
+    if (response.status === 401 && auth && headers.has("Authorization")) unauthorizedHandler?.();
     const candidate = payload as Partial<ApiError> | null;
     const message =
       candidate &&

@@ -1,4 +1,4 @@
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
   useMutation,
@@ -11,7 +11,7 @@ import { useAuthStore } from "@/core/auth/authStore";
 import { useCompanyStore } from "@/core/company/companyStore";
 import { cachedFetch } from "@/core/offline/cachedFetch";
 import { saveCache } from "@/core/offline/mobileDb";
-import { colors, commonStyles } from "@/shared/theme";
+import { makeStyles, useCommonStyles } from "@/shared/theme";
 import {
   Button,
   CustomerShell,
@@ -21,6 +21,7 @@ import {
 } from "@/shared/ui";
 
 export default function CartScreen() {
+  const styles = useStyles(); const commonStyles = useCommonStyles();
   const user = useAuthStore((state) => state.user)!;
   const companyId = useCompanyStore((state) => state.selectedCompanyId);
   const client = useQueryClient();
@@ -199,7 +200,7 @@ export default function CartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   amount: {
     color: colors.ink,
     fontWeight: "800",
@@ -235,4 +236,4 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.ink,
   },
-});
+}));

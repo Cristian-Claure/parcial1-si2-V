@@ -7,7 +7,7 @@ import { useCompanyStore } from "@/core/company/companyStore";
 import { cachedFetch } from "@/core/offline/cachedFetch";
 import { CompanyGate } from "@/features/company/CompanyGate";
 import { ProductCard } from "@/features/catalog/ProductCard";
-import { commonStyles } from "@/shared/theme";
+import { useCommonStyles } from "@/shared/theme";
 import { CustomerShell, EmptyState, Field, Loading, Notice } from "@/shared/ui";
 
 interface CatalogData {
@@ -16,6 +16,7 @@ interface CatalogData {
 }
 
 export default function CatalogScreen() {
+  const commonStyles = useCommonStyles();
   const companyId = useCompanyStore((state) => state.selectedCompanyId);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -118,6 +119,7 @@ function CategoryChip({
   active: boolean;
   onPress: () => void;
 }) {
+  const commonStyles = useCommonStyles();
   return (
     <Pressable
       onPress={onPress}

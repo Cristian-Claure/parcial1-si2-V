@@ -1,5 +1,6 @@
 import type {
   CompanyBrand,
+  CompanySegment,
   DirectoryEntry,
   AddCartItemRequest,
   AuthResponse,
@@ -50,8 +51,16 @@ export const veloraApi = {
     apiRequest<CompanyResponse[]>("/api/companies", {}, false),
 
   // Fase 4B · directorio público de tiendas (solo campos de marca) y marca por slug.
-  directory: () =>
-    apiRequest<DirectoryEntry[]>("/api/companies/directory", {}, false),
+  directory: (query: { q?: string; segment?: CompanySegment | null } = {}) => {
+    const params = new URLSearchParams();
+    if (query.q?.trim()) params.set("q", query.q.trim());
+    if (query.segment) params.set("segment", query.segment);
+    const search = params.toString();
+    return apiRequest<DirectoryEntry[]>(`/api/companies/directory${search ? `?${search}` : ""}`, {}, false);
+  },
+
+  // Fase 4C · propietario: sus empresas (filtradas por TenantScopeService en el backend).
+  adminCompanies: () => apiRequest<CompanyResponse[]>("/api/admin/companies"),
 
   companyBySlug: (slug: string) =>
     apiRequest<CompanyBrand>(`/api/companies/by-slug/${q(slug)}`, {}, false),

@@ -4,10 +4,11 @@ import { useAuthStore } from "@/core/auth/authStore";
 import { useCompanyStore } from "@/core/company/companyStore";
 import { useNetworkStore } from "@/core/network/networkStore";
 import { CompanyGate } from "@/features/company/CompanyGate";
-import { colors, commonStyles } from "@/shared/theme";
+import { useCommonStyles, useTheme } from "@/shared/theme";
 import { Button, CustomerShell, Notice } from "@/shared/ui";
 
 export default function HomeScreen() {
+  const { colors } = useTheme(); const commonStyles = useCommonStyles();
   const user = useAuthStore((state) => state.user)!;
   const isConnected = useNetworkStore((state) => state.isConnected);
   const companyId = useCompanyStore((state) => state.selectedCompanyId);

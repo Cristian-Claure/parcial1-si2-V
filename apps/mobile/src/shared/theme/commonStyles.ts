@@ -1,35 +1,10 @@
-import { StyleSheet } from "react-native";
+import { makeStyles } from "./makeStyles";
 
-export const colors = {
-  ivory: "#F8F4EF",
-  surface: "#FAF6F0",
-  surfaceSoft: "#EFE7DF",
-  card: "#FFFDFA",
-  cardMuted: "#EAE1D8",
-  ink: "#17130F",
-  inkSoft: "#6F675D",
-  muted: "#786E68",
-  mutedLight: "#9B8F87",
-  champagne: "#C7A989",
-  terracotta: "#B5623E",
-  dustyRose: "#C79A98",
-  roseGold: "#B98273",
-  accent: "#8B6A34",
-  accentDeep: "#6B4F22",
-  accentSoft: "#F0E4CF",
-  hairline: "#E7E0D5",
-  success: "#66825F",
-  warning: "#A47A3E",
-  error: "#A05F59",
-  info: "#6E7887",
-  border: "rgba(32,29,27,0.12)",
-  borderStrong: "rgba(32,29,27,0.22)",
-} as const;
-
-export const commonStyles = StyleSheet.create({
+/** Estilos comunes del móvil, derivados del tema activo (Trama o la tienda). */
+export const useCommonStyles = makeStyles(({ colors }) => ({
   page: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.paper,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -40,25 +15,25 @@ export const commonStyles = StyleSheet.create({
   brand: {
     fontSize: 22,
     fontFamily: "Inter_800ExtraBold",
-    letterSpacing: 3,
+    letterSpacing: 0.5,
     color: colors.ink,
   },
   brandTag: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
-    letterSpacing: 2,
-    color: colors.muted,
+    letterSpacing: 0.4,
+    color: colors.inkSoft,
     marginTop: 2,
   },
   eyebrow: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: "Inter_700Bold",
     letterSpacing: 1.5,
-    color: colors.terracotta,
+    color: colors.accentDeep,
   },
   heading: {
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 30,
+    lineHeight: 36,
     fontFamily: "PlayfairDisplay_700Bold",
     color: colors.ink,
   },
@@ -78,12 +53,12 @@ export const commonStyles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     fontFamily: "Inter_400Regular",
-    color: colors.muted,
+    color: colors.inkSoft,
   },
   card: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.paperRaised,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.hairline,
     borderRadius: 20,
     padding: 16,
     gap: 10,
@@ -103,17 +78,17 @@ export const commonStyles = StyleSheet.create({
     minHeight: 48,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    backgroundColor: colors.card,
+    backgroundColor: colors.paperRaised,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
     color: colors.ink,
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: "Inter_400Regular",
   },
   label: {
     color: colors.inkSoft,
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: "Inter_700Bold",
     marginBottom: 6,
   },
@@ -123,15 +98,18 @@ export const commonStyles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
   },
   buttonText: {
-    color: colors.ivory,
+    color: colors.onAccent,
     fontFamily: "Inter_800ExtraBold",
-    letterSpacing: 0.5,
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
   buttonSecondary: {
-    backgroundColor: colors.cardMuted,
+    backgroundColor: colors.paperRaised,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
   },
   buttonSecondaryText: {
     color: colors.ink,
@@ -139,27 +117,33 @@ export const commonStyles = StyleSheet.create({
   buttonDanger: {
     backgroundColor: colors.error,
   },
+  buttonDangerText: {
+    color: colors.onSemantic,
+  },
   chip: {
+    minHeight: 44,
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: 999,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: colors.card,
+    backgroundColor: colors.paperRaised,
   },
   chipActive: {
-    backgroundColor: colors.ink,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   chipText: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
     color: colors.ink,
   },
   chipTextActive: {
-    color: colors.ivory,
+    color: colors.onAccent,
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: colors.hairline,
   },
-});
+}));
