@@ -1,3 +1,4 @@
+import { DEFAULT_BRAND_PALETTE } from "@velora/contracts";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -20,7 +21,7 @@ export function CreateStorePage() {
   const plans = useQuery({ queryKey: ["plans"], queryFn: veloraApi.plans });
   const [step, setStep] = useState(0);
   const [owner, setOwner] = useState({ firstName: "", lastName: "", email: "", password: "" });
-  const [company, setCompany] = useState({ name: "", slug: "", tagline: "", accentColor: "#8B6A34", city: "" });
+  const [company, setCompany] = useState({ name: "", slug: "", tagline: "", accentColor: DEFAULT_BRAND_PALETTE.accent as string, city: "" });
   const [slugTouched, setSlugTouched] = useState(false);
   const [planCode, setPlanCode] = useState(params.get("plan") ?? "FREE");
   const [card, setCard] = useState({ cardNumber: "4242 4242 4242 4242", holderName: "" });

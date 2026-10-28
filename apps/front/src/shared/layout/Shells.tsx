@@ -35,7 +35,7 @@ function NavItems({ items, locked = {} }: { items: readonly (readonly [string, s
  * Marco con barra lateral: en pantallas de menos de 1000px la barra se colapsa y se abre con el
  * botón de menú (se cierra al navegar, con Escape o tocando fuera).
  */
-function SidebarFrame({ sidebar, children, ops = false, title }: { sidebar: ReactNode; children: ReactNode; ops?: boolean; title: string }) {
+function SidebarFrame({ sidebar, children, ops = false, title, platform = false }: { sidebar: ReactNode; children: ReactNode; ops?: boolean; title: string; platform?: boolean }) {
   // El menú queda abierto solo en la ruta donde se abrió: al navegar se cierra sin efectos extra.
   const location = useLocation(); const [openOn, setOpenOn] = useState<string | null>(null);
   const open = openOn === location.pathname;
@@ -45,7 +45,7 @@ function SidebarFrame({ sidebar, children, ops = false, title }: { sidebar: Reac
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setOpenOn(null); };
     document.addEventListener("keydown", onKey); return () => document.removeEventListener("keydown", onKey);
   }, [open]);
-  return <div className="app-shell">
+  return <div className="app-shell" data-platform={platform ? "trama" : undefined}>
     <div className="mobile-topbar">
       <button type="button" className="menu-toggle" aria-label={open ? "Cerrar menú" : "Abrir menú"} aria-expanded={open} aria-controls="app-sidebar" onClick={() => setOpen((value) => !value)}><span aria-hidden="true" /></button>
       <strong className="mobile-topbar-title">{title}</strong>
@@ -160,7 +160,7 @@ function NoCompaniesNotice() {
 /** Área mínima de la plataforma (PLATFORM_ADMIN): marca de la plataforma, sin selector de empresa. */
 export function PlatformShell() {
   const user = useAuthStore((state) => state.user); const logout = useLogout();
-  return <SidebarFrame ops title={PLATFORM_NAME} sidebar={<>
+  return <SidebarFrame ops platform title={PLATFORM_NAME} sidebar={<>
     <Link to="/plataforma" aria-label={`${PLATFORM_NAME}: inicio`}><PlatformBrand variant="mark" tone="dark" /></Link>
     <div className="sidebar-user"><span>Plataforma {PLATFORM_NAME}</span><strong>{user ? `${user.firstName} ${user.lastName}` : ""}</strong></div>
     <nav aria-label="Plataforma"><NavItems items={[["Plataforma", "/plataforma"], ["Tiendas", "/tiendas"], ["Planes públicos", "/planes"]] as const} /></nav>

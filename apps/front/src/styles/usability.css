@@ -11,8 +11,8 @@ input, select, textarea, .filters label input, .filters label select { font-size
 input:not([type="checkbox"]):not([type="radio"]), select { min-height: 44px; }
 
 /* Enfoque visible para teclado en todo control interactivo. */
-:where(a, button, select, input, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.sidebar :where(a, button, select):focus-visible { outline-color: white; }
+:where(a, button, select, input, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.sidebar :where(a, button, select):focus-visible { outline-color: var(--sidebar-indicator); }
 
 /* Textos largos: una línea con elipsis. */
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
@@ -73,6 +73,6 @@ input[aria-invalid="true"] { border-color: var(--error); }
   .app-shell .sidebar.sidebar { position: fixed; inset: 0 auto 0 0; width: min(300px, 86vw); height: 100dvh; z-index: 95; transform: translateX(-105%); transition: transform .2s ease; }
   .app-shell .sidebar.sidebar[data-open="true"] { transform: none; box-shadow: var(--shadow-lg); }
   .app-shell .sidebar.sidebar nav { display: flex; flex-direction: column; }
-  .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 90; background: rgba(20, 20, 43, .45); }
+  .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 90; background: rgba(var(--shadow-rgb), .45); }
 }
 @media (prefers-reduced-motion: reduce) { .app-shell .sidebar.sidebar { transition: none; } }

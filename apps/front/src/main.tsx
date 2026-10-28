@@ -5,6 +5,10 @@ import { AppProviders } from "./app/providers/AppProviders";
 import "./styles/global.css";
 import "./styles/saas.css";
 import "./styles/usability.css";
+import { applyCachedThemeBeforePaint } from "./core/theme/themeScope";
+
+// Tema de la última tienda antes del primer render (sin parpadeo arena → color de la tienda).
+applyCachedThemeBeforePaint(window.location.pathname);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

@@ -11,14 +11,15 @@ interface Props {
     ReportChart;
 }
 
-// Mirrors global.css tokens (--accent, --terracotta, --success, --accent-deep, --ink, --ink-soft); SVG can't read var() here.
+// Serie armónica de la tienda (deriveTheme → --chart-1..6). En SVG se aplica con style (fill/stroke),
+// no como atributo de presentación, para que var() resuelva.
 const COLORS = [
-  "#8B6A34",
-  "#B5623E",
-  "#3F6B4A",
-  "#6B4F22",
-  "#17130F",
-  "#6F675D",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-6)",
 ] as const;
 
 function safeNumber(
@@ -456,10 +457,7 @@ export function ReportChartCard({
                     points={
                       series.polyline
                     }
-                    fill="none"
-                    stroke={
-                      series.color
-                    }
+                    style={{ fill: "none", stroke: series.color }}
                     strokeWidth="3"
                     strokeLinejoin="round"
                     strokeLinecap="round"
@@ -473,9 +471,7 @@ export function ReportChartCard({
                         cx={point.x}
                         cy={point.y}
                         r="4"
-                        fill={
-                          series.color
-                        }
+                        style={{ fill: series.color }}
                       >
                         <title>
                           {`${point.label} · ${series.name}: ${point.value}`}

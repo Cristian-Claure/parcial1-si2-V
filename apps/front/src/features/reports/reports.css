@@ -59,7 +59,7 @@
 
 .chip.active {
   background: var(--ink);
-  color: white;
+  color: var(--on-accent);
   border-color: var(--ink);
 }
 
@@ -267,7 +267,7 @@
 }
 
 .voice-state.recording {
-  background: color-mix(in srgb, var(--error) 16%, white);
+  background: color-mix(in srgb, var(--error) 16%, var(--paper-raised));
   color: var(--error);
 }
 
@@ -277,7 +277,7 @@
 }
 
 .voice-state.error {
-  background: color-mix(in srgb, var(--error) 16%, white);
+  background: color-mix(in srgb, var(--error) 16%, var(--paper-raised));
   color: var(--error);
 }
 

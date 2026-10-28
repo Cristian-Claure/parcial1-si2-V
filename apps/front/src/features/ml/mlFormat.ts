@@ -1,6 +1,7 @@
 /** Constantes de presentación compartidas por los gráficos y paneles de ML. */
 
-export const SEGMENT_COLORS = ["var(--accent)", "var(--terracotta)", "var(--success)", "#6B7FA8", "#B08D57", "#8E6C8A", "#4F8A8B", "#A35D5D"];
+// Segmentos con la serie armónica de la tienda (deriveTheme); 7.º y 8.º son variantes de la misma serie.
+export const SEGMENT_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--chart-6)", "color-mix(in srgb, var(--chart-1) 60%, var(--ink))", "color-mix(in srgb, var(--chart-4) 60%, var(--ink))"];
 
 const FEATURE_LABELS: Record<string, string> = {
   dow: "Día de la semana", month: "Mes", day_of_month: "Día del mes", quincena: "Quincena", month_end: "Fin de mes",

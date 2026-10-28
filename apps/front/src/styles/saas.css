@@ -10,7 +10,7 @@
 .plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; align-items: stretch; }
 .plan-card { position: relative; display: flex; flex-direction: column; gap: 1rem; padding: clamp(1.4rem, 3vw, 2.1rem); background: var(--paper-raised); border: 1px solid var(--hairline); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
 .plan-card.featured { border-color: var(--accent); box-shadow: var(--shadow-md); }
-.plan-card .plan-ribbon { position: absolute; top: -.8rem; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: .7rem; letter-spacing: .16em; font-weight: 800; padding: .35rem .85rem; border-radius: var(--radius-full); white-space: nowrap; }
+.plan-card .plan-ribbon { position: absolute; top: -.8rem; left: 50%; transform: translateX(-50%); background: var(--accent); color: var(--on-accent); font-size: .7rem; letter-spacing: .16em; font-weight: 800; padding: .35rem .85rem; border-radius: var(--radius-full); white-space: nowrap; }
 .plan-card h2 { margin: 0; font-size: 1.9rem; }
 .plan-card .plan-price { font-family: var(--font-display); font-size: 2.4rem; line-height: 1; }
 .plan-card .plan-price small { font-family: var(--font-body); font-size: .9rem; color: var(--ink-soft); margin-left: .3rem; }
@@ -44,7 +44,7 @@
 
 /* ---------- Mi plan / uso ---------- */
 .plan-status { display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .75rem; border-radius: var(--radius-full); font-size: .75rem; font-weight: 800; letter-spacing: .08em; background: var(--accent-soft); color: var(--ink); }
-.plan-status.warn { background: #f7e3dc; color: var(--error); }
+.plan-status.warn { background: var(--error-soft); color: var(--error); }
 .usage-list { display: flex; flex-direction: column; gap: 1rem; }
 .usage-row { display: grid; gap: .4rem; }
 .usage-row header { display: flex; justify-content: space-between; gap: 1rem; font-size: .92rem; }
@@ -69,31 +69,31 @@
 .brand-preview { position: sticky; top: 1rem; border: 1px solid var(--hairline); border-radius: var(--radius-lg); overflow: hidden; background: var(--paper); color: var(--ink); box-shadow: var(--shadow-md); }
 .brand-preview-header { display: flex; align-items: center; justify-content: space-between; padding: .9rem 1.1rem; border-bottom: 1px solid var(--hairline); }
 .brand-preview-hero { padding: 1.6rem 1.2rem; background: linear-gradient(135deg, var(--accent-soft), var(--paper)); }
-.brand-preview-hero.with-banner { background-size: cover; background-position: center; color: #fff; }
+.brand-preview-hero.with-banner { background-size: cover; background-position: center; color: var(--on-accent); }
 .brand-preview-hero h3 { font-size: 1.6rem; margin-bottom: .35rem; }
 .brand-preview-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; padding: 1.1rem; }
 .brand-preview-card { border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: .8rem; background: var(--paper-raised); }
 .brand-preview-swatch { aspect-ratio: 1.3; border-radius: var(--radius-sm); background: var(--accent-soft); margin-bottom: .6rem; }
 .brand-preview-dark { padding: .9rem 1.1rem; background: var(--ink); color: var(--paper); font-size: .9rem; }
-.brand-accent-button { background: var(--accent); color: var(--on-accent, #fff); border-radius: var(--radius-full); border: 0; padding: .6rem 1rem; font-weight: 750; }
+.brand-accent-button { background: var(--accent); color: var(--on-accent); border-radius: var(--radius-full); border: 0; padding: .6rem 1rem; font-weight: 750; }
 .asset-drop { display: flex; align-items: center; gap: .9rem; }
 .asset-drop img { width: 64px; height: 64px; object-fit: contain; border-radius: var(--radius-sm); border: 1px solid var(--hairline); background: var(--paper-raised); }
 
 /* ---------- Marca de empresa (logo en headers) ---------- */
 .tenant-logo { width: 32px; height: 32px; object-fit: contain; border-radius: 8px; }
-.tenant-monogram { width: 32px; height: 32px; border-radius: 8px; display: inline-grid; place-items: center; background: var(--accent); color: var(--on-accent, #fff); font-family: var(--font-display); font-weight: 700; }
+.tenant-monogram { width: 32px; height: 32px; border-radius: 8px; display: inline-grid; place-items: center; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; }
 
 /* ---------- Home genérico de empresa ---------- */
 .tenant-hero { padding: clamp(3rem, 8vw, 6.5rem) clamp(1rem, 6vw, 5rem); background: linear-gradient(135deg, var(--accent-soft), var(--paper)); border-bottom: 1px solid var(--hairline); }
-.tenant-hero.with-banner { background-size: cover; background-position: center; color: #fff; position: relative; }
-.tenant-hero.with-banner::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.55), rgba(0,0,0,.1)); }
+.tenant-hero.with-banner { background-size: cover; background-position: center; color: var(--on-accent); position: relative; }
+.tenant-hero.with-banner::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(var(--shadow-rgb), .55), rgba(var(--shadow-rgb), .1)); }
 .tenant-hero > * { position: relative; max-width: 720px; }
 .tenant-hero p { font-size: 1.1rem; line-height: 1.7; opacity: .85; }
 .tenant-contact { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; color: var(--ink-soft); }
 
 /* ---------- Plataforma ---------- */
 .platform-tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-.platform-tabs button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.platform-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--on-accent); border-color: var(--ink); }
 .inline-form { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
 .inline-form input, .inline-form select { width: auto; min-width: 0; }
 
@@ -104,16 +104,13 @@
 }
 
 /* Contenedor de marca: selector compuesto para ganar a reglas de un solo atributo sin !important. */
-.tenant-theme[data-tenant] { background: var(--paper); color: var(--ink); min-height: 100vh; }
-.tenant-theme[data-tenant] .button.primary { background: var(--ink); color: var(--paper); }
-.tenant-theme[data-tenant] .eyebrow { color: var(--accent-deep); }
 
 /* ---------- Fase 2: sincronización ---------- */
 .sync-indicator { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .55rem .75rem; border-radius: var(--radius-md); border: 1px solid var(--hairline); background: var(--paper-raised); font-size: .82rem; }
 .sync-indicator-link { display: inline-flex; align-items: center; gap: .45rem; font-weight: 700; }
 .sync-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--success); }
 .sync-indicator[data-tone="warn"] .sync-dot { background: var(--terracotta); }
-.sync-indicator[data-tone="offline"] { background: #f6ece8; }
+.sync-indicator[data-tone="offline"] { background: var(--error-soft); }
 .sync-indicator[data-tone="offline"] .sync-dot { background: var(--error); }
 .sync-list { display: flex; flex-direction: column; gap: .75rem; }
 .sync-item { border: 1px solid var(--hairline); border-left: 4px solid var(--accent); border-radius: var(--radius-md); padding: .85rem 1rem; background: var(--paper-raised); display: flex; flex-direction: column; gap: .35rem; }

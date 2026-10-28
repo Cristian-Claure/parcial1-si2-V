@@ -86,12 +86,12 @@
 }
 
 .audit-ok {
-  background: color-mix(in srgb, var(--success) 16%, white);
+  background: color-mix(in srgb, var(--success) 16%, var(--paper-raised));
   color: var(--success);
 }
 
 .audit-fail {
-  background: color-mix(in srgb, var(--error) 16%, white);
+  background: color-mix(in srgb, var(--error) 16%, var(--paper-raised));
   color: var(--error);
 }
 

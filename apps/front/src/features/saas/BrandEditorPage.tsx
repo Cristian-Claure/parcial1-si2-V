@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  brandingAllows, contrastRatio, resolveBrandPalette, validateBrandPalette,
+  brandingAllows, contrastRatio, DEFAULT_BRAND_PALETTE, resolveBrandPalette, validateBrandPalette,
   type AdminBrandingResponse, type BrandPalette, type BrandingField, type CompanyBrand, type CompanyContact, type UpdateBrandingRequest,
 } from "@velora/contracts";
 import { veloraApi } from "../../core/api/veloraApi";
@@ -12,7 +12,7 @@ import { Notice } from "../../shared/feedback/Notice";
 import { PageLoader } from "../../shared/ui/PageLoader";
 import { PlanErrorNotice } from "./PlanErrorNotice";
 
-const DEFAULT_ACCENT = "#8B6A34";
+const DEFAULT_ACCENT = DEFAULT_BRAND_PALETTE.accent;
 const REQUIRED_PLAN: Partial<Record<BrandingField, string>> = { fullPalette: "PLUS", tagline: "MAX", banner: "MAX", contact: "MAX" };
 
 interface Draft { displayName: string; slug: string; tagline: string; palette: { accent: string; primary: string; paper: string; ink: string }; contact: { phone: string; email: string; address: string; instagram: string; facebook: string; whatsapp: string } }
@@ -116,7 +116,7 @@ function BrandEditorForm({ companyId, data, onSaved }: { companyId: string; data
       </form>
       <aside className="brand-preview" data-tenant={preview.slug} style={tenantStyle(preview)} aria-label="Vista previa de la tienda">
         <div className="brand-preview-header"><Brand variant="lockup" brand={preview} showTagline /><span className="field-hint">Vista previa</span></div>
-        <div className={preview.bannerUrl ? "brand-preview-hero with-banner" : "brand-preview-hero"} style={preview.bannerUrl ? { backgroundImage: `linear-gradient(90deg, rgba(0,0,0,.55), rgba(0,0,0,.1)), url(${preview.bannerUrl})` } : undefined}><span className="eyebrow">{preview.name.toUpperCase()}</span><h3>{preview.tagline ?? `Bienvenida a ${preview.name}`}</h3><button type="button" className="brand-accent-button">Ver catálogo</button></div>
+        <div className={preview.bannerUrl ? "brand-preview-hero with-banner" : "brand-preview-hero"} style={preview.bannerUrl ? { backgroundImage: `linear-gradient(90deg, rgba(var(--shadow-rgb), .55), rgba(var(--shadow-rgb), .1)), url(${preview.bannerUrl})` } : undefined}><span className="eyebrow">{preview.name.toUpperCase()}</span><h3>{preview.tagline ?? `Bienvenida a ${preview.name}`}</h3><button type="button" className="brand-accent-button">Ver catálogo</button></div>
         <div className="brand-preview-body">{["Vestido", "Blazer"].map((name) => <div key={name} className="brand-preview-card"><div className="brand-preview-swatch" /><strong>{name}</strong><p className="field-hint">Desde 249 BOB</p></div>)}</div>
         <div className="brand-preview-dark">Superficie oscura con el texto de tu marca</div>
       </aside>
