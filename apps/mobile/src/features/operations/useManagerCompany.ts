@@ -32,3 +32,17 @@ export function useManagerCompany(): CompanyResponse | null {
   useEffect(() => { if (!company) void loadManagerCompany(isConnected); }, [company, isConnected]);
   return company;
 }
+
+/** Empresa del encargado ya cargada (sin disparar la carga): la usa el tema activo. */
+export function useLoadedManagerCompany(): CompanyResponse | null {
+  return useManagerCompanyStore((state) => state.company);
+}
+
+/**
+ * Empresa para el Modo operaciones (registrar producto/cliente): la del encargado o, para el
+ * propietario, su empresa activa. El backend (sync push/pull) vuelve a validar el alcance.
+ */
+export function useOperationsCompany(role: string | undefined, ownerCompany: CompanyResponse | null): CompanyResponse | null {
+  const manager = useManagerCompanyStore((state) => state.company);
+  return role === "ADMIN" ? ownerCompany : manager;
+}

@@ -6,6 +6,9 @@ import { ApiClientError } from "../../core/api/apiClient";
 import { veloraApi } from "../../core/api/veloraApi";
 import { lastStoreSlug } from "../../core/company/companyStore";
 import { Notice } from "../../shared/feedback/Notice";
+import type { LoginRedirectState } from "../../shared/auth/RouteGuards";
+
+import { validateCustomerRegistration, type RegisterField } from "./registerValidation";
 import { PLATFORM_NAME, PLATFORM_TAGLINE, PlatformBrand, WeaveMotif } from "../../shared/platform/PlatformBrand";
 
 /** Panel de marca de la plataforma (sin fotos de tiendas): motivo de tejido vectorial y CTAs. */
@@ -30,12 +33,14 @@ function PlatformHero({ children }: { children?: ReactNode }) {
 export function LoginPage() {
   const login = useAuthStore((state) => state.login); const navigate = useNavigate(); const location = useLocation();
   const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
+  const redirect = location.state as Partial<LoginRedirectState> | null;
+  const expired = useAuthStore((state) => state.sessionExpired) || Boolean(redirect?.expired);
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setBusy(true); setError(null); const data = new FormData(event.currentTarget);
     try {
       const user = await login({ email: String(data.get("email") ?? ""), password: String(data.get("password") ?? "") });
       const adminCompanyCount = user.role === "ADMIN" ? (await veloraApi.adminCompanies().catch(() => [])).length : 0;
-      const requested = (location.state as { from?: string } | null)?.from ?? null;
+      const requested = redirect?.from ?? null;
       navigate(postLoginPath({ role: user.role, lastStoreSlug: lastStoreSlug(), adminCompanyCount, requested }), { replace: true });
     } catch (reason) { setError(reason instanceof ApiClientError ? reason.message : "No se pudo iniciar sesión."); } finally { setBusy(false); }
   };
@@ -49,6 +54,7 @@ export function LoginPage() {
           <span className="eyebrow">BIENVENIDO</span>
           <h1>Ingresar a {PLATFORM_NAME}</h1>
           <p>Compra en tus tiendas favoritas o administra la tuya.</p>
+          {expired && !error ? <Notice kind="warning">Tu sesión expiró. Ingresa de nuevo para continuar donde estabas.</Notice> : null}
           {error ? <Notice kind="error">{error}</Notice> : null}
           <label>Correo<input name="email" type="email" autoComplete="email" required /></label>
           <label>Contraseña<input name="password" type="password" autoComplete="current-password" required /></label>
@@ -91,8 +97,12 @@ export function RegisterChooserPage() {
 export function RegisterPage() {
   const register = useAuthStore((state) => state.register); const navigate = useNavigate();
   const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<RegisterField, string>>>({});
   const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); setBusy(true); setError(null); const data = new FormData(event.currentTarget);
+    event.preventDefault(); setError(null); const data = new FormData(event.currentTarget);
+    const errors = validateCustomerRegistration({ firstName: String(data.get("firstName") ?? ""), lastName: String(data.get("lastName") ?? ""), email: String(data.get("email") ?? ""), password: String(data.get("password") ?? "") });
+    setFieldErrors(errors); if (Object.keys(errors).length) return;
+    setBusy(true);
     try {
       await register({ firstName: String(data.get("firstName") ?? ""), lastName: String(data.get("lastName") ?? ""), email: String(data.get("email") ?? ""), password: String(data.get("password") ?? "") });
       navigate(postLoginPath({ role: "CUSTOMER", lastStoreSlug: lastStoreSlug(), adminCompanyCount: 0 }), { replace: true });
@@ -102,15 +112,15 @@ export function RegisterPage() {
     <main className="platform-auth">
       <PlatformHero />
       <div className="platform-form-side">
-        <form className="platform-card wide" onSubmit={(event) => void submit(event)}>
+        <form className="platform-card wide" noValidate onSubmit={(event) => void submit(event)}>
           <span className="eyebrow">SOY CLIENTE</span>
           <h1>Crea tu cuenta de cliente</h1>
           {error ? <Notice kind="error">{error}</Notice> : null}
           <div className="form-grid">
-            <label>Nombre<input name="firstName" required maxLength={80} /></label>
-            <label>Apellido<input name="lastName" required maxLength={100} /></label>
-            <label className="span-2">Correo<input name="email" type="email" required maxLength={180} /></label>
-            <label className="span-2">Contraseña<input name="password" type="password" minLength={8} maxLength={72} required /><small>Incluye mayúscula, minúscula y número.</small></label>
+            <label>Nombre<input name="firstName" required maxLength={80} autoComplete="given-name" aria-invalid={Boolean(fieldErrors.firstName)} aria-describedby="err-firstName" />{fieldErrors.firstName ? <small className="field-error" id="err-firstName">{fieldErrors.firstName}</small> : null}</label>
+            <label>Apellido<input name="lastName" required maxLength={100} autoComplete="family-name" aria-invalid={Boolean(fieldErrors.lastName)} aria-describedby="err-lastName" />{fieldErrors.lastName ? <small className="field-error" id="err-lastName">{fieldErrors.lastName}</small> : null}</label>
+            <label className="span-2">Correo<input name="email" type="email" required maxLength={180} autoComplete="email" aria-invalid={Boolean(fieldErrors.email)} aria-describedby="err-email" />{fieldErrors.email ? <small className="field-error" id="err-email">{fieldErrors.email}</small> : null}</label>
+            <label className="span-2">Contraseña<input name="password" type="password" minLength={8} maxLength={72} required autoComplete="new-password" aria-invalid={Boolean(fieldErrors.password)} aria-describedby="err-password" />{fieldErrors.password ? <small className="field-error" id="err-password">{fieldErrors.password}</small> : <small id="err-password">Incluye mayúscula, minúscula y número.</small>}</label>
           </div>
           <button className="button primary" disabled={busy}>{busy ? "Creando…" : "Crear cuenta"}</button>
           <p className="auth-switch">¿Quieres vender? <Link to="/crear-tienda">Abre tu tienda</Link> · <Link to="/login">Ingresar</Link></p>

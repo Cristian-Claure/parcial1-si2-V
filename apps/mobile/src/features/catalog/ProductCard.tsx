@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import type { ProductResponse } from "@velora/contracts";
+import { formatMoney, type ProductResponse } from "@velora/contracts";
 import { primaryImage } from "@/shared/lib/productImages";
-import { colors, commonStyles } from "@/shared/theme";
+import { makeStyles, useCommonStyles } from "@/shared/theme";
 
 export function productPrice(product: ProductResponse): string {
   const active = product.variants.filter((variant) => variant.active);
@@ -13,14 +13,17 @@ export function productPrice(product: ProductResponse): string {
 
   const minimum = Math.min(...active.map((variant) => variant.price));
   const currency = active[0]?.currency ?? "BOB";
-  return `Desde ${minimum.toFixed(2)} ${currency}`;
+  return `Desde ${formatMoney(minimum, currency)}`;
 }
 
 export function ProductCard({ product }: { product: ProductResponse }) {
+  const styles = useStyles(); const commonStyles = useCommonStyles();
   const imageUrl = primaryImage(product);
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${product.name}, ${productPrice(product)}`}
       style={({ pressed }) => [
         commonStyles.card,
         styles.card,
@@ -54,7 +57,7 @@ export function ProductCard({ product }: { product: ProductResponse }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   card: {
     padding: 12,
   },
@@ -73,4 +76,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "800",
   },
-});
+}));

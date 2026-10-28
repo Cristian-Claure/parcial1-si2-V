@@ -51,6 +51,7 @@ h2 { font-size: clamp(1.5rem, 2.6vw, 2.4rem); }
 .notice { border: 1px solid #d9cfc8; background: #fffaf6; border-radius: 14px; padding: .9rem 1rem; margin: 1rem 0; line-height: 1.5; }
 .notice-success { border-color: #b8d6c5; background: #f2faf5; color: #24563e; }
 .notice-error { border-color: #e2b8b8; background: #fff4f4; color: #7d2525; }
+.notice-warning { border-color: #e6cf9c; background: #fdf7ea; color: #6b4a12; }
 .empty-state { background: var(--paper); border: 1px dashed var(--hairline); border-radius: var(--radius); padding: 2rem; text-align: center; }
 .page-loading { min-height: 50vh; display: grid; place-items: center; }
 .page-loader { gap: .5rem; }

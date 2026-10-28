@@ -1,4 +1,6 @@
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { formatMoney } from "@velora/contracts";
+import { LoyaltyBanner, useLoyaltyEstimate } from "@/features/cart/LoyaltyBanner";
+import { Alert, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
   useMutation,
@@ -11,7 +13,7 @@ import { useAuthStore } from "@/core/auth/authStore";
 import { useCompanyStore } from "@/core/company/companyStore";
 import { cachedFetch } from "@/core/offline/cachedFetch";
 import { saveCache } from "@/core/offline/mobileDb";
-import { colors, commonStyles } from "@/shared/theme";
+import { makeStyles, useCommonStyles } from "@/shared/theme";
 import {
   Button,
   CustomerShell,
@@ -21,6 +23,7 @@ import {
 } from "@/shared/ui";
 
 export default function CartScreen() {
+  const styles = useStyles(); const commonStyles = useCommonStyles();
   const user = useAuthStore((state) => state.user)!;
   const companyId = useCompanyStore((state) => state.selectedCompanyId);
   const client = useQueryClient();
@@ -70,10 +73,10 @@ export default function CartScreen() {
 
   const error = update.error ?? remove.error ?? clear.error;
 
-  if (!companyId) return <CustomerShell active="cart"><Notice kind="error">Seleccione una compañía antes de abrir su bolsa.</Notice></CustomerShell>;
+  if (!companyId) return <CustomerShell active="cart"><Notice kind="error">Elige una tienda antes de abrir tu bolsa.</Notice></CustomerShell>;
 
   return (
-    <CustomerShell active="cart">
+    <CustomerShell active="cart" refreshing={cart.isRefetching} onRefresh={() => void cart.refetch()}>
       <Text style={commonStyles.eyebrow}>MI BOLSA</Text>
       <Text style={commonStyles.heading}>Su selección.</Text>
       <Text style={commonStyles.muted}>
@@ -114,7 +117,7 @@ export default function CartScreen() {
                 </Text>
               </View>
               <Text style={styles.amount}>
-                {item.subtotal.toFixed(2)} {item.currency}
+                {formatMoney(item.subtotal, item.currency)}
               </Text>
             </View>
 
@@ -160,15 +163,16 @@ export default function CartScreen() {
         <>
           <View style={commonStyles.card}>
             <View style={commonStyles.rowBetween}>
-              <Text style={commonStyles.subheading}>Total</Text>
+              <Text style={commonStyles.subheading}>Subtotal</Text>
               <Text style={styles.total}>
-                {cart.data.subtotal.toFixed(2)} {cart.data.currency}
+                {formatMoney(cart.data.subtotal, cart.data.currency)}
               </Text>
             </View>
             <Text style={commonStyles.muted}>
               {cart.data.totalItems} unidades
             </Text>
           </View>
+          <CartLoyalty subtotal={cart.data.subtotal} currency={cart.data.currency} />
 
           <Button
             title="CONTINUAR AL CHECKOUT"
@@ -199,7 +203,7 @@ export default function CartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   amount: {
     color: colors.ink,
     fontWeight: "800",
@@ -235,4 +239,10 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.ink,
   },
-});
+}));
+
+/** Descuento por compras estimado (solo tiendas cuyo plan lo incluye). */
+function CartLoyalty({ subtotal, currency }: { subtotal: number; currency: string }) {
+  const estimate = useLoyaltyEstimate(subtotal);
+  return <LoyaltyBanner estimate={estimate} currency={currency} />;
+}

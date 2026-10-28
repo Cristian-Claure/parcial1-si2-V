@@ -1,3 +1,4 @@
+import { formatDateTime } from "@velora/contracts";
 import {
   useEffect,
   useMemo,
@@ -806,9 +807,7 @@ export function TryOnPage() {
                             <tr key={item.id}>
                               <td>
                                 {
-                                  new Date(
-                                    item.createdAt,
-                                  ).toLocaleString()
+                                  formatDateTime(item.createdAt)
                                 }
                               </td>
                               <td>{item.provider}</td>

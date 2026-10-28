@@ -8,10 +8,11 @@ import { listMirror } from "@/core/sync/syncDb";
 import { useOperationsSync } from "@/core/sync/syncEngine";
 import { OperationsShell } from "@/features/operations/OperationsShell";
 import { useManagerCompany } from "@/features/operations/useManagerCompany";
-import { commonStyles } from "@/shared/theme";
+import { useCommonStyles } from "@/shared/theme";
 import { Button, Notice } from "@/shared/ui";
 
 export default function OperationsHome() {
+  const commonStyles = useCommonStyles();
   const user = useAuthStore((state) => state.user)!;
   const logout = useAuthStore((state) => state.logout);
   const isConnected = useNetworkStore((state) => state.isConnected);

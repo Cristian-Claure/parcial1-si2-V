@@ -669,3 +669,18 @@ Estado (22-oct-2026): **Fase 4B completa**.
 **Siguiente:**
 1. Fase 5: pago por QR.
 2. Cierre del parcial y documento PDF.
+
+---
+
+# Fase 4C — Experiencia de uso web + móvil completo
+
+Plan, guía de 3 minutos y desviaciones: `docs/FASE4C_UX_MOVIL.md`. Auditoría web: `docs/UX_AUDIT.md`.
+
+Estado (28-oct-2026): **Fase 4C completa**.
+- Web: 8 P1 y 15 P2 corregidos (redirecciones compartidas, sesión expirada, menú hamburguesa, filtros en la URL, paginación, formatos es-BO, textos en español).
+- Móvil: tema por empresa con las funciones de `@velora/contracts`, marca Trama, cliente completo y panel del propietario y del encargado.
+- Un endpoint aditivo: disponibilidad pública por variante (solo nivel), con prueba A/B.
+
+**Siguiente:**
+1. Fase 5: pago por QR.
+2. Cierre del parcial y documento PDF.

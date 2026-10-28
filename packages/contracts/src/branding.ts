@@ -36,6 +36,22 @@ export const DEFAULT_BRAND_PALETTE = {
   ink: "#17130F",
 } as const;
 
+/**
+ * Tokens de la plataforma Trama (iguales a `[data-platform]` de la web). El móvil los usa en
+ * login, registro, directorio, elegir empresa y planes.
+ */
+export const TRAMA_TOKENS = {
+  paper: "#F7F6FB",
+  paperRaised: "#FFFFFF",
+  ink: "#14142B",
+  inkSoft: "#5B5B75",
+  hairline: "#E4E3EF",
+  accent: "#4F46E5",
+  accentDeep: "#3730A3",
+  accentSoft: "#E8E7FB",
+  highlight: "#F2B544",
+} as const;
+
 export const WCAG_AA_TEXT = 4.5;
 
 export interface ResolvedBrandPalette {

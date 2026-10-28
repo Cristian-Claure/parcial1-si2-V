@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "VÉLORA",
+    "name": "Trama",
     "slug": "velora-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#F4F0EA",
+        "backgroundColor": "#4F46E5",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -30,7 +30,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F4F0EA",
+          "backgroundColor": "#F7F6FB",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 140
         }

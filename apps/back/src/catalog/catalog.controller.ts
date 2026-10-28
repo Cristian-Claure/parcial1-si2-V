@@ -28,6 +28,7 @@ import {
   type ProductResponse,
   type VariantRequest,
   type VariantResponse,
+  type VariantAvailability,
 } from "@velora/contracts";
 
 import {
@@ -153,6 +154,15 @@ export class CatalogPublicController {
         query.companyId,
         id,
       );
+  }
+
+  /** Fase 4C · nivel de disponibilidad por variante (IN_STOCK, LOW, OUT), sin cantidades. */
+  @Get("products/:id/availability")
+  availability(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Query(new ZodValidationPipe(catalogCompanyQuerySchema)) query: CatalogCompanyQuery,
+  ): Promise<VariantAvailability[]> {
+    return this.catalog.publicAvailability(query.companyId, id);
   }
 }
 

@@ -1,8 +1,8 @@
+import { useCompanyStore } from "@/core/company/companyStore";
 import { useState } from "react";
 import {
   Alert,
   Pressable,
-  StyleSheet,
   Switch,
   Text,
   View,
@@ -25,7 +25,7 @@ import { useAuthStore } from "@/core/auth/authStore";
 import { mobilePush } from "@/core/push/mobilePush";
 import { cachedFetch } from "@/core/offline/cachedFetch";
 import { saveCache } from "@/core/offline/mobileDb";
-import { colors, commonStyles } from "@/shared/theme";
+import { makeStyles, useCommonStyles, useTheme } from "@/shared/theme";
 import {
   Button,
   CustomerShell,
@@ -47,9 +47,11 @@ const blankAddress: CustomerAddressRequest = {
 };
 
 export default function AccountScreen() {
+  const styles = useStyles(); const { colors } = useTheme(); const commonStyles = useCommonStyles();
   const sessionUser = useAuthStore((state) => state.user)!;
   const replaceUser = useAuthStore((state) => state.replaceUser);
   const logout = useAuthStore((state) => state.logout);
+  const storePinned = useCompanyStore((state) => state.pinned);
   const client = useQueryClient();
 
   const profile = useQuery({
@@ -435,6 +437,9 @@ export default function AccountScreen() {
         ) : null}
       </View>
 
+      {!storePinned ? (
+        <Button title="Cambiar de tienda" variant="secondary" onPress={() => router.push("/stores" as never)} />
+      ) : null}
       <Button
         title="CERRAR SESIÓN"
         variant="danger"
@@ -457,7 +462,7 @@ export default function AccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(({ colors }) => ({
   options: {
     flexDirection: "row",
     gap: 8,
@@ -475,4 +480,4 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontWeight: "800",
   },
-});
+}));

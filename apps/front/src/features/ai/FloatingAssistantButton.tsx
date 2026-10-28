@@ -6,7 +6,9 @@ import { useAuthStore } from "../../core/auth/authStore";
 import { useCompanyStore } from "../../core/company/companyStore";
 import { veloraApi } from "../../core/api/veloraApi";
 
-import mark from "../../assets/brand/logo-mark.png";
+import { useLocation } from "react-router-dom";
+import { webArea } from "@velora/contracts";
+import { useStorefrontBrand } from "../../core/company/useBrand";
 import { ProductAssistantPanel } from "./ProductAssistantPanel";
 
 export function FloatingAssistantButton() {
@@ -46,7 +48,11 @@ export function FloatingAssistantButton() {
     triggerRef.current?.focus();
   };
 
-  if (user?.role !== "CUSTOMER" || !companyId) {
+  const location = useLocation(); const brand = useStorefrontBrand();
+  // Solo dentro de una tienda (/t/…, catálogo y área del cliente); nunca en pantallas de la plataforma.
+  const inStore = location.pathname.startsWith("/t/") || location.pathname.startsWith("/catalogo") || webArea(location.pathname) === "customer";
+
+  if (user?.role !== "CUSTOMER" || !companyId || !inStore) {
     return null;
   }
 
@@ -63,7 +69,7 @@ export function FloatingAssistantButton() {
         {open ? (
           <span className="assistant-fab-close">✕</span>
         ) : (
-          <img className="assistant-fab-mark" src={mark} alt="" />
+          brand?.logoUrl ? <img className="assistant-fab-mark" src={brand.logoUrl} alt="" /> : <span className="assistant-fab-initial" aria-hidden="true">{(brand?.name ?? "?").slice(0, 1).toUpperCase()}</span>
         )}
       </button>
 

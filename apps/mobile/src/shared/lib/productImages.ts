@@ -10,7 +10,7 @@ import { apiBaseUrl } from "../../core/api/apiClient";
 // Without this, expo-image just fails the request silently and renders nothing.
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost"]);
 
-function resolveAssetUrl(url: string): string {
+export function resolveAssetUrl(url: string): string {
   if (Platform.OS !== "android") {
     return url;
   }

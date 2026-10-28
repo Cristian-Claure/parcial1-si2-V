@@ -2,10 +2,11 @@ import { Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { veloraApi } from "@/core/api/veloraApi";
-import { commonStyles } from "@/shared/theme";
+import { useCommonStyles } from "@/shared/theme";
 import { Button, CustomerShell, Loading, Notice } from "@/shared/ui";
 
 export default function StripeReturnScreen() {
+  const commonStyles = useCommonStyles();
   const params = useLocalSearchParams<{
     payment_id?: string | string[];
     session_id?: string | string[];

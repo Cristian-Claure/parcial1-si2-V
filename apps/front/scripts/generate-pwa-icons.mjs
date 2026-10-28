@@ -39,4 +39,30 @@ async function main() {
   console.log(`Generados ${SIZES.length} íconos de Trama en ${OUT_DIR} y public/trama-mark.svg`);
 }
 
+/**
+ * Fase 4C · Íconos de la app móvil (Expo) desde el mismo monograma: ícono 1024, adaptive icon de
+ * Android (fondo índigo + figura en la zona segura), versión monocroma, splash claro para el fondo
+ * #F7F6FB y el PNG del monograma que usa <PlatformBrand/> en el móvil.
+ */
+const MOBILE_DIR = path.join(ROOT, "../mobile/assets/images");
+const square = (size, body, background) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">`
+  + (background ? `<rect width="64" height="64" fill="${background}"/>` : "") + `${body}</svg>`;
+const centered = (scale, mark) => `<g transform="translate(${32 - 32 * scale} ${32 - 32 * scale}) scale(${scale})">${mark}</g>`;
+const lightMark = markSvg({ bar: "#4F46E5", stem: "#3730A3", gap: "#F7F6FB" });
+const darkMark = markSvg({ bar: "#FFFFFF", stem: "#C9C6F7", gap: ACCENT });
+
+async function mobile() {
+  const outputs = [
+    ["icon.png", square(1024, centered(0.66, darkMark), ACCENT)],
+    ["android-icon-background.png", square(432, "", ACCENT)],
+    ["android-icon-foreground.png", square(432, centered(0.5, darkMark), null)],
+    ["android-icon-monochrome.png", square(432, centered(0.5, markSvg({ bar: "#FFFFFF", stem: "#FFFFFF", gap: "#000000" })), null)],
+    ["splash-icon.png", square(512, centered(0.9, lightMark), null)],
+    ["trama-mark.png", square(256, lightMark, null)],
+  ];
+  for (const [name, svg] of outputs) await sharp(Buffer.from(svg)).png().toFile(path.join(MOBILE_DIR, name));
+  console.log(`Generados ${outputs.length} íconos móviles de Trama en ${MOBILE_DIR}`);
+}
+
 await main();
+await mobile();
