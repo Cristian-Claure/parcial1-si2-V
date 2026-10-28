@@ -11,7 +11,9 @@ import type {
   ProductResponse,
   VariantRequest,
   VariantResponse,
+  VariantAvailability,
 } from "@velora/contracts";
+import { availabilityLevel } from "@velora/contracts";
 
 import type {
   AuthPrincipal,
@@ -398,6 +400,18 @@ export class CatalogService {
           variant,
         ),
     );
+  }
+
+  /** Fase 4C · disponibilidad pública (solo nivel) de las variantes de un producto activo. */
+  async publicAvailability(
+    companyId: string,
+    productId: string,
+  ): Promise<VariantAvailability[]> {
+    await this.requireActiveCompany(companyId);
+    const product = await this.requireProduct(companyId, productId);
+    if (product.status !== "ACTIVE") throw new ApiHttpError(404, "Producto no encontrado.");
+    const rows = await this.catalog.variantAvailability(companyId, productId);
+    return rows.map((row) => ({ variantId: row.variantId, level: availabilityLevel(row.available) }));
   }
 
   async createProduct(

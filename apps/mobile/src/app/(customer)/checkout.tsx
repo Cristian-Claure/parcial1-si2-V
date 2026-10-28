@@ -1,3 +1,5 @@
+import { formatMoney } from "@velora/contracts";
+import { useLoyaltyEstimate } from "@/features/cart/LoyaltyBanner";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
@@ -68,6 +70,8 @@ export default function CheckoutScreen() {
         return { cart, warehouses, addresses };
       }),
   });
+  // Descuento por compras estimado (tiendas MAX); el definitivo lo aplica el backend al crear el pedido.
+  const loyalty = useLoyaltyEstimate(checkout.data?.cart.subtotal ?? 0);
 
   const defaultAddress =
     checkout.data?.addresses.find((address) => address.defaultAddress) ??
@@ -213,8 +217,8 @@ export default function CheckoutScreen() {
 
       <Text style={commonStyles.subheading}>2. Sucursal elegible</Text>
       <Text style={commonStyles.muted}>
-        Para PICKUP solo aparecen almacenes principales que pueden cubrir toda
-        su bolsa.
+        Para retirar en tienda solo aparecen las sucursales que tienen toda tu
+        bolsa disponible.
       </Text>
 
       {modalityWarehouses.length === 0 ? (
@@ -298,12 +302,23 @@ export default function CheckoutScreen() {
 
       <View style={commonStyles.card}>
         <View style={commonStyles.rowBetween}>
-          <Text style={commonStyles.subheading}>Total</Text>
+          <Text style={commonStyles.subheading}>Subtotal</Text>
           <Text style={styles.total}>
-            {checkout.data.cart.subtotal.toFixed(2)}{" "}
-            {checkout.data.cart.currency}
+            {formatMoney(checkout.data.cart.subtotal, checkout.data.cart.currency)}
           </Text>
         </View>
+        {loyalty && loyalty.amount > 0 ? (
+          <View style={commonStyles.rowBetween}>
+            <Text style={commonStyles.body}>Descuento por compras ({loyalty.percent}%)</Text>
+            <Text style={commonStyles.body}>−{formatMoney(loyalty.amount, checkout.data.cart.currency)}</Text>
+          </View>
+        ) : null}
+        {loyalty && loyalty.amount > 0 ? (
+          <View style={commonStyles.rowBetween}>
+            <Text style={commonStyles.subheading}>Total estimado</Text>
+            <Text style={styles.total}>{formatMoney(checkout.data.cart.subtotal - loyalty.amount, checkout.data.cart.currency)}</Text>
+          </View>
+        ) : null}
         <Text style={commonStyles.muted}>
           {checkout.data.cart.totalItems} unidades
           {selectedWarehouse ? ` · ${selectedWarehouse.storeName}` : ""}

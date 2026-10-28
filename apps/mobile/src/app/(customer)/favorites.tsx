@@ -11,7 +11,8 @@ import { cachedFetch } from "@/core/offline/cachedFetch";
 import { CompanyGate } from "@/features/company/CompanyGate";
 import { ProductCard } from "@/features/catalog/ProductCard";
 import { useCommonStyles } from "@/shared/theme";
-import { CustomerShell, EmptyState, Loading, Notice } from "@/shared/ui";
+import { CustomerShell, EmptyState, ErrorState, Loading } from "@/shared/ui";
+import { router } from "expo-router";
 
 interface FavoriteData {
   favorites: CustomerFavoriteResponse[];
@@ -45,23 +46,19 @@ export default function FavoritesScreen() {
     query.data?.products.filter((product) => favoriteIds.has(product.id)) ?? [];
 
   return (
-    <CustomerShell active="favorites">
+    <CustomerShell active="favorites" refreshing={query.isRefetching} onRefresh={() => void query.refetch()}>
       <CompanyGate>
         <Text style={commonStyles.eyebrow}>FAVORITOS</Text>
         <Text style={commonStyles.heading}>Piezas que quiere volver a ver.</Text>
 
         {query.isLoading ? <Loading /> : null}
-        {query.isError ? (
-          <Notice kind="error">
-            {query.error instanceof Error
-              ? query.error.message
-              : "No fue posible consultar favoritos."}
-          </Notice>
+        {query.isError && !query.data ? (
+          <ErrorState message={query.error instanceof Error ? query.error.message : "No fue posible consultar tus favoritos."} onRetry={() => void query.refetch()} />
         ) : null}
 
-        {!query.isLoading && products.length === 0 ? (
-          <EmptyState title="Aún no tiene favoritos">
-            Guarde productos desde el catálogo para encontrarlos aquí.
+        {query.data && products.length === 0 ? (
+          <EmptyState title="Aún no tienes favoritos" actionTitle="Ir al catálogo" onAction={() => router.push("/catalog" as never)}>
+            Guarda prendas desde su ficha para encontrarlas aquí.
           </EmptyState>
         ) : (
           <View style={{ gap: 14 }}>

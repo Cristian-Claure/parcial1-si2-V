@@ -953,6 +953,30 @@ export class CatalogRepository {
     return product;
   }
 
+  /**
+   * Fase 4C · unidades vendibles por variante activa del producto: físico − comprometido en los
+   * almacenes activos de las sucursales activas de la empresa (nunca de otra empresa).
+   */
+  async variantAvailability(
+    companyId: string,
+    productId: string,
+  ): Promise<{ variantId: string; available: number }[]> {
+    const result = await this.database.db.execute(sql`
+      select pv.id::text as variant_id,
+             coalesce(sum(greatest(st.physical_quantity - st.committed_quantity, 0)), 0)::int as available
+      from product_variants pv
+      join products p on p.id = pv.product_id and p.company_id = ${companyId}::uuid
+      left join (
+        inventory_stocks st
+        join warehouses w on w.id = st.warehouse_id and w.active = true
+        join stores s on s.id = w.store_id and s.active = true and s.company_id = ${companyId}::uuid
+      ) on st.variant_id = pv.id
+      where pv.product_id = ${productId}::uuid and pv.active = true
+      group by pv.id`);
+    return (result.rows as { variant_id: string; available: number | string }[])
+      .map((row) => ({ variantId: row.variant_id, available: Number(row.available) }));
+  }
+
   async listVariants(
     productId: string,
     publicOnly: boolean,

@@ -1,3 +1,4 @@
+import { useCompanyStore } from "@/core/company/companyStore";
 import { useState } from "react";
 import {
   Alert,
@@ -50,6 +51,7 @@ export default function AccountScreen() {
   const sessionUser = useAuthStore((state) => state.user)!;
   const replaceUser = useAuthStore((state) => state.replaceUser);
   const logout = useAuthStore((state) => state.logout);
+  const storePinned = useCompanyStore((state) => state.pinned);
   const client = useQueryClient();
 
   const profile = useQuery({
@@ -435,6 +437,9 @@ export default function AccountScreen() {
         ) : null}
       </View>
 
+      {!storePinned ? (
+        <Button title="Cambiar de tienda" variant="secondary" onPress={() => router.push("/stores" as never)} />
+      ) : null}
       <Button
         title="CERRAR SESIÓN"
         variant="danger"

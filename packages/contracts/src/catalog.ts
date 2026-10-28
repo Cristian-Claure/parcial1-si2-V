@@ -502,3 +502,14 @@ export type ProductResponse =
   z.infer<
     typeof productResponseSchema
   >;
+
+// Fase 4C (aditivo): disponibilidad pública por variante. Solo un nivel (no cantidades) para no
+// exponer el inventario de la tienda; el umbral "LOW" es el mismo semáforo de la web (≤ 5).
+export const variantAvailabilityLevelSchema = z.enum(["IN_STOCK", "LOW", "OUT"]);
+export type VariantAvailabilityLevel = z.infer<typeof variantAvailabilityLevelSchema>;
+export const variantAvailabilitySchema = z.object({ variantId: dbIdSchema, level: variantAvailabilityLevelSchema });
+export type VariantAvailability = z.infer<typeof variantAvailabilitySchema>;
+
+export function availabilityLevel(available: number, lowThreshold = 5): VariantAvailabilityLevel {
+  return available <= 0 ? "OUT" : available <= lowThreshold ? "LOW" : "IN_STOCK";
+}

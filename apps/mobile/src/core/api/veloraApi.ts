@@ -1,6 +1,8 @@
 import type {
   CompanyBrand,
   CompanySegment,
+  Plan,
+  VariantAvailability,
   DirectoryEntry,
   AddCartItemRequest,
   AuthResponse,
@@ -58,6 +60,12 @@ export const veloraApi = {
     const search = params.toString();
     return apiRequest<DirectoryEntry[]>(`/api/companies/directory${search ? `?${search}` : ""}`, {}, false);
   },
+
+  // Fase 4C · planes públicos (escalones del descuento por compras) y disponibilidad por variante.
+  plans: () => apiRequest<Plan[]>("/api/plans", {}, false),
+
+  availability: (companyId: string, productId: string) =>
+    apiRequest<VariantAvailability[]>(`/api/catalog/products/${q(productId)}/availability?companyId=${q(companyId)}`, {}, false),
 
   // Fase 4C · propietario: sus empresas (filtradas por TenantScopeService en el backend).
   adminCompanies: () => apiRequest<CompanyResponse[]>("/api/admin/companies"),

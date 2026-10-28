@@ -1,3 +1,4 @@
+import { FULFILLMENT_LABELS, formatDate, formatMoney, labelFor, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@velora/contracts";
 import { useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
@@ -71,7 +72,7 @@ export default function OrdersScreen() {
     (offline.data?.length ?? 0) === 0;
 
   return (
-    <CustomerShell>
+    <CustomerShell refreshing={orders.isRefetching} onRefresh={() => void orders.refetch()}>
       <Text style={commonStyles.eyebrow}>MIS PEDIDOS</Text>
       <Text style={commonStyles.heading}>Compras y pagos.</Text>
 
@@ -255,7 +256,7 @@ function OrderCard({ order }: { order: OrderResponse }) {
   const cancelPayment = useMutation({
     mutationFn: (payment: PaymentResponse) =>
       veloraApi.cancelPayment(payment.id, {
-        reason: "Pago cancelado por el cliente desde React Native.",
+        reason: "Pago cancelado por el cliente desde la app móvil.",
       }),
     onSuccess: () =>
       client.invalidateQueries({ queryKey: ["payments", order.id] }),
@@ -270,16 +271,21 @@ function OrderCard({ order }: { order: OrderResponse }) {
     <View style={commonStyles.card}>
       <View style={commonStyles.rowBetween}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.status}>{order.status}</Text>
+          <Text style={styles.status}>{labelFor(ORDER_STATUS_LABELS, order.status)}</Text>
           <Text style={commonStyles.subheading}>{order.orderNumber}</Text>
           <Text style={commonStyles.muted}>
-            {order.storeName} · {order.fulfillmentType}
+            {order.storeName} · {labelFor(FULFILLMENT_LABELS, order.fulfillmentType)} · {formatDate(order.createdAt)}
           </Text>
         </View>
         <Text style={styles.total}>
-          {order.total.toFixed(2)} {order.currency}
+          {formatMoney(order.total, order.currency)}
         </Text>
       </View>
+      {order.discountAmount ? (
+        <Notice kind="success">
+          Descuento por compras: −{formatMoney(order.discountAmount, order.currency)} (subtotal {formatMoney(order.subtotal, order.currency)}).
+        </Notice>
+      ) : null}
 
       <View style={commonStyles.divider} />
       {order.items.map((item) => (
@@ -287,7 +293,7 @@ function OrderCard({ order }: { order: OrderResponse }) {
           <Text style={[commonStyles.body, { flex: 1 }]}>
             {item.productName} · {item.size}/{item.color} × {item.quantity}
           </Text>
-          <Text style={commonStyles.muted}>{item.subtotal.toFixed(2)}</Text>
+          <Text style={commonStyles.muted}>{formatMoney(item.subtotal, order.currency)}</Text>
         </View>
       ))}
 
@@ -303,7 +309,7 @@ function OrderCard({ order }: { order: OrderResponse }) {
             <Text style={commonStyles.body}>
               {paymentMethodLabel(payment.method)}
             </Text>
-            <Text style={commonStyles.muted}>{payment.status}</Text>
+            <Text style={commonStyles.muted}>{labelFor(PAYMENT_STATUS_LABELS, payment.status)}</Text>
           </View>
           {payment.status === "PENDING" ? (
             <Pressable

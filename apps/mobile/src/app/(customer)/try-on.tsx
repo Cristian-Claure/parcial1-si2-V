@@ -61,7 +61,8 @@ import {
   Notice,
 } from "@/shared/ui";
 
-import { tryOnErrorMessage } from "@/features/try-on/tryOnQuota";
+import { remainingTryOns, tryOnErrorMessage } from "@/features/try-on/tryOnQuota";
+import { cachedFetch } from "@/core/offline/cachedFetch";
 const terminal =
   (
     status:
@@ -674,6 +675,7 @@ export default function TryOnScreen() {
         <Text style={commonStyles.heading}>
           Pruebe una pieza con su foto.
         </Text>
+        <TryOnQuotaNotice jobs={history.data ?? []} productIds={catalog.data?.map((product) => product.id) ?? []} />
 
         {
           catalog.isLoading
@@ -1037,3 +1039,19 @@ const useStyles = makeStyles(({ colors }) => ({
     justifyContent: "center",
   },
 }));
+
+/** Cuota restante del probador en la tienda activa (según su plan); sin límite no se muestra. */
+function TryOnQuotaNotice({ jobs, productIds }: { jobs: TryOnJobResponse[]; productIds: string[] }) {
+  const tier = useCompanyStore((state) => state.companies.find((company) => company.id === state.selectedCompanyId)?.brand?.tier ?? null);
+  const plans = useQuery({ queryKey: ["plans"], queryFn: () => cachedFetch("plans", "public", veloraApi.plans), staleTime: 3_600_000 });
+  const limit = plans.data?.find((plan) => plan.brandingTier === tier)?.limits.tryOnMonthlyPerCustomer;
+  const quota = remainingTryOns(limit, jobs, new Set(productIds));
+  if (!quota) return null;
+  return (
+    <Notice kind={quota.remaining === 0 ? "warning" : "info"}>
+      {quota.remaining === 0
+        ? `Usaste tus ${quota.limit} pruebas de este mes en esta tienda. Podrás volver a usar el probador el próximo mes.`
+        : `Te quedan ${quota.remaining} de ${quota.limit} pruebas este mes en esta tienda.`}
+    </Notice>
+  );
+}
