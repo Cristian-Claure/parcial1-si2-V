@@ -32,21 +32,32 @@ import {
   type ManagedImageContentType,
 } from "../common/media/image-validation.js";
 
+/** Fase 5: además de imágenes, se guardan comprobantes PDF (privados; nunca por la ruta pública). */
+export type ManagedAssetContentType = ManagedImageContentType | "application/pdf";
+
+function extensionFor(contentType: ManagedAssetContentType): string {
+  return contentType === "application/pdf" ? "pdf" : extensionForContentType(contentType);
+}
+
+function contentTypeForKey(storageKey: string): ManagedAssetContentType {
+  return storageKey.toLowerCase().endsWith(".pdf") ? "application/pdf" : contentTypeForStorageKey(storageKey);
+}
+
 export interface StoredManagedAsset {
   storageKey: string;
-  contentType: ManagedImageContentType;
+  contentType: ManagedAssetContentType;
   sizeBytes: number;
 }
 
 export interface LoadedManagedAsset {
   storageKey: string;
-  contentType: ManagedImageContentType;
+  contentType: ManagedAssetContentType;
   sizeBytes: number;
   bytes: Buffer;
 }
 
 const STORAGE_KEY_PATTERN =
-  /^[0-9a-fA-F-]{36}\.(jpg|png|webp)$/;
+  /^[0-9a-fA-F-]{36}\.(jpg|png|webp|pdf)$/;
 
 @Injectable()
 export class ManagedAssetStorageService {
@@ -62,10 +73,10 @@ export class ManagedAssetStorageService {
   async store(
     bytes: Buffer,
     contentType:
-      ManagedImageContentType,
+      ManagedAssetContentType,
   ): Promise<StoredManagedAsset> {
     const storageKey =
-      `${randomUUID()}.${extensionForContentType(contentType)}`;
+      `${randomUUID()}.${extensionFor(contentType)}`;
 
     if (
       this.config.value
@@ -165,7 +176,7 @@ export class ManagedAssetStorageService {
       storageKey:
         key,
       contentType:
-        contentTypeForStorageKey(
+        contentTypeForKey(
           key,
         ),
       sizeBytes:

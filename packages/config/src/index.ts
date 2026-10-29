@@ -212,6 +212,10 @@ export const serverRuntimeConfigSchema =
     STRIPE_WEBHOOK_SECRET:
       optionalStringFromEnv(),
 
+    /** Solo pruebas: base de un doble local de la API de Stripe. */
+    VELORA_STRIPE_API_BASE_URL:
+      optionalHttpUrlFromEnv(),
+
     STRIPE_SUCCESS_URL:
       z
         .string()

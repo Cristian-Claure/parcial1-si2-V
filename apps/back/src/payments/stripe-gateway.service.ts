@@ -253,7 +253,7 @@ export class StripeGatewayService {
             unknown;
         }
       >(
-        "https://api.stripe.com/v1/checkout/sessions",
+        this.apiBase() + "/v1/checkout/sessions",
         {
           method:
             "POST",
@@ -352,7 +352,7 @@ export class StripeGatewayService {
         await this.requestJson<
           StripeSessionRecord
         >(
-          "https://api.stripe.com/v1/checkout/sessions/" +
+          this.apiBase() + "/v1/checkout/sessions/" +
             encodeURIComponent(
               sessionId,
             ) +
@@ -498,7 +498,7 @@ export class StripeGatewayService {
       await this.requestJson<
         StripeRefundRecord
       >(
-        "https://api.stripe.com/v1/refunds",
+        this.apiBase() + "/v1/refunds",
         {
           method:
             "POST",
@@ -714,7 +714,7 @@ export class StripeGatewayService {
     return this.requestJson<
       StripeSessionRecord
     >(
-      "https://api.stripe.com/v1/checkout/sessions/" +
+      this.apiBase() + "/v1/checkout/sessions/" +
         encodeURIComponent(
           sessionId,
         ),
@@ -783,6 +783,61 @@ export class StripeGatewayService {
     }
 
     return payload as T;
+  }
+
+  /** Base de la API (doble local en pruebas con VELORA_STRIPE_API_BASE_URL; por defecto api.stripe.com). */
+  private apiBase(): string {
+    return (this.config.value.VELORA_STRIPE_API_BASE_URL ?? "https://api.stripe.com").replace(/\/+$/, "");
+  }
+
+  /** Stripe habilitado solo con una clave secreta con formato válido (sk_test_… o sk_live_…). */
+  isConfigured(): boolean {
+    return /^sk_(test|live)_[A-Za-z0-9]{8,}/.test(this.config.value.STRIPE_SECRET_KEY?.trim() ?? "");
+  }
+
+  /** Checkout de un pago de plan (Fase 5): monto fijado por el servidor, moneda BOB, retorno a Mi plan. */
+  async createPlanCheckoutSession(input: { paymentId: string; planName: string; amount: string; currency: string; successUrl: string; cancelUrl: string }): Promise<StripeCheckoutSession> {
+    const secret = this.requireSecretKey();
+    const body = new URLSearchParams();
+    body.set("mode", "payment");
+    body.set("success_url", `${input.successUrl}${input.successUrl.includes("?") ? "&" : "?"}session_id={CHECKOUT_SESSION_ID}`);
+    body.set("cancel_url", input.cancelUrl);
+    body.set("client_reference_id", input.paymentId);
+    body.set("metadata[velora_payment_id]", input.paymentId);
+    body.set("metadata[velora_kind]", "PLAN");
+    body.set("payment_intent_data[metadata][velora_payment_id]", input.paymentId);
+    body.set("line_items[0][quantity]", "1");
+    body.set("line_items[0][price_data][currency]", input.currency.toLowerCase());
+    body.set("line_items[0][price_data][unit_amount]", String(this.toMinorUnits(input.amount)));
+    body.set("line_items[0][price_data][product_data][name]", `Plan ${input.planName} · 30 días`);
+    body.set("line_items[0][price_data][product_data][description]", "Suscripción Trama");
+    const session = await this.requestJson<{ id?: unknown; url?: unknown; expires_at?: unknown }>(
+      this.apiBase() + "/v1/checkout/sessions",
+      { method: "POST", headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/x-www-form-urlencoded" }, body: body.toString() },
+      "No fue posible iniciar el pago seguro con Stripe.",
+    );
+    if (typeof session.id !== "string" || !session.id || typeof session.url !== "string" || !session.url) throw new ApiHttpError(502, "Stripe no devolvió una sesión de pago válida.");
+    return { id: session.id, url: session.url, expiresAt: typeof session.expires_at === "number" ? new Date(session.expires_at * 1000) : null };
+  }
+
+  /** Revalidación contra la API de Stripe (estado, monto y moneda de la sesión). */
+  async retrieveCheckoutSummary(sessionId: string): Promise<{ status: string | null; paymentStatus: string | null; amountTotal: number | null; currency: string | null }> {
+    const secret = this.requireSecretKey();
+    const session = await this.requestJson<{ status?: unknown; payment_status?: unknown; amount_total?: unknown; currency?: unknown }>(
+      this.apiBase() + "/v1/checkout/sessions/" + encodeURIComponent(sessionId),
+      { method: "GET", headers: { Authorization: `Bearer ${secret}` } },
+      "No fue posible consultar la sesión de pago en Stripe.",
+    );
+    return {
+      status: typeof session.status === "string" ? session.status : null,
+      paymentStatus: typeof session.payment_status === "string" ? session.payment_status : null,
+      amountTotal: typeof session.amount_total === "number" ? session.amount_total : null,
+      currency: typeof session.currency === "string" ? session.currency : null,
+    };
+  }
+
+  toMinorUnitsPublic(amount: string): number {
+    return this.toMinorUnits(amount);
   }
 
   private requireSecretKey():

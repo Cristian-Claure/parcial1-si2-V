@@ -23,6 +23,7 @@ import { TryOnModule } from "./try-on/try-on.module.js";
 import { PushModule } from "./push/push.module.js";
 import { BootstrapModule } from "./bootstrap/bootstrap.module.js";
 import { PlansModule } from "./plans/plans.module.js";
+import { PlanPaymentsModule } from "./plan-payments/plan-payments.module.js";
 import { PlatformModule } from "./platform/platform.module.js";
 import { OnboardingModule } from "./onboarding/onboarding.module.js";
 import { SyncModule } from "./sync/sync.module.js";
@@ -36,6 +37,7 @@ import { SyncModule } from "./sync/sync.module.js";
     AuthorizationModule,
     CompaniesModule,
     PlansModule,
+    PlanPaymentsModule,
     PlatformModule,
     OnboardingModule,
     SyncModule,

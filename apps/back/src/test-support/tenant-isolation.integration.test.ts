@@ -8,7 +8,7 @@ import {
 } from "@velora/contracts";
 import type { z } from "zod";
 import { createMigratedDatabase, integrationDatabaseAvailable, type TestDatabase } from "./integration-database.js";
-import { http, insertUser, listRoutes, login, seedTenant, startTestApp, type RouteInfo, type SeededTenant, type TestApp } from "./integration-app.js";
+import { http, insertUser, listRoutes, login, multipart, seedTenant, startTestApp, TINY_PNG, type RouteInfo, type SeededTenant, type TestApp } from "./integration-app.js";
 
 const available = await integrationDatabaseAvailable();
 
@@ -26,6 +26,7 @@ interface Fixtures {
   orderPaymentId: string;
   definitionId: string;
   mlRunId: string;
+  planPaymentId: string;
 }
 
 interface Ctx { A: SeededTenant; B: SeededTenant; b: Fixtures }
@@ -50,6 +51,14 @@ const ATTACKS: Record<string, (ctx: Ctx) => Attack[]> = {
   "GET sync/pull": ({ B }) => [{ path: `/api/sync/pull?companyId=${B.companyId}`, expect: "DENIED" }],
   "GET plan": () => [{ path: "/api/admin/plan", expect: "NO_LEAK" }],
   "POST plan/change": () => [{ path: "/api/admin/plan/change", body: { planCode: "MAX" }, expect: "SELF" }],
+  "GET plan/payment-options": () => [{ path: "/api/admin/plan/payment-options", expect: "NO_LEAK" }],
+  "POST plan/payments": () => [{ path: "/api/admin/plan/payments", body: { planCode: "MAX", method: "TRANSFER" }, expect: "SELF" }],
+  "GET plan/payments": () => [{ path: "/api/admin/plan/payments", expect: "NO_LEAK" }],
+  "GET plan/payments/:paymentId": ({ b }) => [{ path: `/api/admin/plan/payments/${b.planPaymentId}`, expect: "DENIED" }],
+  "POST plan/payments/:paymentId/cancel": ({ b }) => [{ path: `/api/admin/plan/payments/${b.planPaymentId}/cancel`, body: {}, expect: "DENIED" }],
+  "POST plan/payments/:paymentId/transfer-proof": ({ b }) => [{ path: `/api/admin/plan/payments/${b.planPaymentId}/transfer-proof`, raw: multipart({ operationNumber: "INTRUSO-1" }, { name: "file", filename: "c.png", contentType: "image/png", data: TINY_PNG }), expect: "DENIED" }],
+  "GET plan/payments/:paymentId/receipt": ({ b }) => [{ path: `/api/admin/plan/payments/${b.planPaymentId}/receipt`, expect: "DENIED" }],
+  "GET billing/payments/:paymentId/proof": ({ b }) => [{ path: `/api/billing/payments/${b.planPaymentId}/proof`, expect: "DENIED" }],
   "GET orders": ({ B }) => [{ path: "@/orders", expect: "NO_LEAK" }, { path: `@/orders?companyId=${B.companyId}`, expect: "DENIED" }],
   "POST orders/:orderId/fulfill": ({ b }) => [{ path: `@/orders/${b.orderId}/fulfill`, body: {}, expect: "DENIED" }],
   "POST payments/:paymentId/confirm": ({ b }) => [{ path: `@/payments/${b.orderPaymentId}/confirm`, body: {}, expect: "DENIED" }],
@@ -173,7 +182,13 @@ describe.skipIf(!available)("aislamiento multi-tenant A/B (integración)", () =>
     const mlRunId = randomUUID();
     await db.query("insert into ml_runs (id, company_id, model_key, status, metrics) values ($1, $2, 'SALES_FORECAST', 'SUCCEEDED', '{}')", [mlRunId, B.companyId]);
     const definition = await call<{ id: string }>(tokens.ownerB!, "POST", "/api/admin/reports/definitions", { companyId: B.companyId, name: "Reporte B", definition: { dimensions: ["STORE"], measures: ["NET_SALES"] } });
-    ctx = { A, B, b: { pointOfSaleId: point.id, cashSessionId: session.id, posPaymentId: sale.paymentId, orderId: order.id, orderPaymentId, definitionId: definition.id, mlRunId } };
+    // Fase 5: pago de plan de B por transferencia con comprobante (privado).
+    const planPayment = await call<{ payment: { id: string } }>(tokens.ownerB!, "POST", "/api/admin/plan/payments", { planCode: "MAX", method: "TRANSFER" });
+    const proof = await http(server.baseUrl, "POST", `/api/admin/plan/payments/${planPayment.payment.id}/transfer-proof`, {
+      token: tokens.ownerB, raw: multipart({ operationNumber: "OP-B-1" }, { name: "file", filename: "c.png", contentType: "image/png", data: TINY_PNG }),
+    });
+    if (proof.status >= 300) throw new Error(`comprobante B → ${proof.status} ${proof.text}`);
+    ctx = { A, B, b: { pointOfSaleId: point.id, cashSessionId: session.id, posPaymentId: sale.paymentId, orderId: order.id, orderPaymentId, definitionId: definition.id, mlRunId, planPaymentId: planPayment.payment.id } };
     markers = [B.companyId, B.storeId, B.warehouseId, B.productId, B.variantId, B.categoryId, B.managerId, B.ownerId, point.id, session.id, order.id, orderPaymentId, definition.id, "Reporte B", mlRunId, B.ownerEmail, B.managerEmail, "Compania B", "Sucursal B"];
   });
 
@@ -237,6 +252,8 @@ describe.skipIf(!available)("aislamiento multi-tenant A/B (integración)", () =>
       ["GET", `/api/inventory/warehouses/${ctx.B.warehouseId}/stock`],
       ["GET", `/api/admin/pos/sales/pending/${ctx.b.cashSessionId}`],
       ["GET", `/api/admin/orders?companyId=${ctx.B.companyId}`],
+      ["GET", `/api/admin/plan/payments/${ctx.b.planPaymentId}`],
+      ["GET", `/api/billing/payments/${ctx.b.planPaymentId}/proof`],
     ];
     for (const [method, path] of own) {
       const result = await http(server.baseUrl, method, path, { token: tokens.ownerB });

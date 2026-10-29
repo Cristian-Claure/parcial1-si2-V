@@ -17,6 +17,7 @@ import {
 import { PushModule } from "../push/push.module.js";
 import { BillingModule } from "../billing/billing.module.js";
 import { CustomerQrPaymentsController } from "./customer-qr-payments.controller.js";
+import { StripePlanService } from "./stripe-plan.service.js";
 
 import {
   CustomerPaymentsController,
@@ -75,9 +76,11 @@ import {
     StripeGatewayService,
     StripePaymentGateway,
     StripeWebhookService,
+    StripePlanService,
   ],
   exports: [
     StripePaymentGateway,
+    StripePlanService,
   ],
 })
 export class PaymentsModule {}
