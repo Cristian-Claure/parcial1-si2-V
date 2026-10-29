@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PlatformSubscription } from "@velora/contracts";
 import { veloraApi } from "../../core/api/veloraApi";
-import { Notice } from "../../shared/feedback/Notice";
 import { PlanErrorNotice } from "../saas/PlanErrorNotice";
+import { toast } from "../../shared/feedback/toastStore";
 
 type Tab = "owners" | "companies" | "subscriptions";
 const STATUS = { TRIAL: "Prueba", ACTIVE: "Activa", PAST_DUE: "Vencida", CANCELLED: "Cancelada" } as const;
@@ -37,7 +37,7 @@ function SubscriptionRow({ subscription, onDone }: { subscription: PlatformSubsc
 export function PlatformPage() {
   const client = useQueryClient();
   const [tab, setTab] = useState<Tab>("owners");
-  const [message, setMessage] = useState<string | null>(null);
+  const setMessage = (text: string | null) => { if (text) toast(text); }; // P3: aviso breve que se cierra solo
   const [transfer, setTransfer] = useState<Record<string, string>>({});
   const owners = useQuery({ queryKey: ["platform", "owners"], queryFn: veloraApi.platformOwners });
   const companies = useQuery({ queryKey: ["platform", "companies"], queryFn: veloraApi.platformCompanies });
@@ -51,7 +51,7 @@ export function PlatformPage() {
     <div className="page-heading"><span className="eyebrow">PLATAFORMA</span><h1>Operación SaaS</h1><p>Propietarios, tiendas y suscripciones de toda la plataforma. Los cambios de plan respetan las mismas reglas que ve el propietario (bajar de plan requiere que el uso quepa).</p></div>
     <div className="metric-grid"><article><span>Propietarios</span><strong>{owners.data?.length ?? "—"}</strong></article><article className="metric-tone-terracotta"><span>Tiendas</span><strong>{companies.data?.length ?? "—"}</strong></article><article className="metric-tone-success"><span>Suscripciones</span><strong>{subscriptions.data?.length ?? "—"}</strong></article></div>
     <div className="platform-tabs" role="tablist">{([["owners", "Propietarios"], ["companies", "Tiendas"], ["subscriptions", "Suscripciones"]] as const).map(([value, label]) => <button key={value} type="button" className="button secondary small" aria-pressed={tab === value} onClick={() => { setTab(value); setMessage(null); }}>{label}</button>)}</div>
-    {message ? <Notice kind="success">{message}</Notice> : null}
+    
     <PlanErrorNotice error={changePlan.error ?? transferOwner.error} upgradeTo={null} />
     {tab === "owners" ? <div className="panel"><h2>Propietarios</h2><div className="table-wrap"><table><thead><tr><th>Correo</th><th>Nombre</th><th>Tiendas</th><th>Plan</th><th>Estado</th><th>Cambiar plan</th></tr></thead><tbody>{owners.data?.map((owner) => <tr key={owner.id}><td>{owner.email}</td><td>{owner.firstName} {owner.lastName}</td><td>{owner.companies}</td><td>{owner.planCode ?? "—"}</td><td>{owner.subscriptionStatus ? STATUS[owner.subscriptionStatus] : owner.status}</td>
       <td><div className="inline-form">{plans.data?.map((plan) => <button key={plan.code} type="button" className="button secondary small" disabled={changePlan.isPending || plan.code === owner.planCode} onClick={() => changePlan.mutate({ ownerId: owner.id, planCode: plan.code })}>{plan.code}</button>)}</div></td></tr>)}</tbody></table></div></div> : null}

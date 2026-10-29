@@ -5,8 +5,8 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { ApiClientError } from "../../core/api/apiClient";
 import { veloraApi } from "../../core/api/veloraApi";
 import { Notice } from "../../shared/feedback/Notice";
-import { PageLoader } from "../../shared/ui/PageLoader";
 import { formatCountdown, secondsUntil } from "./paymentFormat";
+import { PageSkeleton } from "../../shared/ui/Skeleton";
 
 function errorMessage(error: unknown): string {
   if (error instanceof ApiClientError) {
@@ -32,7 +32,7 @@ export function DemoBankPage() {
     return () => clearInterval(timer);
   }, []);
 
-  if (charge.isLoading) return <section className="page demo-bank"><PageLoader /></section>;
+  if (charge.isLoading) return <PageSkeleton cards={1} />;
   const data = charge.data;
   const remaining = data ? secondsUntil(data.expiresAt, now, data.secondsRemaining) : 0;
   const finalStatus = result?.status ?? data?.status;

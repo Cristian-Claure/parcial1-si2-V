@@ -7,11 +7,11 @@ import { veloraApi } from "../../core/api/veloraApi";
 import { useAuthStore } from "../../core/auth/authStore";
 import { useCompanyStore } from "../../core/company/companyStore";
 import { Notice } from "../../shared/feedback/Notice";
-import { PageLoader } from "../../shared/ui/PageLoader";
 import { planHighlights, priceLabel } from "./planCopy";
 import { PlanErrorNotice } from "./PlanErrorNotice";
 import { SlugHint } from "./SlugHint";
 import { slugify, useSlugAvailability } from "./slugTools";
+import { PageSkeleton } from "../../shared/ui/Skeleton";
 
 const STEPS = ["Tu cuenta", "Tu tienda", "Tu plan", "Confirmar"] as const;
 
@@ -40,7 +40,7 @@ export function CreateStorePage() {
     onSuccess: async (result) => { adopt(result.auth); selectAdmin(result.company.id); await loadAdmin(); navigate("/admin/mi-plan", { replace: true, state: { welcome: result.company.name } }); },
   });
 
-  if (plans.isLoading) return <PageLoader />;
+  if (plans.isLoading) return <PageSkeleton />;
   const ownerValid = owner.firstName.trim() && owner.lastName.trim() && /\S+@\S+\.\S+/.test(owner.email) && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(owner.password);
   const companyValid = company.name.trim().length >= 2 && availability.data?.available === true && availability.data.slug === company.slug && paletteIssues.length === 0;
   const canContinue = [ownerValid, companyValid, Boolean(plan), !needsCard || (card.cardNumber.replace(/\s/g, "").length >= 12 && card.holderName.trim().length >= 2)][step];

@@ -30,6 +30,10 @@ import {
 import {
   Notice,
 } from "../../shared/feedback/Notice";
+import type { ProductResponse } from "@velora/contracts";
+import { useUrlState } from "../../shared/hooks/useUrlState";
+import { Pagination } from "../../shared/ui/Pagination/Pagination";
+import { paginate } from "../../shared/ui/Pagination/paginate";
 
 export function CatalogManagementPage() {
   const companyId =
@@ -1059,45 +1063,45 @@ export function CatalogManagementPage() {
         </div>
       </div>
 
-      <div className="panel">
-        <h2>Productos actuales</h2>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Categoría</th>
-                <th>Variantes</th>
-                <th>Try-On</th>
-              </tr>
-            </thead>
-            <tbody>
-              {
-                products.data?.map(
-                  (
-                    product,
-                  ) => (
-                    <tr key={product.id}>
-                      <td>{product.name}</td>
-                      <td>{product.categoryName}</td>
-                      <td>{product.variants.length}</td>
-                      <td>
-                        {
-                          product.tryOnReady
-                            ? <span className="status-pill status-normal">Listo</span>
-                            : product.tryOnEnabled
-                              ? <span className="status-pill status-bajo">{product.tryOnCategory ?? "Sin categoría"} · falta asset administrado</span>
-                              : <span className="status-pill status-neutral">No</span>
-                        }
-                      </td>
-                    </tr>
-                  ),
-                )
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <ProductTable products={products.data ?? []} />
     </section>
   );
+}
+
+
+const PAGE_SIZE = 20;
+
+/** P3 · UX_AUDIT: búsqueda, categoría y página en la URL (?q=&categoria=&pagina=) para catálogos grandes. */
+function ProductTable({ products }: { products: ProductResponse[] }) {
+  const { values, set, page, setPage } = useUrlState(["q", "categoria"] as const);
+  const categories = [...new Set(products.map((product) => product.categoryName).filter(Boolean))].sort((a, b) => a.localeCompare(b, "es"));
+  const query = values.q.trim().toLowerCase();
+  const filtered = products.filter((product) => (!values.categoria || product.categoryName === values.categoria)
+    && (!query || product.name.toLowerCase().includes(query) || product.variants.some((variant) => variant.sku.toLowerCase().includes(query))));
+  const current = paginate(filtered, page, PAGE_SIZE);
+  return <div className="panel">
+    <h2>Productos actuales</h2>
+    <div className="filters-row">
+      <label>Buscar<input type="search" value={values.q} placeholder="Nombre o SKU" onChange={(event) => set({ q: event.target.value })} /></label>
+      <label>Categoría<select value={values.categoria} onChange={(event) => set({ categoria: event.target.value })}><option value="">Todas</option>{categories.map((name) => <option key={name} value={name}>{name}</option>)}</select></label>
+    </div>
+    <div className="table-wrap">
+      <table>
+        <thead><tr><th>Producto</th><th>Categoría</th><th>Variantes</th><th>Try-On</th></tr></thead>
+        <tbody>
+          {current.items.length === 0 ? <tr><td colSpan={4}>No hay productos con esos filtros.</td></tr> : current.items.map((product) => <tr key={product.id}>
+            <td>{product.name}</td>
+            <td>{product.categoryName}</td>
+            <td>{product.variants.length}</td>
+            <td>{product.tryOnReady
+              ? <span className="status-pill status-normal">Listo</span>
+              : product.tryOnEnabled
+                ? <span className="status-pill status-bajo">{product.tryOnCategory ?? "Sin categoría"} · falta asset administrado</span>
+                : <span className="status-pill status-neutral">No</span>}</td>
+          </tr>)}
+        </tbody>
+      </table>
+    </div>
+    <Pagination page={current.page} pageCount={current.pageCount} total={filtered.length} onPage={setPage} label="productos" />
+  </div>;
 }

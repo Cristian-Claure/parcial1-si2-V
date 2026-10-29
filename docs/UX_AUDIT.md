@@ -39,12 +39,12 @@ Prioridad: **P1** confunde o bloquea · **P2** molesta · **P3** pulido. Todos l
 
 Ya cumplían (verificado en el código): `/catalogo` sin tienda → `/tiendas`; 403 por plan en Inteligencia y en el constructor muestra "Disponible en MAX / PLUS/MAX" con botón a `/admin/mi-plan`; tablas dentro de `.table-wrap` con scroll horizontal; `lang="es"`; los enlaces profundos funcionan porque todas las rutas son de primer nivel en el router y las guardas guardan `from`.
 
-## P3 — pendientes
+## P3 — corregidos (Parte B, 29-oct-2026)
 
-1. El header de `/t/:slug` inexistente conserva la marca de la tienda visitada antes (se ve un instante).
-2. Los avisos de éxito son `Notice` en la página y no toasts que se cierran solos (`NotificationProvider` existe pero casi no se usa).
-3. Catálogo de gestión (`CatalogManagementPage.tsx`, 1.103 líneas) y POS (2.233 líneas) sin paginación ni filtros en la URL.
-4. Reportes: los gráficos SVG se adaptan al ancho, pero las tablas de detalle no pasan a tarjetas en pantallas angostas (usan scroll horizontal).
-5. El selector de empresa en la barra lateral sigue siendo un `<select>` nativo (funciona con teclado, pero no muestra el logo).
-6. Esqueletos solo en pedidos, inventario y elegir empresa; el resto usa `PageLoader`.
-7. Auditoría y Sincronización conservan algunos términos técnicos en tablas internas (`entityType`, ids).
+1. **Marca en `/t/:slug`**: al abrir otra tienda se suelta la marca anterior antes de pintar (`leaveTenant` en `useLayoutEffect`); mientras carga se ve un esqueleto con la marca Trama (`TenantEntry.tsx`).
+2. **Avisos breves**: `toast()` + `<Toaster />` (`shared/feedback/toastStore.ts`, región `aria-live`, se cierran solos a los 4,5 s) en Mi plan, Empresas, Plataforma, Cobros, Inventario, Pedidos operativos y Registro offline. Los errores siguen como `Notice` persistente.
+3. **Catálogo de gestión y POS**: búsqueda (nombre o SKU), categoría y página en la URL (`?q=&categoria=&pagina=`, 20 productos por página; POS 24 variantes por página) con `useUrlState` y `Pagination`.
+4. **Reportes en pantallas angostas**: las tablas de detalle pasan a tarjetas (≤ 640 px) con la etiqueta de cada columna (`data-label`).
+5. **Selector de empresa con logo**: `CompanySwitcher` (patrón listbox: ↑/↓, Inicio/Fin, Enter, Escape) reemplaza el `<select>` nativo de la barra lateral.
+6. **Esqueletos**: `PageSkeleton`/`Skeleton` reemplazan el spinner en Mi plan, Planes, Crear tienda, Bolsa, Checkout, Detalle de producto, Banco demo, Cobros, Pagos y la entrada de tienda.
+7. **Términos técnicos**: Auditoría muestra roles en español, la ruta legible (`admin › orders › fulfill`, el patrón completo queda en el título), "Correcto/Error (código)" y la referencia abreviada; Sincronización traduce los códigos de conflicto.

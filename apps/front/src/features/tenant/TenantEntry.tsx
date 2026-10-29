@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useParams } from "react-router-dom";
 import { veloraApi } from "../../core/api/veloraApi";
 import { useCompanyStore } from "../../core/company/companyStore";
-import { PageLoader } from "../../shared/ui/PageLoader";
+import { PageSkeleton } from "../../shared/ui/Skeleton";
 import { StoreCard } from "../platform-entry/DirectoryPage";
 import { PlatformTheme } from "../../shared/platform/PlatformBrand";
 
@@ -15,8 +15,14 @@ export function TenantEntry() {
   const { tenantSlug = "" } = useParams();
   const enterTenant = useCompanyStore((state) => state.enterTenant); const current = useCompanyStore((state) => state.storefrontCompanyId);
   const brand = useQuery({ queryKey: ["tenant-brand", tenantSlug], queryFn: () => veloraApi.companyBySlug(tenantSlug), retry: false });
+  const leaveTenant = useCompanyStore((state) => state.leaveTenant);
+  // P3 · UX_AUDIT: antes de pintar, se suelta la marca de la tienda visitada antes (el header vuelve a Trama).
+  useLayoutEffect(() => {
+    const previous = useCompanyStore.getState().tenantBrand;
+    if (previous && previous.slug !== tenantSlug) leaveTenant();
+  }, [tenantSlug, leaveTenant]);
   useEffect(() => { if (brand.data) enterTenant(brand.data); }, [brand.data, enterTenant]);
-  if (brand.isLoading || (brand.data && current !== brand.data.companyId)) return <PageLoader />;
+  if (brand.isLoading || (brand.data && current !== brand.data.companyId)) return <PlatformTheme><PageSkeleton cards={3} /></PlatformTheme>;
   if (!brand.data) return <TenantNotFound slug={tenantSlug} />;
   return <Outlet />;
 }

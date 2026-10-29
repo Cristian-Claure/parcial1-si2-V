@@ -2,13 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { veloraApi } from "../../core/api/veloraApi";
 import { Notice } from "../../shared/feedback/Notice";
-import { PageLoader } from "../../shared/ui/PageLoader";
 import { PLAN_ROWS, planHighlights, priceLabel } from "./planCopy";
+import { PageSkeleton } from "../../shared/ui/Skeleton";
 
 /** Comparación pública de planes (marca de la plataforma Trama). Los datos vienen de la tabla plans. */
 export function PlansPage() {
   const plans = useQuery({ queryKey: ["plans"], queryFn: veloraApi.plans });
-  if (plans.isLoading) return <PageLoader />;
+  if (plans.isLoading) return <PageSkeleton />;
   if (plans.isError || !plans.data) return <section className="page"><Notice kind="error">No se pudieron cargar los planes.</Notice></section>;
   const featured = plans.data[Math.floor(plans.data.length / 2)]?.code;
   return <section className="page platform-main">

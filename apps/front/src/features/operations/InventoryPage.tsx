@@ -1,5 +1,5 @@
 import { formatDateTime, labelFor, MOVEMENT_TYPE_LABELS, stockLevel } from "@velora/contracts";
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InventoryMovementType } from "@velora/contracts";
 import { veloraApi } from "../../core/api/veloraApi";
@@ -10,13 +10,14 @@ import { Notice } from "../../shared/feedback/Notice";
 import { useUrlState } from "../../shared/hooks/useUrlState";
 import { Pagination } from "../../shared/ui/Pagination/Pagination";
 import { paginate } from "../../shared/ui/Pagination/paginate";
+import { toast } from "../../shared/feedback/toastStore";
 
 const movementTypes: InventoryMovementType[] = ["ENTRY", "ADJUSTMENT_IN", "ADJUSTMENT_OUT", "RETURN"];
 const STOCK_LABELS = { agotado: "Agotado", bajo: "Bajo", normal: "Normal" } as const;
 const PAGE_SIZE = 25;
 
 export function InventoryPage() {
-  const user = useAuthStore((state) => state.user)!; const companyId = useOperationalCompanyId(); const adminCompanyId = useCompanyStore((state) => state.adminCompanyId); const client = useQueryClient(); const [message, setMessage] = useState<string | null>(null);
+  const user = useAuthStore((state) => state.user)!; const companyId = useOperationalCompanyId(); const adminCompanyId = useCompanyStore((state) => state.adminCompanyId); const client = useQueryClient(); const setMessage = (text: string | null) => { if (text) toast(text); }; // P3: aviso breve que se cierra solo
   const { values, set, page, setPage } = useUrlState(["almacen", "q", "nivel"] as const);
   const warehouses = useQuery({ queryKey: ["warehouses", user.role, companyId], queryFn: veloraApi.warehouses, enabled: Boolean(companyId) });
   const stores = useQuery({ queryKey: ["admin-stores", adminCompanyId], queryFn: () => veloraApi.adminStores(adminCompanyId!), enabled: user.role === "ADMIN" && Boolean(adminCompanyId) });
@@ -39,7 +40,7 @@ export function InventoryPage() {
   const movementSubmit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); await movement.mutateAsync({ warehouseId: effectiveWarehouse, variantId: String(data.get("variantId") ?? ""), movementType: String(data.get("movementType")) as InventoryMovementType, quantity: Number(data.get("quantity") ?? 0), reason: String(data.get("reason") ?? ""), referenceType: null, referenceId: null }); form.reset(); };
   return <section className="page">
     <div className="page-heading"><span className="eyebrow">INVENTARIO</span><h1>Stock por almacén</h1><p>Físico es lo que hay en el almacén; comprometido, lo reservado por pedidos; disponible, lo que se puede vender.</p></div>
-    {message ? <Notice kind="success">{message}</Notice> : null}
+    
     {movement.isError ? <Notice kind="error">{movement.error instanceof Error ? movement.error.message : "No se pudo registrar el movimiento."}</Notice> : null}
     <div className="two-columns">
       <div className="panel">

@@ -6,6 +6,7 @@ import { enqueueCustomer, enqueueProduct, runOperationsSync, useSyncStatus } fro
 import type { MirrorRecord } from "../../core/sync/types";
 import { useOperationalCompanyId } from "../../core/sync/useOperationalContext";
 import { Notice } from "../../shared/feedback/Notice";
+import { toast } from "../../shared/feedback/toastStore";
 
 interface VariantDraft { key: string; size: string; color: string; sku: string; price: string; stock: string }
 const emptyVariant = (): VariantDraft => ({ key: crypto.randomUUID(), size: "", color: "", sku: "", price: "", stock: "" });
@@ -22,7 +23,7 @@ export function OfflineRegistryPage() {
   const online = useSyncStatus((state) => state.online);
   const [tab, setTab] = useState<"customer" | "product">("customer");
   const [records, setRecords] = useState<MirrorRecord[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
+  const setMessage = (text: string | null) => { if (text) toast(text); }; // P3: aviso breve que se cierra solo
   const [error, setError] = useState<string | null>(null);
   const [customer, setCustomer] = useState(emptyCustomer);
   const [product, setProduct] = useState({ name: "", categoryId: "", description: "", warehouseId: "" });
@@ -78,7 +79,7 @@ export function OfflineRegistryPage() {
   return <section className="page">
     <div className="page-heading"><span className="eyebrow">REGISTRO SIN CONEXIÓN</span><h1>Clientes y productos</h1><p>Funciona con o sin internet. Lo registrado sin red se marca “pendiente” hasta sincronizar.</p></div>
     <div className="platform-tabs"><button type="button" className="button secondary small" aria-pressed={tab === "customer"} onClick={() => setTab("customer")}>Registrar cliente</button><button type="button" className="button secondary small" aria-pressed={tab === "product"} onClick={() => setTab("product")}>Registrar producto</button></div>
-    {message ? <Notice kind="success">{message}</Notice> : null}
+    
     {error ? <Notice kind="error">{error}</Notice> : null}
     {tab === "customer" ? <div className="two-columns">
       <form className="panel" onSubmit={(event) => void submitCustomer(event)}><h2>Nuevo cliente</h2><p className="field-hint">El cliente queda en tu tienda sin acceso. Si luego se registra con el mismo correo, se vincula a esta ficha.</p>

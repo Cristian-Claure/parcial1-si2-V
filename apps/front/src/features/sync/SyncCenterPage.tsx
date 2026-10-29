@@ -9,6 +9,11 @@ import { useOperationalCompanyId } from "../../core/sync/useOperationalContext";
 import { Notice } from "../../shared/feedback/Notice";
 
 const STATUS_LABEL = { PENDING: "En cola", SYNCING: "Sincronizando", CONFLICT: "Conflicto", FAILED: "Error" } as const;
+/** P3 · códigos del servidor en lenguaje del negocio. */
+const CODE_LABEL: Record<string, string> = {
+  SKU_TAKEN: "el SKU ya existe", EMAIL_TAKEN: "el correo ya está registrado", DOCUMENT_TAKEN: "el documento ya está registrado",
+  STOCK_INSUFFICIENT: "stock insuficiente", VERSION_CONFLICT: "otro usuario cambió el registro", NOT_FOUND: "el registro ya no existe", FORBIDDEN: "sin permiso",
+};
 const OPTION_LABEL: Record<SyncConflictOption, string> = {
   USE_EXISTING: "Usar el existente", ADJUST_AND_RETRY: "Ajustar y reintentar", DISCARD: "Descartar", KEEP_MINE: "Conservar el mío", KEEP_SERVER: "Conservar el del servidor",
 };
@@ -76,7 +81,7 @@ export function SyncCenterPage() {
     <div className="panel"><h2>Operaciones ({entries.length})</h2>
       {entries.length === 0 ? <p className="field-hint">No hay operaciones pendientes.</p> : <div className="sync-list">{entries.map((entry) => <article key={entry.clientOperationId} className="sync-item" data-status={entry.status}>
         <header><strong>{entry.label}</strong><span className="sync-status">{STATUS_LABEL[entry.status]}</span></header>
-        <p className="field-hint">{new Date(entry.createdAt).toLocaleString("es-BO")} · intentos {entry.attempts}/5{entry.code ? ` · ${entry.code}` : ""}</p>
+        <p className="field-hint">{new Date(entry.createdAt).toLocaleString("es-BO")} · intentos {entry.attempts}/5{entry.code ? ` · ${CODE_LABEL[entry.code] ?? "conflicto de datos"}` : ""}</p>
         {entry.error ? <p className="sync-error">{entry.error}</p> : null}
         {describeServer(entry) ? <p className="field-hint">{describeServer(entry)}</p> : null}
         <div className="actions">

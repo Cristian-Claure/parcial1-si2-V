@@ -22,6 +22,14 @@ import {
 
 import "./audit.css";
 
+/** P3 · UX_AUDIT: términos legibles en lugar de códigos internos (el valor técnico queda en el título). */
+const ROLE_LABELS: Record<string, string> = { PLATFORM_ADMIN: "Plataforma", ADMIN: "Propietario", STORE_MANAGER: "Encargado", CUSTOMER: "Cliente", SYSTEM: "Sistema", ANONYMOUS: "Sin sesión" };
+
+/** "/api/admin/orders/:orderId/fulfill" → "admin › orders › fulfill" (sin prefijo ni parámetros). */
+function routeLabel(pattern: string): string {
+  return pattern.replace(/^\/?api\//, "").split("/").filter((part) => part && !part.startsWith(":")).join(" › ") || pattern;
+}
+
 const CATEGORY_LABELS:
   Record<
     string,
@@ -605,7 +613,7 @@ export function AuditPage() {
                   Estado
                 </th>
                 <th>
-                  Request ID
+                  Referencia
                 </th>
               </tr>
             </thead>
@@ -656,7 +664,7 @@ export function AuditPage() {
                           </small>
                         </td>
                         <td>
-                          {event.actorRole}
+                          {ROLE_LABELS[event.actorRole] ?? event.actorRole}
                         </td>
                         <td>
                           {CATEGORY_LABELS[
@@ -670,9 +678,7 @@ export function AuditPage() {
                           )}
                         </td>
                         <td>
-                          <code>
-                            {event.routePattern}
-                          </code>
+                          <span title={event.routePattern}>{routeLabel(event.routePattern)}</span>
                         </td>
                         <td>
                           <span
@@ -682,14 +688,11 @@ export function AuditPage() {
                                 : "audit-fail"
                             }
                           >
-                            {event.statusCode}
+                            {event.success ? "Correcto" : "Error"} ({event.statusCode})
                           </span>
                         </td>
                         <td>
-                          <code>
-                            {event.requestId ??
-                              "—"}
-                          </code>
+                          <code title={event.requestId ?? undefined}>{event.requestId ? event.requestId.slice(0, 8) : "—"}</code>
                         </td>
                       </tr>
                     ),

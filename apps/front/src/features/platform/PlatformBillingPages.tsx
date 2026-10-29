@@ -5,14 +5,15 @@ import { useSearchParams } from "react-router-dom";
 import { apiBaseUrl } from "../../core/api/apiClient";
 import { veloraApi } from "../../core/api/veloraApi";
 import { EmptyState, Notice } from "../../shared/feedback/Notice";
-import { PageLoader } from "../../shared/ui/PageLoader";
 import { planPaymentMethodLabel, statusPillClass } from "../payments/paymentFormat";
+import { PageSkeleton, Skeleton } from "../../shared/ui/Skeleton";
+import { toast } from "../../shared/feedback/toastStore";
 
 
 /** /plataforma/cobros: datos de la cuenta que reciben las transferencias de planes. */
 export function PlatformBillingSettingsPage() {
   const settings = useQuery({ queryKey: ["platform-billing-settings"], queryFn: veloraApi.platformBillingSettings });
-  if (settings.isLoading) return <PageLoader />;
+  if (settings.isLoading) return <PageSkeleton cards={2} />;
   if (!settings.data) return <section className="page"><Notice kind="error">No se pudieron cargar los datos de cobro.</Notice></section>;
   return <BillingSettingsForm key={settings.data.updatedAt} settings={settings.data} />;
 }
@@ -23,7 +24,7 @@ function BillingSettingsForm({ settings: initial }: { settings: PlatformBillingS
   const [form, setForm] = useState<PlatformBillingSettingsInput>(() => ({
     bankName: initial.bankName, accountHolder: initial.accountHolder, accountType: initial.accountType, accountNumber: initial.accountNumber, taxId: initial.taxId, instructions: initial.instructions,
   }));
-  const [message, setMessage] = useState<string | null>(null);
+  const setMessage = (text: string | null) => { if (text) toast(text); }; // P3: aviso breve que se cierra solo
   const save = useMutation({ mutationFn: () => veloraApi.updatePlatformBillingSettings(form), onSuccess: (data) => { client.setQueryData(["platform-billing-settings"], data); setMessage("Datos de cobro guardados."); } });
   const uploadQr = useMutation({ mutationFn: (file: File) => veloraApi.uploadPlatformBillingQr(file), onSuccess: (data) => { client.setQueryData(["platform-billing-settings"], data); setMessage("QR de la cuenta actualizado."); } });
   const removeQr = useMutation({ mutationFn: veloraApi.removePlatformBillingQr, onSuccess: (data) => { client.setQueryData(["platform-billing-settings"], data); setMessage("QR de la cuenta eliminado."); } });
@@ -35,7 +36,7 @@ function BillingSettingsForm({ settings: initial }: { settings: PlatformBillingS
   return <section className="page">
     <div className="page-heading"><span className="eyebrow">PLATAFORMA</span><h1>Datos de cobro</h1><p>Cuenta que reciben las transferencias de los planes. Se muestran al propietario junto con el monto y la glosa.</p></div>
     {settings.data?.isSample ? <Notice kind="warning">DATOS DE EJEMPLO: reemplázalos por la cuenta real antes de recibir transferencias.</Notice> : null}
-    {message ? <Notice kind="success">{message}</Notice> : null}
+    
     {save.isError ? <Notice kind="error">{save.error instanceof Error ? save.error.message : "No se pudo guardar."}</Notice> : null}
     <div className="two-columns">
       <form className="panel form-grid" onSubmit={submit}>
@@ -123,7 +124,7 @@ export function PlatformPaymentsPage() {
       <label>Estado<select value={status} onChange={(event) => setFilter("estado", event.target.value)}>{STATUS_FILTERS.map((value) => <option key={value || "all"} value={value}>{value ? labelFor(PAYMENT_STATUS_LABELS, value) : "Todos"}</option>)}</select></label>
       <label>Método<select value={method} onChange={(event) => setFilter("metodo", event.target.value)}><option value="">Todos</option><option value="TRANSFER">Transferencia</option><option value="QR">QR</option><option value="WEB">Tarjeta (Stripe)</option><option value="CARD">Tarjeta DEMO</option></select></label>
     </div>
-    {queue.isLoading ? <PageLoader /> : null}
+    {queue.isLoading ? <div className="skeleton-grid" aria-busy="true"><Skeleton height="160px" /><Skeleton height="160px" /></div> : null}
     {queue.isError ? <Notice kind="error">No se pudo cargar la cola de pagos.</Notice> : null}
     {queue.data && queue.data.length === 0 ? <EmptyState title="Sin pagos con ese filtro">Cuando un propietario envíe un comprobante aparecerá aquí.</EmptyState> : null}
     <div className="review-list">{queue.data?.map((payment) => <ReviewCard key={payment.id} payment={payment} />)}</div>
