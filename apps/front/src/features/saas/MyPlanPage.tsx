@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import type { AdminPlanResponse, Plan } from "@velora/contracts";
 import { ApiClientError } from "../../core/api/apiClient";
 import { veloraApi } from "../../core/api/veloraApi";
@@ -8,6 +8,7 @@ import { Notice } from "../../shared/feedback/Notice";
 import { PageLoader } from "../../shared/ui/PageLoader";
 import { limitLabel, planHighlights, priceLabel } from "./planCopy";
 import { PlanErrorNotice } from "./PlanErrorNotice";
+import { PlanPaymentFlow, PlanPaymentHistory, PlanPaymentResult } from "./PlanPayments";
 
 const STATUS_LABEL = { TRIAL: "PRUEBA", ACTIVE: "ACTIVA", PAST_DUE: "VENCIDA", CANCELLED: "CANCELADA" } as const;
 
@@ -26,10 +27,14 @@ export function MyPlanPage() {
   const summary = useQuery({ queryKey: ["admin-plan"], queryFn: veloraApi.adminPlan });
   const plans = useQuery({ queryKey: ["plans"], queryFn: veloraApi.plans });
   const [target, setTarget] = useState<Plan | null>(null);
-  const [card, setCard] = useState({ cardNumber: "4242 4242 4242 4242", holderName: "" });
+  const [search, setSearch] = useSearchParams();
+  // Retorno de Stripe (?pago=<id>) o "Continuar" desde el historial: muestra el resultado del pago.
+  const [activePayment, setActivePayment] = useState<string | null>(() => search.get("pago"));
   const [done, setDone] = useState<string | null>(null);
+  const closePayment = () => { setActivePayment(null); if (search.has("pago")) { search.delete("pago"); search.delete("stripe"); search.delete("session_id"); setSearch(search, { replace: true }); } };
+  // Solo los planes gratuitos se cambian sin pago; los pagos van por PlanPaymentFlow (el plan cambia al confirmarse).
   const change = useMutation({
-    mutationFn: (plan: Plan) => veloraApi.changePlan({ planCode: plan.code, card: plan.priceMonthly > 0 ? card : null }),
+    mutationFn: (plan: Plan) => veloraApi.changePlan({ planCode: plan.code, card: null }),
     onSuccess: async (result: AdminPlanResponse) => { setDone(`Tu plan ahora es ${result.effectivePlan.name}.`); setTarget(null); client.setQueryData(["admin-plan"], result); await client.invalidateQueries({ queryKey: ["admin-reports"] }); },
   });
 
@@ -61,13 +66,16 @@ export function MyPlanPage() {
       <div className="plan-grid">{plans.data?.map((plan) => {
         const current = plan.code === subscription?.planCode && subscription?.status === "ACTIVE" && !restricted;
         return <article key={plan.code} className={current ? "plan-card featured" : "plan-card"}>{current ? <span className="plan-ribbon">TU PLAN</span> : null}<span className="eyebrow">{plan.code}</span><h2>{plan.name}</h2><div className="plan-price">{priceLabel(plan)}{plan.priceMonthly > 0 ? <small>/ mes</small> : null}</div><ul>{planHighlights(plan).map((line) => <li key={line}>{line}</li>)}</ul>
-          <button type="button" className={current ? "button secondary full" : "button primary full"} disabled={current} onClick={() => { change.reset(); setDone(null); setTarget(plan); }}>{current ? "Plan actual" : plan.sortOrder > effectivePlan.sortOrder ? "Mejorar" : plan.code === subscription?.planCode ? "Activar / renovar" : "Cambiar"}</button></article>;
+          <button type="button" className={current && plan.priceMonthly === 0 ? "button secondary full" : "button primary full"} disabled={current && plan.priceMonthly === 0} onClick={() => { change.reset(); setDone(null); setActivePayment(null); setTarget(plan); }}>{current ? (plan.priceMonthly > 0 ? "Renovar (+30 días)" : "Plan actual") : plan.sortOrder > effectivePlan.sortOrder ? "Mejorar" : plan.code === subscription?.planCode ? "Activar / renovar" : "Cambiar"}</button></article>;
       })}</div>
-      {target ? <div className="panel"><h2>Confirmar cambio a {target.name}</h2>
-        {target.priceMonthly > 0 ? <div className="form-grid"><label>Tarjeta DEMO<input value={card.cardNumber} onChange={(event) => setCard({ ...card, cardNumber: event.target.value })} inputMode="numeric" /></label><label>Titular<input value={card.holderName} onChange={(event) => setCard({ ...card, holderName: event.target.value })} /></label><p className="demo-card-note span-2">Se cobrarán {priceLabel(target)} (DEMO). 4242… se aprueba; 4000 0000 0000 0002 se rechaza.</p></div> : <p className="field-hint">Plan gratuito: no requiere pago.</p>}
+      {target && target.priceMonthly > 0 ? <PlanPaymentFlow plan={target} onCancel={() => setTarget(null)} onStarted={(paymentId) => { setTarget(null); setActivePayment(paymentId); }} /> : null}
+      {target && target.priceMonthly === 0 ? <div className="panel"><h2>Confirmar cambio a {target.name}</h2>
+        <p className="field-hint">Plan gratuito: no requiere pago.</p>
         {excess.length > 0 ? <Notice kind="error">No puedes bajar a {target.name} todavía: {excess.map((item) => `${resourceLabel[item.resource] ?? item.resource}${item.companyId ? ` en ${companyName(item.companyId)}` : ""}: ${item.used} de ${item.limit} permitidos`).join(" · ")}.</Notice> : <PlanErrorNotice error={change.error} upgradeTo={null} />}
-        <div className="actions"><button type="button" className="button secondary" onClick={() => setTarget(null)}>Cancelar</button><button type="button" className="button primary" disabled={change.isPending || (target.priceMonthly > 0 && card.holderName.trim().length < 2)} onClick={() => change.mutate(target)}>{change.isPending ? "Procesando…" : "Confirmar"}</button></div>
+        <div className="actions"><button type="button" className="button secondary" onClick={() => setTarget(null)}>Cancelar</button><button type="button" className="button primary" disabled={change.isPending} onClick={() => change.mutate(target)}>{change.isPending ? "Procesando…" : "Confirmar"}</button></div>
       </div> : null}
     </div>
+    {activePayment ? <PlanPaymentResult key={activePayment} paymentId={activePayment} onClose={closePayment} onRetry={(planCode) => { const plan = plans.data?.find((entry) => entry.code === planCode) ?? null; closePayment(); setTarget(plan); }} /> : null}
+    <PlanPaymentHistory onOpen={(paymentId) => { setTarget(null); setActivePayment(paymentId); }} />
   </section>;
 }

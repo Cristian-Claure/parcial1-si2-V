@@ -82,7 +82,7 @@ export class OnboardingService {
           ownerUserId: ownerId, planId: plan.id, status: trial ? "TRIAL" : "ACTIVE", periodStart: now,
           periodEnd: trial ? new Date(now.getTime() + plan.trialDays * DAY_MS) : this.limits.periodEndFor(plan, now),
         });
-        if (payment) await this.plans.insertSubscriptionPayment(tx, subscription.id, ownerId, payment);
+        if (payment) await this.plans.insertSubscriptionPayment(tx, subscription.id, ownerId, payment, plan.id);
         return { ownerId, companyId: company.companyId };
       });
     } catch (error) {

@@ -70,16 +70,16 @@ export class PlansRepository {
   async changeOwnerPlan(input: { ownerUserId: string; planId: string; status: SubscriptionStatusValue; periodStart: Date; periodEnd: Date | null; payment?: SubscriptionPaymentInput | null }): Promise<SubscriptionRow> {
     return this.database.db.transaction(async (tx) => {
       const saved = await this.upsertOwnerSubscription(tx, input);
-      if (input.payment) await this.insertSubscriptionPayment(tx, saved.id, input.ownerUserId, input.payment);
+      if (input.payment) await this.insertSubscriptionPayment(tx, saved.id, input.ownerUserId, input.payment, input.planId);
       return saved;
     });
   }
 
-  async insertSubscriptionPayment(tx: Transaction, subscriptionId: string, ownerUserId: string, payment: SubscriptionPaymentInput): Promise<void> {
+  async insertSubscriptionPayment(tx: Transaction, subscriptionId: string, ownerUserId: string, payment: SubscriptionPaymentInput, planId: string | null = null): Promise<void> {
     const now = new Date();
     const id = randomUUID();
     await tx.insert(payments).values({
-      id, orderId: null, subscriptionId, method: "CARD", status: "PAID", amount: payment.amount.toFixed(2), currency: payment.currency,
+      id, orderId: null, subscriptionId, planId, method: "CARD", status: "PAID", amount: payment.amount.toFixed(2), currency: payment.currency,
       provider: payment.provider, externalReference: payment.externalReference, notes: payment.notes,
       createdBy: ownerUserId, processedBy: ownerUserId, paidAt: now, failedAt: null, cancelledAt: null, refundedAt: null,
       createdAt: now, updatedAt: now,

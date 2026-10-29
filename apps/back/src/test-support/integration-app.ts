@@ -205,3 +205,23 @@ export function listRoutes(app: INestApplication): RouteInfo[] {
   }
   return routes.sort((a, b) => `${a.path} ${a.method}`.localeCompare(`${b.path} ${b.method}`));
 }
+
+/** Cuerpo multipart/form-data mínimo (campos de texto + un archivo) para las rutas con FileInterceptor. */
+export function multipart(fields: Record<string, string>, file?: { name: string; filename: string; contentType: string; data: Uint8Array }): { contentType: string; data: Uint8Array } {
+  const boundary = `----velora${randomBytes(8).toString("hex")}`;
+  const crlf = "\r\n";
+  const parts: Buffer[] = [];
+  for (const [name, value] of Object.entries(fields)) {
+    parts.push(Buffer.from(`--${boundary}${crlf}Content-Disposition: form-data; name="${name}"${crlf}${crlf}${value}${crlf}`));
+  }
+  if (file) {
+    parts.push(Buffer.from(`--${boundary}${crlf}Content-Disposition: form-data; name="${file.name}"; filename="${file.filename}"${crlf}Content-Type: ${file.contentType}${crlf}${crlf}`));
+    parts.push(Buffer.from(file.data));
+    parts.push(Buffer.from(crlf));
+  }
+  parts.push(Buffer.from(`--${boundary}--${crlf}`));
+  return { contentType: `multipart/form-data; boundary=${boundary}`, data: Buffer.concat(parts) };
+}
+
+/** PNG 1×1 válido (comprobantes e imágenes de prueba). */
+export const TINY_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");

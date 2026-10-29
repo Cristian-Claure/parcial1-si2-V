@@ -53,6 +53,7 @@ export default function CheckoutScreen() {
   const [warehouseId, setWarehouseId] = useState<string | null>(null);
   const [addressId, setAddressId] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
+  const [payWithQr, setPayWithQr] = useState(false);
   const [offlineSaved, setOfflineSaved] = useState(false);
 
   const checkout = useQuery({
@@ -115,6 +116,8 @@ export default function CheckoutScreen() {
 
       try {
         const order = await veloraApi.createOrder({ companyId: companyId!, warehouseId: effectiveWarehouseId, fulfillmentType, addressId: address, notes: notes.trim() || null }, createClientOperationId());
+        // Fase 5: QR inmediato; si falla, el pedido queda reservado y se paga desde Mis pedidos.
+        if (payWithQr) await veloraApi.createOrderQr(order.id).catch(() => null);
 
         return { offline: false as const, order };
       } catch (error) {
@@ -290,6 +293,16 @@ export default function CheckoutScreen() {
           )}
         </>
       ) : null}
+
+      <Text style={commonStyles.label}>Pago</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {([[true, "Pagar ahora con QR"], [false, "Elegir después"]] as const).map(([value, label]) => (
+          <Pressable key={label} disabled={value && !connected} accessibilityRole="radio" accessibilityState={{ selected: payWithQr === value }}
+            style={[commonStyles.chip, payWithQr === value && commonStyles.chipActive]} onPress={() => setPayWithQr(value)}>
+            <Text style={[commonStyles.chipText, payWithQr === value && commonStyles.chipTextActive]}>{label}</Text>
+          </Pressable>
+        ))}
+      </View>
 
       <Field
         label="Observaciones"

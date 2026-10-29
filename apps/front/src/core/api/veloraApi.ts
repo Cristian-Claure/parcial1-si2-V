@@ -65,11 +65,25 @@ import type {
   VariantResponse,
   WarehouseRequest,
   WarehouseResponse,
+  CreatePlanPaymentRequest,
+  CustomerQrPaymentResponse,
+  PlanPayment,
+  PlanPaymentOptionsResponse,
+  PlanPaymentResponse,
+  PlatformBillingSettingsInput,
+  PlatformBillingSettingsResponse,
+  PlatformPayment,
+  PlatformPaymentsQuery,
+  PublicQrCharge,
+  QrActionResponse,
+  QrCharge,
+  ReviewPaymentRequest,
 } from "@velora/contracts";
 
 import {
   apiRequest,
   jsonBody,
+  apiBlobRequest,
 } from "./apiClient";
 
 const q = (
@@ -111,6 +125,25 @@ export const veloraApi = {
   platformChangePlan: (ownerId: string, planCode: string) => apiRequest<AdminPlanResponse>(`/api/platform/owners/${q(ownerId)}/plan`, { method: "POST", body: jsonBody({ planCode }) }),
   platformAdjustSubscription: (subscriptionId: string, body: PlatformAdjustSubscriptionRequest) => apiRequest<PlatformSubscription>(`/api/platform/subscriptions/${q(subscriptionId)}`, { method: "PATCH", body: jsonBody(body) }),
   platformTransferOwner: (companyId: string, ownerEmail: string) => apiRequest<PlatformCompany>(`/api/platform/companies/${q(companyId)}/owner`, { method: "PUT", body: jsonBody({ ownerEmail }) }),
+  // Fase 5 · pagos de plan, QR y revisión de transferencias
+  planPaymentOptions: () => apiRequest<PlanPaymentOptionsResponse>("/api/admin/plan/payment-options"),
+  createPlanPayment: (body: CreatePlanPaymentRequest) => apiRequest<PlanPaymentResponse>("/api/admin/plan/payments", { method: "POST", body: jsonBody(body) }),
+  planPayments: () => apiRequest<PlanPayment[]>("/api/admin/plan/payments"),
+  planPayment: (paymentId: string) => apiRequest<PlanPaymentResponse>(`/api/admin/plan/payments/${q(paymentId)}`),
+  cancelPlanPayment: (paymentId: string) => apiRequest<PlanPaymentResponse>(`/api/admin/plan/payments/${q(paymentId)}/cancel`, { method: "POST" }),
+  uploadTransferProof: (paymentId: string, file: File, operationNumber: string) => { const form = new FormData(); form.append("operationNumber", operationNumber); form.append("file", file); return apiRequest<PlanPaymentResponse>(`/api/admin/plan/payments/${q(paymentId)}/transfer-proof`, { method: "POST", body: form }); },
+  planReceipt: (paymentId: string) => apiBlobRequest(`/api/admin/plan/payments/${q(paymentId)}/receipt`),
+  paymentProof: (paymentId: string, proofId?: string) => apiBlobRequest(`/api/billing/payments/${q(paymentId)}/proof${proofId ? `?proofId=${q(proofId)}` : ""}`),
+  createOrderQr: (orderId: string) => apiRequest<CustomerQrPaymentResponse>(`/api/customer/orders/${q(orderId)}/payments/qr`, { method: "POST" }),
+  orderQr: (paymentId: string) => apiRequest<QrCharge>(`/api/customer/payments/${q(paymentId)}/qr`),
+  publicQr: (reference: string, token: string) => apiRequest<PublicQrCharge>(`/api/pay/qr/${q(reference)}?t=${q(token)}`),
+  publicQrAction: (reference: string, token: string, action: "confirm" | "cancel") => apiRequest<QrActionResponse>(`/api/pay/qr/${q(reference)}/${action}`, { method: "POST", body: jsonBody({ token }) }),
+  platformBillingSettings: () => apiRequest<PlatformBillingSettingsResponse>("/api/platform/billing-settings"),
+  updatePlatformBillingSettings: (body: PlatformBillingSettingsInput) => apiRequest<PlatformBillingSettingsResponse>("/api/platform/billing-settings", { method: "PUT", body: jsonBody(body) }),
+  uploadPlatformBillingQr: (file: File) => { const form = new FormData(); form.append("file", file); return apiRequest<PlatformBillingSettingsResponse>("/api/platform/billing-settings/qr-image", { method: "POST", body: form }); },
+  removePlatformBillingQr: () => apiRequest<PlatformBillingSettingsResponse>("/api/platform/billing-settings/qr-image", { method: "DELETE" }),
+  platformPayments: (query: PlatformPaymentsQuery) => apiRequest<PlatformPayment[]>(`/api/platform/payments?${new URLSearchParams(Object.entries(query).filter(([, value]) => Boolean(value)) as [string, string][]).toString()}`),
+  reviewPlatformPayment: (paymentId: string, body: ReviewPaymentRequest) => apiRequest<PlatformPayment>(`/api/platform/payments/${q(paymentId)}/review`, { method: "POST", body: jsonBody(body) }),
   createCompany: (body: CreateCompanyRequest) => apiRequest<CompanyResponse>("/api/admin/companies", { method: "POST", body: jsonBody(body) }),
 
   login: (

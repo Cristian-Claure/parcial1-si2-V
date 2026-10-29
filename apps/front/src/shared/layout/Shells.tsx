@@ -28,7 +28,7 @@ const managerNav = [
 ] as const;
 
 function NavItems({ items, locked = {} }: { items: readonly (readonly [string, string])[]; locked?: Record<string, string> }) {
-  return <>{items.map(([label, to]) => <NavLink key={to} to={to} end={to === "/admin" || to === "/sucursal"} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>{label}{locked[to] ? <span className="nav-lock" title={`Disponible en ${locked[to]}`}>{locked[to]}</span> : null}</NavLink>)}</>;
+  return <>{items.map(([label, to]) => <NavLink key={to} to={to} end={to === "/admin" || to === "/sucursal" || to === "/plataforma"} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>{label}{locked[to] ? <span className="nav-lock" title={`Disponible en ${locked[to]}`}>{locked[to]}</span> : null}</NavLink>)}</>;
 }
 
 /**
@@ -163,7 +163,7 @@ export function PlatformShell() {
   return <SidebarFrame ops platform title={PLATFORM_NAME} sidebar={<>
     <Link to="/plataforma" aria-label={`${PLATFORM_NAME}: inicio`}><PlatformBrand variant="mark" tone="dark" /></Link>
     <div className="sidebar-user"><span>Plataforma {PLATFORM_NAME}</span><strong>{user ? `${user.firstName} ${user.lastName}` : ""}</strong></div>
-    <nav aria-label="Plataforma"><NavItems items={[["Plataforma", "/plataforma"], ["Tiendas", "/tiendas"], ["Planes públicos", "/planes"]] as const} /></nav>
+    <nav aria-label="Plataforma"><NavItems items={[["Plataforma", "/plataforma"], ["Pagos", "/plataforma/pagos"], ["Cobros", "/plataforma/cobros"], ["Tiendas", "/tiendas"], ["Planes públicos", "/planes"]] as const} /></nav>
     <button className="nav-button" type="button" onClick={logout}>Cerrar sesión</button>
   </>}><PlatformTheme><Outlet /></PlatformTheme></SidebarFrame>;
 }

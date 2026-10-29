@@ -231,11 +231,12 @@ export class PlanLimitsService {
    * Reglas del cambio de plan (sin cobrar). Se permite "cambiar" al mismo plan si está en
    * TRIAL (activar) o vencido (renovar). Downgrade solo si el uso cabe en el destino (D2).
    */
-  async validatePlanChange(ownerUserId: string, planCode: string): Promise<PlanRow> {
+  async validatePlanChange(ownerUserId: string, planCode: string, options: { allowRenewal?: boolean } = {}): Promise<PlanRow> {
     const target = await this.plans.planByCode(planCode);
     if (!target || !target.active) throw new ApiHttpError(404, "Plan no encontrado.");
     const current = await this.resolveForOwner(ownerUserId);
-    if (current.subscribedPlan?.id === target.id && !current.restricted && current.subscription?.status === "ACTIVE") {
+    // Fase 5: pagar el mismo plan vigente es una renovación anticipada (suma 30 días al vencimiento).
+    if (!options.allowRenewal && current.subscribedPlan?.id === target.id && !current.restricted && current.subscription?.status === "ACTIVE") {
       throw new ApiHttpError(409, `Ya tienes el plan ${target.name}.`);
     }
 

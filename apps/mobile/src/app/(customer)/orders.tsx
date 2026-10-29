@@ -27,6 +27,8 @@ import {
   paymentMethodLabel,
   paymentMethodsForOrder,
 } from "@/core/payments/paymentRules";
+import { QrPaymentCard } from "@/features/payments/QrPaymentCard";
+import { isQrCharge } from "@/features/payments/qrCountdown";
 import { makeStyles, useCommonStyles, useTheme } from "@/shared/theme";
 import {
   Button,
@@ -240,6 +242,10 @@ function OrderCard({ order }: { order: OrderResponse }) {
         return checkout.payment;
       }
 
+      if (selected === "QR") {
+        return (await veloraApi.createOrderQr(order.id)).payment;
+      }
+
       return veloraApi.createPayment(order.id, {
         method: selected,
         notes: `Pago ${selected} iniciado desde React Native.`,
@@ -302,6 +308,10 @@ function OrderCard({ order }: { order: OrderResponse }) {
           Los pagos se consultarán nuevamente al recuperar conexión.
         </Notice>
       ) : null}
+
+      {payments.data?.filter((payment) => isQrCharge(payment) && payment.status === "PENDING").map((payment) => (
+        <QrPaymentCard key={`qr-${payment.id}`} paymentId={payment.id} orderId={order.id} concept={`Pedido ${order.orderNumber}`} onRetry={() => createPayment.mutate("QR")} />
+      ))}
 
       {payments.data?.map((payment) => (
         <View key={payment.id} style={styles.payment}>
@@ -367,7 +377,9 @@ function OrderCard({ order }: { order: OrderResponse }) {
                 ? "PROCESANDO…"
                 : method === "WEB"
                   ? "ABRIR STRIPE CHECKOUT"
-                  : "REGISTRAR MÉTODO"
+                  : method === "QR"
+                    ? "GENERAR QR"
+                    : "REGISTRAR MÉTODO"
             }
             disabled={createPayment.isPending}
             onPress={() => createPayment.mutate(method)}

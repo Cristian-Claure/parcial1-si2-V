@@ -1,3 +1,4 @@
+import type { DatabasePaymentMethod, DatabasePaymentStatus } from "@velora/database";
 import {
   Injectable,
 } from "@nestjs/common";
@@ -1793,11 +1794,7 @@ export class ReportsService {
     paidEvents:
       Array<{
         method:
-          "COD" |
-          "CASH" |
-          "CARD" |
-          "WEB" |
-          "QR";
+          DatabasePaymentMethod;
         amount:
           string;
       }>,
@@ -1943,11 +1940,7 @@ export class ReportsService {
         orderId:
           string;
         status:
-          "PENDING" |
-          "PAID" |
-          "FAILED" |
-          "CANCELLED" |
-          "REFUNDED";
+          DatabasePaymentStatus;
         paidAt:
           Date |
           null;
@@ -2469,6 +2462,8 @@ export class ReportsService {
         return "Pago web";
       case "QR":
         return "QR";
+      case "TRANSFER":
+        return "Transferencia";
       default:
         return method;
     }

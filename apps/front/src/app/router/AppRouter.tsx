@@ -41,6 +41,9 @@ const BrandEditorPage = lazyNamed(() => import("../../features/saas/BrandEditorP
 import { TenantEntry } from "../../features/tenant/TenantEntry";
 import { PlatformTheme } from "../../shared/platform/PlatformBrand";
 const PlatformPage = lazyNamed(() => import("../../features/platform/PlatformPage"), "PlatformPage");
+const PlatformBillingSettingsPage = lazyNamed(() => import("../../features/platform/PlatformBillingPages"), "PlatformBillingSettingsPage");
+const PlatformPaymentsPage = lazyNamed(() => import("../../features/platform/PlatformBillingPages"), "PlatformPaymentsPage");
+const DemoBankPage = lazyNamed(() => import("../../features/payments/DemoBankPage"), "DemoBankPage");
 const SyncCenterPage = lazyNamed(() => import("../../features/sync/SyncCenterPage"), "SyncCenterPage");
 const OfflineRegistryPage = lazyNamed(() => import("../../features/sync/OfflineRegistryPage"), "OfflineRegistryPage");
 
@@ -57,6 +60,7 @@ export function AppRouter() {
       <Route path="planes" element={<PlansPage />} />
       <Route path="tiendas" element={<DirectoryPage />} />
       <Route path="crear-tienda" element={<GuestOnly><CreateStorePage /></GuestOnly>} />
+      <Route path="pagar/qr/:reference" element={<DemoBankPage />} />
     </Route>
     <Route element={<RequireRole roles={["ADMIN"]}><PlatformAppShell /></RequireRole>}>
       <Route path="elegir-empresa" element={<ChooseCompanyPage />} />
@@ -109,6 +113,8 @@ export function AppRouter() {
     </Route>
     <Route element={<RequireRole roles={["PLATFORM_ADMIN"]}><PlatformShell /></RequireRole>}>
       <Route path="plataforma" element={<PlatformPage />} />
+      <Route path="plataforma/cobros" element={<PlatformBillingSettingsPage />} />
+      <Route path="plataforma/pagos" element={<PlatformPaymentsPage />} />
     </Route>
     <Route path="*" element={<NotFound />} />
   </Routes></Suspense>;

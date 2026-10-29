@@ -1,3 +1,4 @@
+import type { DatabasePaymentMethod, DatabasePaymentStatus } from "@velora/database";
 import {
   randomUUID,
 } from "node:crypto";
@@ -150,8 +151,8 @@ interface LockedStock {
 
 interface PosPaymentHeader {
   paymentId: string;
-  paymentMethod: "COD" | "CASH" | "CARD" | "WEB" | "QR";
-  paymentStatus: "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "REFUNDED";
+  paymentMethod: DatabasePaymentMethod;
+  paymentStatus: DatabasePaymentStatus;
   orderId: string;
   orderNumber: string;
   orderStatus: "RESERVED" | "CANCELLED" | "FULFILLED";

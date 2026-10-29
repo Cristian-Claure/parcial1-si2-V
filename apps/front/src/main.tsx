@@ -4,6 +4,7 @@ import { App } from "./app/App";
 import { AppProviders } from "./app/providers/AppProviders";
 import "./styles/global.css";
 import "./styles/saas.css";
+import "./styles/payments.css";
 import "./styles/usability.css";
 import { applyCachedThemeBeforePaint } from "./core/theme/themeScope";
 

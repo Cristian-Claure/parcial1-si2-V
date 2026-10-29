@@ -11,6 +11,7 @@ import {
 } from "./stripe-gateway.service.js";
 
 import { CustomerPushService } from "../push/customer-push.service.js";
+import { StripePlanService } from "./stripe-plan.service.js";
 
 @Injectable()
 export class StripeWebhookService {
@@ -23,6 +24,9 @@ export class StripeWebhookService {
 
     private readonly push?:
       CustomerPushService,
+
+    private readonly plans?:
+      StripePlanService,
   ) {}
 
   async handle(
@@ -46,6 +50,16 @@ export class StripeWebhookService {
     if (!session) {
       return;
     }
+
+    // Fase 5: las sesiones de pago de plan se revalidan contra Stripe y activan el plan al pagarse.
+    if (
+      this.plans &&
+      event.type.startsWith("checkout.session.") &&
+      (await this.plans.reconcile(session.id, "WEBHOOK")) !== "NOT_PLAN"
+    ) {
+      return;
+    }
+
 
     switch (
       event.type
