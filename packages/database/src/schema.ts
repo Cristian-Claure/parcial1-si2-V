@@ -5175,6 +5175,7 @@ export const qrCharges = pgTable("qr_charges", {
   expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
   consumedAt: timestamp("consumed_at", { withTimezone: true, mode: "date" }),
   providerChargeId: varchar("provider_charge_id", { length: 120 }),
+  providerQrPayload: text("provider_qr_payload"),
   pollAttempts: integer("poll_attempts").notNull().default(0),
   nextPollAt: timestamp("next_poll_at", { withTimezone: true, mode: "date" }),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),

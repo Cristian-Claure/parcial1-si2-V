@@ -55,6 +55,7 @@ CREATE TABLE qr_charges (
     expires_at TIMESTAMPTZ NOT NULL,
     consumed_at TIMESTAMPTZ,
     provider_charge_id VARCHAR(120),
+    provider_qr_payload TEXT,
     poll_attempts INTEGER NOT NULL DEFAULT 0,
     next_poll_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL,

@@ -282,6 +282,36 @@ export const serverRuntimeConfigSchema =
         "https://api.replicate.com/v1",
       ),
 
+    // Fase 5 · pago por QR (DEMO firmado por defecto; OPENBCB/BCP requieren la documentación oficial).
+    VELORA_QR_PROVIDER:
+      z.preprocess(
+        (value) =>
+          typeof value === "string" && value.trim() !== "" ? value.trim().toUpperCase() : "DEMO",
+        z.enum(["DEMO", "OPENBCB", "BCP"]),
+      ),
+
+    VELORA_QR_SIGNING_SECRET:
+      optionalSecretFromEnv(),
+
+    VELORA_QR_BASE_URL:
+      optionalHttpUrlFromEnv(),
+
+    VELORA_QR_CLIENT_ID:
+      optionalStringFromEnv(),
+
+    VELORA_QR_CLIENT_SECRET:
+      optionalSecretFromEnv(),
+
+    VELORA_QR_WEBHOOK_SECRET:
+      optionalSecretFromEnv(),
+
+    /** URL pública de la web (enlaces del QR DEMO hacia /pagar/qr/...). */
+    VELORA_PUBLIC_WEB_URL:
+      z.preprocess(
+        (value) => (typeof value === "string" && value.trim() !== "" ? value.trim().replace(/\/+$/, "") : "http://localhost:5173"),
+        z.string().url().regex(/^https?:\/\//, "La URL debe usar http o https."),
+      ),
+
     VELORA_TRYON_PROVIDER:
       z.preprocess(
         (value) =>
