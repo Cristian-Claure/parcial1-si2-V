@@ -46,8 +46,8 @@ payment_transfer_proofs (id, payment_id, storage_key, content_type, size_bytes,
 | Generación de QR (SVG para web, PNG en data URL para móvil) con `qrcode-generator` (sin dependencias) y PNG propio con `zlib` | `billing/qr/qr-image.ts` |
 | `QrChargeService`: crear cargo, vencimiento perezoso (10 min → `EXPIRED`), consulta de estado con backoff para el proveedor real, confirmación/cancelación con token de un solo uso (hash SHA-256, `timingSafeEqual`), límite de intentos por IP | `billing/qr-charge.service.ts` |
 | `PaymentSettlementService`: transición a `PAID` y efectos (activar plan) en un solo lugar, usado por QR, Stripe y transferencia | `billing/payment-settlement.service.ts` |
-| `PlanPaymentsService`: opciones, crear pago de plan (STRIPE/QR/TRANSFER), historial, estado, comprobante de transferencia, PDF | `billing/plan-payments.service.ts` |
-| Revisión de transferencias y configuración de cobro | `billing/platform-billing.service.ts` |
+| `PlanPaymentsService`: opciones, crear pago de plan (STRIPE/QR/TRANSFER), historial, estado, comprobante de transferencia, PDF | `plan-payments/plan-payments.service.ts` |
+| Revisión de transferencias y configuración de cobro | `plan-payments/platform-billing.service.ts` |
 
 ### Endpoints nuevos
 

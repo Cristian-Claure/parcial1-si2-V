@@ -8,7 +8,7 @@
 //   · Solana (la más nueva): sus pedidos existentes se RE-FECHAN al tramo 12-oct → ayer con crecimiento
 //     semanal ~10 %, picos de fin de semana y promoción y ticket creciente; luego sigue creciendo.
 //   · Todas: continúan desde su ritmo real de los últimos 28 días hasta HOY (o --until).
-//   · Huecos: ≥ 1 pedido diario en los últimos 90 días (VÉLORA desde 2025-01-01; FREE excluida).
+//   · Huecos: ≥ 1 pedido diario en los últimos 90 días (VÉLORA desde 2024-11-11; FREE excluida).
 //   · Fechas de creación (empresa, sucursales, catálogo, stock) coherentes con el primer pedido.
 //
 // Uso:

@@ -691,7 +691,7 @@ Las Fases 1, 2, 3, 4, 4B y 4C y la mejora de tema por tienda están mergeadas en
 1. Fase 5: pago por QR.
 2. Los 7 hallazgos P3 de `docs/UX_AUDIT.md` (pulido web).
 3. Cierre: regresión final (pruebas y demos) y PDF de defensa.
-4. Menor: regenerar los logos y banners de Urbano Boutique, Urbano Outlet y Primer Paso con sus colores nuevos (hoy son imágenes de la paleta anterior; se suben desde `/admin/marca`).
+4. ~~Menor: regenerar los logos y banners de Urbano Boutique, Urbano Outlet y Primer Paso~~ (hecho en la Parte B).
 
 ---
 
@@ -704,3 +704,27 @@ Estado (29-oct-2026): **Parte A completa** en `feat/fase5-pagos` (PR en borrador
 - QR DEMO firmado para pedidos (web y móvil) y planes; Stripe Checkout para planes (revalidado contra la API); transferencia con revisión en `/plataforma/pagos`.
 - El plan cambia solo en PAID (idempotente, auditado); renovación anticipada +30 días; PDF de pago.
 - Demo: `node scripts/demo-pagos.mjs`.
+
+---
+
+# Parte B — Datos finales, pulido, marca y defensa (29-oct-2026)
+
+Guía de defensa por fase: `docs/DEFENSA_FASES.md`.
+
+- **Fase 5 (ajustes)**: listener local de Stripe CLI (`scripts/stripe-listener.ps1`); la transferencia muestra el QR estático de la cuenta de cobro con el aviso "Ingresa exactamente Bs X y escribe la referencia Y en la glosa" (la imagen vive en el storage, no en git).
+- **Datos**: `scripts/seed-final-history.mjs` — VÉLORA con 24 meses (desde 2024-11-11, sin días vacíos), Casa Montalvo e Ímpetu desde mayo-2026, Solana re-fechada al 12-oct con crecimiento semanal ~10 %, todas continúan hasta hoy. Verificación en `docs/DATOS_SINTETICOS.md`.
+- **ML**: reentreno de las 5 tiendas MAX y una iteración declarada (Platt en validación; anomalías sobre pedidos por día) en `docs/ML_MODELOS.md`.
+- **Pulido**: los 7 P3 de `docs/UX_AUDIT.md` corregidos.
+- **Marca**: logos y banners geométricos de Urbano Boutique, Urbano Outlet, Andina Moda y Primer Paso (`scripts/brand-assets-final.mjs`, contraste ≥ 3:1).
+
+## Estado general (29-oct-2026)
+
+Todas las fases (1, 2, 3, 4, 4B, 4C, tema por tienda y 5) y la Parte B están en `main`.
+
+**Pendiente (solo):**
+1. **Tramo final de datos al 11-nov** — lanzarlo el 9 o 10 de noviembre, con el backend en 18080:
+   `node scripts/seed-final-history.mjs --until 2026-11-11 --resume`
+   (luego reentrenar las tiendas MAX: `pnpm ml:train -- --company <slug>`).
+2. **Banco real** (QR OPENBCB/BCP): falta la documentación oficial; ver `docs/bank-api/FALTA.md`. Mientras tanto funciona el QR DEMO.
+
+Notas operativas: la clave de prueba de Stripe del `.env` local está vencida (la tarjeta aparece "no configurada"); al reemplazarla, correr `.\scripts\stripe-listener.ps1` y reiniciar el backend. El servicio ML debe reiniciarse (`pnpm dev:ml`) para que "Reentrenar" desde la web use la iteración de la Parte B.
