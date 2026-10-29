@@ -112,7 +112,14 @@ Los pedidos usan el mismo QR (`POST /api/customer/orders/:id/payments/qr`): al p
 
 - **DEMO**: el QR codifica un enlace firmado con HMAC (`VELORA_QR_SIGNING_SECRET`) a la pantalla "Banco demo" de la propia web, que avisa "modo demostración" y no mueve dinero. Sirve para demostrar el ciclo completo (generar, vencer, pagar una sola vez, reflejarse en reportes) sin convenio bancario.
 - **Banco real (OPENBCB/BCP)**: el adaptador existe como esqueleto (`billing/qr/bank-qr.gateway.ts`) y está probado contra un servidor simulado; **no se inventó ningún endpoint**. Falta la documentación oficial: ver `docs/bank-api/FALTA.md`. Con ella se escribe el `BankQrApiSpec`, se cargan `VELORA_QR_BASE_URL`, `VELORA_QR_CLIENT_ID`, `VELORA_QR_CLIENT_SECRET` (y `VELORA_QR_WEBHOOK_SECRET` si hay webhook) y se cambia `VELORA_QR_PROVIDER`. La confirmación funciona sin URL pública: cuando el cliente consulta un pago PENDING, el servidor pregunta al banco con backoff (2 s → 30 s).
-- **Stripe**: modo test. La clave del `.env` local está **vencida** (Stripe responde `api_key_expired`); el sistema lo detecta (`GET /v1/balance`, en caché 10 min) y muestra la tarjeta como "no configurada". Con una clave `sk_test_…` vigente el flujo se habilita sin cambios.
+- **Stripe**: modo test. El backend verifica la clave con `GET /v1/balance` (en caché 10 min); si Stripe la rechaza (p. ej. `api_key_expired`) la tarjeta aparece "no configurada". Con una clave `sk_test_…` vigente el flujo se habilita sin cambios de código.
+
+### Listener local de Stripe (webhooks en 127.0.0.1:18080)
+
+1. Poner una clave de prueba vigente en `STRIPE_SECRET_KEY` del `.env`.
+2. `.\scripts\stripe-listener.ps1` (o `-Port 8080`): verifica la clave (solo lectura), obtiene el secreto del listener con `stripe listen --print-secret`, lo guarda como `STRIPE_WEBHOOK_SECRET` en el `.env` **sin imprimirlo**, arranca el contenedor `velora-stripe-listener-local` (`stripe/stripe-cli`, reenvía a `http://host.docker.internal:18080/api/payments/stripe/webhook`) y detiene `velora-stripe-listener-azure-v2`. La clave pasa al contenedor por un `--env-file` temporal.
+3. Reiniciar solo el backend. Sin listener el flujo también funciona: al consultar un pago PENDING el servidor revalida la sesión contra Stripe.
+4. `node scripts/demo-pagos.mjs` crea una sesión de Checkout para un plan y otra para un pedido **sin pagarlas** (se cancelan); la tarjeta `4242 4242 4242 4242` se prueba a mano en el navegador.
 
 ## 7. Limitaciones honestas
 
