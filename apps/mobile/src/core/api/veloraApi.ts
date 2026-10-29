@@ -27,6 +27,8 @@ import type {
   SyncOfflineOrderRequest,
   UpdateCartItemRequest,
   UserProfile,
+  CustomerQrPaymentResponse,
+  QrCharge,
 } from "@velora/contracts";
 import { apiRequest, jsonBody } from "./apiClient";
 
@@ -205,6 +207,13 @@ export const veloraApi = {
     apiRequest<PaymentHistoryResponse[]>(
       `/api/customer/payments/${paymentId}/history`,
     ),
+
+  // Fase 5 · QR del pedido (imagen PNG en data URL) y su estado (vencimiento perezoso en el servidor).
+  createOrderQr: (orderId: string) =>
+    apiRequest<CustomerQrPaymentResponse>(`/api/customer/orders/${orderId}/payments/qr`, { method: "POST", body: "{}" }),
+
+  orderQr: (paymentId: string) =>
+    apiRequest<QrCharge>(`/api/customer/payments/${paymentId}/qr`),
 
   stripeCheckoutMobile: (orderId: string) =>
     apiRequest<StripeCheckoutResponse>(

@@ -12,6 +12,7 @@ import type {
   VariantRequest,
   VariantResponse,
   WarehouseResponse,
+  PlanPayment,
 } from "@velora/contracts";
 import { apiRequest, jsonBody } from "./apiClient";
 
@@ -33,6 +34,7 @@ function query(values: Record<string, string | null | undefined>): string {
 
 export const ownerApi = {
   plan: () => apiRequest<AdminPlanResponse>("/api/admin/plan"),
+  planPayments: () => apiRequest<PlanPayment[]>("/api/admin/plan/payments"),
   stores: (companyId: string) => apiRequest<StoreResponse[]>(`/api/admin/stores?companyId=${q(companyId)}`),
   managers: (companyId: string) => apiRequest<ManagerResponse[]>(`/api/admin/users/managers?companyId=${q(companyId)}`),
 

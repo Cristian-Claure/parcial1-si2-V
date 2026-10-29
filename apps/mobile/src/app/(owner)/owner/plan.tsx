@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { formatDate, formatMoney } from "@velora/contracts";
+import { formatDate, formatMoney, labelFor, PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS } from "@velora/contracts";
 import { ownerApi } from "@/core/api/ownerApi";
 import { useAuthStore } from "@/core/auth/authStore";
 import { cachedFetch } from "@/core/offline/cachedFetch";
@@ -20,6 +20,9 @@ function PlanContent() {
   const commonStyles = useCommonStyles();
   const user = useAuthStore((state) => state.user)!;
   const plan = useQuery({ queryKey: ["owner-plan", user.id], queryFn: () => cachedFetch("owner-plan", user.id, ownerApi.plan) });
+  // Fase 5: el móvil solo muestra el estado de los pagos del plan; pagar o renovar se hace en la web.
+  const payments = useQuery({ queryKey: ["owner-plan-payments", user.id], queryFn: () => cachedFetch("owner-plan-payments", user.id, ownerApi.planPayments) });
+  const open = payments.data?.find((payment) => payment.status === "PENDING" || payment.status === "PENDING_REVIEW") ?? null;
   const data = plan.data;
   const limits = data?.effectivePlan.limits;
 
@@ -53,6 +56,20 @@ function PlanContent() {
             ))}
             <Text style={commonStyles.muted}>Probador virtual: {limits.tryOnMonthlyPerCustomer === null ? "ilimitado" : `${limits.tryOnMonthlyPerCustomer} pruebas por cliente al mes`}</Text>
           </View>
+          {open ? <Notice kind={open.rejectionReason ? "error" : "info"}>
+            Pago del plan {open.planName} por {labelFor(PAYMENT_METHOD_LABELS, open.method)}: {labelFor(PAYMENT_STATUS_LABELS, open.status)}.{open.rejectionReason ? ` Comprobante rechazado: ${open.rejectionReason}.` : ""} Continúalo desde la web.
+          </Notice> : null}
+          {payments.data?.length ? (
+            <View style={commonStyles.card}>
+              <Text style={commonStyles.subheading}>Pagos recientes</Text>
+              {payments.data.slice(0, 5).map((payment) => (
+                <View key={payment.id} style={commonStyles.rowBetween}>
+                  <Text style={commonStyles.body}>{formatDate(payment.paidAt ?? payment.createdAt)} · {payment.planName}</Text>
+                  <Text style={commonStyles.muted}>{formatMoney(payment.amount, payment.currency)} · {labelFor(PAYMENT_STATUS_LABELS, payment.status)}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
           <Button title="Mejorar mi plan en la web" onPress={() => void openWeb("/admin/mi-plan")} />
         </>
       ) : null}
