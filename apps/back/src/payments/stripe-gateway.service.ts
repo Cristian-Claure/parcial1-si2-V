@@ -795,6 +795,25 @@ export class StripeGatewayService {
     return /^sk_(test|live)_[A-Za-z0-9]{8,}/.test(this.config.value.STRIPE_SECRET_KEY?.trim() ?? "");
   }
 
+  private keyCheck: { checkedAt: number; usable: boolean } | null = null;
+
+  /**
+   * Clave con formato válido y aceptada por Stripe (GET /v1/balance, en caché 10 minutos).
+   * Una clave vencida o revocada deja la tarjeta deshabilitada ("no configurada").
+   */
+  async isUsable(): Promise<boolean> {
+    if (!this.isConfigured()) return false;
+    if (this.keyCheck && Date.now() - this.keyCheck.checkedAt < 10 * 60_000) return this.keyCheck.usable;
+    let usable = true;
+    try {
+      await this.requestJson(this.apiBase() + "/v1/balance", { method: "GET", headers: { Authorization: `Bearer ${this.requireSecretKey()}` } }, "Stripe rechazó la clave.");
+    } catch {
+      usable = false;
+    }
+    this.keyCheck = { checkedAt: Date.now(), usable };
+    return usable;
+  }
+
   /** Checkout de un pago de plan (Fase 5): monto fijado por el servidor, moneda BOB, retorno a Mi plan. */
   async createPlanCheckoutSession(input: { paymentId: string; planName: string; amount: string; currency: string; successUrl: string; cancelUrl: string }): Promise<StripeCheckoutSession> {
     const secret = this.requireSecretKey();

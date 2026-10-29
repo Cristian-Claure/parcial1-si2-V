@@ -9,13 +9,15 @@ const SECRET = "s".repeat(40);
 const charge = { chargeId: "c1", reference: "26102912345678", amount: "149.00", currency: "BOB", expiresAt: new Date("2026-10-29T12:10:00Z") };
 
 describe("QR DEMO: firma, token e imagen", () => {
-  it("la firma cambia si cambia el monto, la moneda, la referencia o el vencimiento (monto inmutable)", () => {
+  it("la firma cambia si cambia el monto, la moneda o la referencia (monto inmutable)", () => {
     const base = signDemoToken(SECRET, charge);
     expect(signDemoToken(SECRET, { ...charge })).toBe(base);
     expect(signDemoToken(SECRET, { ...charge, amount: "1.00" })).not.toBe(base);
     expect(signDemoToken(SECRET, { ...charge, currency: "USD" })).not.toBe(base);
     expect(signDemoToken(SECRET, { ...charge, reference: "26102900000000" })).not.toBe(base);
-    expect(signDemoToken(SECRET, { ...charge, expiresAt: new Date("2026-10-29T13:00:00Z") })).not.toBe(base);
+    // El vencimiento lo controla el servidor (expires_at), no la firma.
+    const later = { ...charge, expiresAt: new Date("2026-10-29T13:00:00Z") };
+    expect(signDemoToken(SECRET, later)).toBe(base);
     expect(signDemoToken("otro".repeat(10), charge)).not.toBe(base);
   });
 

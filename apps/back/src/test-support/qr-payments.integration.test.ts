@@ -93,12 +93,12 @@ describe.skipIf(!available)("Fase 5 · pago QR DEMO de pedidos (integración)", 
   });
 
   it("vence a los 10 minutos de forma perezosa: el cliente ve EXPIRED y el banco responde 410", async () => {
-    // Simula un QR emitido hace 11 minutos: se mueve el vencimiento y se re-firma con el secreto de prueba.
+    // Simula un QR emitido hace 11 minutos (el token firmado sigue siendo el mismo).
     const expire = async (paymentId: string): Promise<string> => {
-      const row = (await db.query<{ id: string; reference: string; amount: string; currency: string }>("select id, reference, amount, currency from qr_charges where payment_id = $1", [paymentId]))[0]!;
-      const expiresAt = new Date(Date.now() - 60_000);
-      const token = signDemoToken(SECRET, { chargeId: row.id, reference: row.reference, amount: row.amount, currency: row.currency, expiresAt });
-      await db.query("update qr_charges set expires_at = $2, token_hash = $3 where payment_id = $1", [paymentId, expiresAt, hashToken(token)]);
+      const row = (await db.query<{ id: string; reference: string; amount: string; currency: string; token_hash: string }>("select id, reference, amount, currency, token_hash from qr_charges where payment_id = $1", [paymentId]))[0]!;
+      const token = signDemoToken(SECRET, { chargeId: row.id, reference: row.reference, amount: row.amount, currency: row.currency });
+      expect(hashToken(token)).toBe(row.token_hash);
+      await db.query("update qr_charges set expires_at = now() - interval '1 minute' where payment_id = $1", [paymentId]);
       return token;
     };
     const order = await newOrder();

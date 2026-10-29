@@ -692,3 +692,15 @@ Las Fases 1, 2, 3, 4, 4B y 4C y la mejora de tema por tienda están mergeadas en
 2. Los 7 hallazgos P3 de `docs/UX_AUDIT.md` (pulido web).
 3. Cierre: regresión final (pruebas y demos) y PDF de defensa.
 4. Menor: regenerar los logos y banners de Urbano Boutique, Urbano Outlet y Primer Paso con sus colores nuevos (hoy son imágenes de la paleta anterior; se suben desde `/admin/marca`).
+
+---
+
+# Fase 5 — Pagos (Stripe, QR y transferencia)
+
+Plan, diagrama, limitaciones y guía de 3 minutos: `docs/FASE5_PAGOS.md`. Lo que falta del banco real: `docs/bank-api/FALTA.md`.
+
+Estado (29-oct-2026): **Parte A completa** en `feat/fase5-pagos` (PR en borrador).
+- V35: métodos `TRANSFER`, estados `PENDING_REVIEW`/`EXPIRED`, `qr_charges`, `platform_billing_settings`, `payment_transfer_proofs`.
+- QR DEMO firmado para pedidos (web y móvil) y planes; Stripe Checkout para planes (revalidado contra la API); transferencia con revisión en `/plataforma/pagos`.
+- El plan cambia solo en PAID (idempotente, auditado); renovación anticipada +30 días; PDF de pago.
+- Demo: `node scripts/demo-pagos.mjs`.

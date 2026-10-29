@@ -54,10 +54,10 @@ export class PlanPaymentsService {
 
   async options(): Promise<PlanPaymentOptionsResponse> {
     const qr = this.qr.readiness();
-    const stripeReady = this.stripe.checkout.isConfigured();
+    const stripeReady = await this.stripe.checkout.isUsable();
     return {
       methods: [
-        { method: "STRIPE", label: "Tarjeta (Stripe)", enabled: stripeReady, reason: stripeReady ? null : "Tarjeta no configurada: falta una STRIPE_SECRET_KEY válida." },
+        { method: "STRIPE", label: "Tarjeta (Stripe)", enabled: stripeReady, reason: stripeReady ? null : "Tarjeta no configurada: falta una STRIPE_SECRET_KEY válida y vigente." },
         { method: "QR", label: this.qr.gateway.demo ? "QR (modo demostración)" : "QR", enabled: qr.ready, reason: qr.reason },
         { method: "TRANSFER", label: "Transferencia bancaria", enabled: true, reason: null },
       ],

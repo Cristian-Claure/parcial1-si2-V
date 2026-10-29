@@ -1,6 +1,6 @@
 # Fase 5 — Pagos: Stripe, QR y transferencia
 
-> Estado: **en curso** (rama `feat/fase5-pagos`). Este documento se escribe primero como plan y se completa al cerrar la fase.
+> Estado (29-oct-2026): **Parte A completa** en la rama `feat/fase5-pagos`. Demo: `node scripts/demo-pagos.mjs` (25 comprobaciones).
 
 ## 0. Punto de partida (auditoría)
 
@@ -19,7 +19,7 @@
 ck_payments_method  += 'TRANSFER'
 ck_payments_status  += 'PENDING_REVIEW', 'EXPIRED'      (y en payment_status_history)
 payments.plan_id            UUID NULL REFERENCES plans(id)   -- plan comprado (solo pagos de suscripción)
-payments.payment_reference  VARCHAR(24) NULL UNIQUE          -- referencia numérica (QR) o glosa (transferencia)
+payments.payment_reference  VARCHAR(24) NULL UNIQUE          -- referencia numérica (QR) o glosa TRM… (transferencia)
 ck_payments_plan_target: plan_id IS NULL OR subscription_id IS NOT NULL
 
 qr_charges (id, payment_id UNIQUE, provider DEMO|OPENBCB|BCP, reference UNIQUE,
@@ -64,7 +64,8 @@ payment_transfer_proofs (id, payment_id, storage_key, content_type, size_bytes,
 | GET | `/api/customer/payments/:paymentId/qr` | CUSTOMER |
 | GET | `/api/pay/qr/:reference?t=` · POST `/confirm` · POST `/cancel` | público (token) |
 | GET/PUT | `/api/platform/billing-settings` · POST/DELETE `/qr-image` | PLATFORM_ADMIN |
-| GET | `/api/platform/payments` · POST `/:paymentId/approve` · `/:paymentId/reject` | PLATFORM_ADMIN |
+| GET | `/api/platform/payments?status=&method=` · POST `/:paymentId/review` (`{decision: APPROVE\|REJECT, reason}`) | PLATFORM_ADMIN |
+| GET | `/api/billing/transfer-qr/:storageKey` (QR estático de la cuenta, público por diseño) | público |
 
 Stripe: el pago de plan crea una sesión de Checkout en BOB con el monto del servidor. Se confirma por el webhook firmado (que ahora revalida la sesión contra la API de Stripe antes de activar un plan) **o** cuando el propietario consulta el pago `PENDING` (consulta de la sesión), así funciona en local sin URL pública. Sin `STRIPE_SECRET_KEY` válida el método aparece deshabilitado ("no configurado").
 
@@ -86,3 +87,55 @@ Stripe: el pago de plan crea una sesión de Checkout en BOB con el monto del ser
 6. Web (panel QR, Mi plan, Banco demo, plataforma).
 7. Móvil (QR en checkout y pedidos).
 8. `scripts/demo-pagos.mjs` + documentación final.
+
+## 5. Flujo (diagrama)
+
+```text
+ Propietario (Mi plan)                Backend                                    Proveedor
+ ───────────────────                  ───────                                    ─────────
+ Mejorar/renovar → método ──POST /admin/plan/payments──► payments PENDING (monto = plans.price_monthly)
+   Tarjeta ─────────────────────────► Stripe Checkout (BOB) ─────────────────► checkout.stripe.com
+                                       ◄─ webhook firmado ─┐   GET sesión (revalida estado, monto, moneda)
+                                       ◄─ consulta PENDING ┘
+   QR ──────────────────────────────► qr_charges (ref 14 díg., token HMAC, 10 min) ─► Banco demo /pagar/qr/<ref>?t=
+                                       ◄─ POST /pay/qr/<ref>/confirm (token 1 uso, 403/410/429)
+   Transferencia ──► comprobante ────► PENDING_REVIEW ──► /plataforma/pagos: aprobar | rechazar(motivo)
+                                                                 │                 └─► PENDING (reenvía)
+                                                                 ▼
+                         PaymentSettlementService.markPaid (FOR UPDATE, idempotente)
+                         └─► PAID ─► subscriptions: plan + 30 días (renovación suma al vencimiento) + audit_event BILLING
+```
+
+Los pedidos usan el mismo QR (`POST /api/customer/orders/:id/payments/qr`): al pagar, el pago del pedido pasa a PAID y el reporte "Cobros por método" lo cuenta como QR. Los pagos de plan nunca cuentan como ventas (los reportes unen `payments` con `orders`).
+
+## 6. Por qué es una demo y cómo pasar al banco real
+
+- **DEMO**: el QR codifica un enlace firmado con HMAC (`VELORA_QR_SIGNING_SECRET`) a la pantalla "Banco demo" de la propia web, que avisa "modo demostración" y no mueve dinero. Sirve para demostrar el ciclo completo (generar, vencer, pagar una sola vez, reflejarse en reportes) sin convenio bancario.
+- **Banco real (OPENBCB/BCP)**: el adaptador existe como esqueleto (`billing/qr/bank-qr.gateway.ts`) y está probado contra un servidor simulado; **no se inventó ningún endpoint**. Falta la documentación oficial: ver `docs/bank-api/FALTA.md`. Con ella se escribe el `BankQrApiSpec`, se cargan `VELORA_QR_BASE_URL`, `VELORA_QR_CLIENT_ID`, `VELORA_QR_CLIENT_SECRET` (y `VELORA_QR_WEBHOOK_SECRET` si hay webhook) y se cambia `VELORA_QR_PROVIDER`. La confirmación funciona sin URL pública: cuando el cliente consulta un pago PENDING, el servidor pregunta al banco con backoff (2 s → 30 s).
+- **Stripe**: modo test. La clave del `.env` local está **vencida** (Stripe responde `api_key_expired`); el sistema lo detecta (`GET /v1/balance`, en caché 10 min) y muestra la tarjeta como "no configurada". Con una clave `sk_test_…` vigente el flujo se habilita sin cambios.
+
+## 7. Limitaciones honestas
+
+- En un QR real **cada tienda necesitaría su propio convenio**; en la demo todo cobro QR (pedidos y planes) va a la cuenta de la plataforma.
+- El límite de intentos del Banco demo es en memoria (por proceso), igual que el de autenticación.
+- El vencimiento es perezoso: un QR vencido que nadie consulta sigue PENDING en la BD hasta la siguiente lectura (los reportes solo cuentan PAID, así que no afecta cifras).
+- La caja (POS) sigue registrando QR manual (confirmación del cajero); no se conectó al QR dinámico.
+- `POST /api/admin/plan/change` con tarjeta DEMO se conserva para el alta de tiendas (`/crear-tienda`) y `demo-saas`; Mi plan ya no la ofrece.
+- Los precios se mantienen (PLUS 99, MAX 249 Bs/mes): `plans.price_monthly` ya existía.
+
+## 8. Pruebas
+
+| Suite | Qué cubre |
+|---|---|
+| `billing/qr/qr.test.ts` | firma (monto inmutable), tiempo constante, hash, SVG/PNG válidos, referencia, backoff, límite por IP, periodo del plan |
+| `billing/qr/bank-qr.gateway.test.ts` | adaptador real sin doc (503), sin credenciales, contra servidor simulado, timeout 502 |
+| `qr-payments.integration.test.ts` | QR de pedido, idempotencia, 403/410/429, monto alterado, vencimiento perezoso, aislamiento, reporte con QR |
+| `plan-payments.integration.test.ts` | 3 métodos, plan solo en PAID, renovación +30, auditoría, PDF, transferencia (415/413, rechazo, reenvío, aprobación), comprobante ajeno 404/403/401, Stripe con doble HTTP (monto alterado, firma inválida, idempotencia) |
+| `tenant-isolation.integration.test.ts` | 8 rutas nuevas en la suite A/B |
+
+## 9. Cómo demostrarlo en 3 minutos
+
+1. `node scripts/demo-pagos.mjs` (25 ✔).
+2. Web como cliente: Checkout → "Pagar ahora con QR" → Mis pedidos muestra el QR con cuenta regresiva → "Abrir el Banco demo" → Pagar → el pedido pasa a Pagado.
+3. Propietario: Mi plan → Mejorar → elegir QR o Transferencia → (transferencia) subir comprobante.
+4. Plataforma: `/plataforma/pagos` → ver el comprobante → Rechazar con motivo → el propietario lo ve y reenvía → Aprobar → el plan queda activo y aparece el PDF en el historial.

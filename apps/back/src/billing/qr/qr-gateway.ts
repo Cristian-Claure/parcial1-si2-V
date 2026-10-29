@@ -43,12 +43,13 @@ export interface QrPaymentGateway {
 export const QR_PAYMENT_GATEWAY = Symbol("QR_PAYMENT_GATEWAY");
 
 /**
- * Token DEMO: HMAC-SHA256 (VELORA_QR_SIGNING_SECRET) sobre cargo, referencia, monto en centavos,
- * moneda y vencimiento. Cambiar cualquiera de esos datos invalida el QR. En la BD solo queda su hash.
+ * Token DEMO: HMAC-SHA256 (VELORA_QR_SIGNING_SECRET) sobre cargo, referencia, monto en centavos y
+ * moneda. Cambiar cualquiera de esos datos invalida el QR. El vencimiento (10 min) lo controla el
+ * servidor con `expires_at` (410 al vencer). En la BD solo queda el hash del token.
  */
-export function signDemoToken(secret: string, charge: Pick<QrChargeContext, "chargeId" | "reference" | "amount" | "currency" | "expiresAt">): string {
+export function signDemoToken(secret: string, charge: Pick<QrChargeContext, "chargeId" | "reference" | "amount" | "currency">): string {
   const cents = Math.round(Number(charge.amount) * 100);
-  const payload = ["v1", charge.chargeId, charge.reference, cents, charge.currency.toUpperCase(), Math.floor(charge.expiresAt.getTime() / 1000)].join("|");
+  const payload = ["v1", charge.chargeId, charge.reference, cents, charge.currency.toUpperCase()].join("|");
   return createHmac("sha256", secret).update(payload).digest("base64url");
 }
 

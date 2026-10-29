@@ -28,6 +28,10 @@ function stripeDouble() {
         response.end(JSON.stringify({ id, url: `https://checkout.stripe.test/${id}`, expires_at: Math.floor(Date.now() / 1000) + 1800 }));
         return;
       }
+      if (request.method === "GET" && request.url === "/v1/balance") {
+        response.end(JSON.stringify({ object: "balance" }));
+        return;
+      }
       const match = /^\/v1\/checkout\/sessions\/([^/?]+)/.exec(request.url ?? "");
       const session = match ? sessions.get(decodeURIComponent(match[1]!)) : undefined;
       if (request.method === "GET" && session) {
