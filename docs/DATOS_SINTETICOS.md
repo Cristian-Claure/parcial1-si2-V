@@ -93,3 +93,51 @@ Controles: 0 días sin pedidos en los últimos 90 días (empresas activas no FRE
 0 pedidos con `total ≠ Σ ítems − descuento`, 0 filas cruzadas entre empresas. Un pedido de VÉLORA
 (`9f3b46ee…`, entregado sin pago, 30-ago-2026) es dato **previo** al generador y no se modificó.
 El primer mes de cada tienda es más bajo: la base de clientes se va dando de alta con el tiempo.
+
+---
+
+# Historial final para la defensa (Parte B · `scripts/seed-final-history.mjs`)
+
+Mismo principio: **todo por HTTP real** (carrito, pedido, pago, confirmación, entrega/cancelación, POS con sesión de caja, reposición con movimientos `ENTRY`) y la única escritura SQL reescribe **columnas de fecha**. Semilla `20261111`, progreso reanudable en `scripts/.seed-progress/final-20261111.json` (no versionado).
+
+| Tienda | Qué hace el script |
+|---|---|
+| VÉLORA | Retroceso **2024-11-11 → 2025-05-31** anclado al ritmo real del primer mes (≈ 1 pedido/día), 4 %/mes hacia atrás, Black Friday 2024 y Navidad; 70 clientes históricos nuevos. Junio 2025 original (28 pedidos) se completa con pedidos **nuevos** hasta 51 para que la unión no tenga un bache. **Sin días vacíos desde el 2024-11-11.** No se borra ni modifica ningún pedido existente. |
+| Urbano Boutique, Urbano Outlet, Andina Moda | Continúan desde su ritmo real de los últimos 28 días (15–16 meses de historia). |
+| Casa Montalvo, Ímpetu Sport | Retroceso **2026-05-10 → 2026-07-22** (≈ 6 meses al 11-nov); el stock inicial se re-fecha al día anterior al nuevo primer pedido. |
+| Solana | Sus 451 pedidos existentes se **re-fechan** al tramo 12-oct → ayer (desplazamiento por pedido o por sesión de caja aplicado a todas sus fechas: pagos, historial, movimientos, carrito). Cada semana (lunes a domingo) vale un **10 % más** que la anterior; dentro de la semana, la demanda se reparte por fin de semana y promociones (24-oct y 7-nov), y los tickets más altos van más tarde. Luego sigue la misma curva, con más recompra (clientes con compras previas ×3) y ticket creciente. Empresa, sucursales, catálogo, stock, propietaria, encargados y suscripción quedan dados de alta el 12-oct. |
+| Primer Paso (FREE) | Continúa; excluida de la regla de continuidad. |
+
+- **Día en curso**: solo se ejecutan los pedidos cuya hora ya pasó; el resto queda pendiente para la siguiente corrida con `--resume`. Nunca hay pedidos en el futuro.
+- **Huecos**: ≥ 1 pedido diario en los últimos 90 días (VÉLORA desde el 2024-11-11).
+- **Altas coherentes**: empresa, sucursales, almacenes, cajas, categorías, productos, variantes, stock y cuentas ≤ primer pedido.
+- **Tramo final** (lanzar el 9 o 10 de noviembre): `node scripts/seed-final-history.mjs --until 2026-11-11 --resume`.
+- `--dry-run` simula sin escribir; `--only <slug>` limita a una tienda; `--verify` imprime las comprobaciones.
+
+## Verificación (29-oct-2026, `--verify`)
+
+| Comprobación | Resultado |
+|---|---|
+| Días vacíos (últimos 90 días; VÉLORA desde 2024-11-11; FREE excluida) | **0** |
+| Stock negativo o comprometido > físico | **0** |
+| `total ≠ Σ ítems − descuento` | **0** |
+| Pedido de una empresa con producto de otra | **0** |
+| Empresa creada después de su primer pedido / pedidos en el futuro | **0 / 0** |
+| Pagos incoherentes con el estado | **1** — pedido original de VÉLORA del 30-ago-2026 (entregado sin pago), anterior a esta fase; no se modificó por la regla de no tocar pedidos existentes. |
+
+| Tienda | Pedidos | Desde | Viernes–domingo vs lunes–jueves | Top 20 % de productos |
+|---|---|---|---|---|
+| Urbano Boutique | 4.787 | 2025-07-01 | 1,42 | 78 % |
+| VÉLORA | 2.807 | 2024-11-11 | 1,29 | 60 % |
+| Andina Moda | 2.205 | 2025-07-03 | 1,53 | 72 % |
+| Urbano Outlet | 1.496 | 2025-07-01 | 1,32 | 70 % |
+| Ímpetu Sport | 835 | 2026-05-10 | 1,40 | 69 % |
+| Casa Montalvo | 736 | 2026-05-10 | 1,39 | 74 % |
+| Solana | 451 (+ hoy) | 2026-10-12 | 1,21 | 75 % |
+| Primer Paso | 176 | 2026-09-11 | 1,30 | 74 % |
+
+**Solana**: semanas 180 → 197 pedidos (+9,4 %), ticket medio 406 → 514 → 680 Bs, recompra 47 % (36 de 76 clientes con 2 o más compras), 27,8 pedidos/día en los últimos 14 días frente a 7,4 de Ímpetu y 6,1 de Casa Montalvo.
+
+**VÉLORA por mes**: nov-24 19 · dic 48 · ene-25 44 … may 46 · jun 51 · jul 68 · … · ago-26 255. **Limitación honesta**: de enero a mayo de 2025 la curva es casi plana (~1,4 pedidos/día), porque el mínimo de un pedido diario domina sobre el 4 %/mes de una base tan baja.
+
+Segmentos de clientes (todas las tiendas): 588 con 1 compra, 231 con 2–3, 305 con 4–9 y 265 con 10 o más.

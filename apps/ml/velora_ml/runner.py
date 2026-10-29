@@ -148,9 +148,11 @@ def run_models(settings: Settings, company_id: str, runs: dict[str, str]) -> dic
             _mark(connection, run_id, company_id, "RUNNING", started_at=datetime.now(timezone.utc))
             connection.commit()
             try:
-                if model_key in ("SALES_FORECAST", "SALES_ANOMALIES") and series is None:
+                if model_key == "SALES_FORECAST" and series is None:
                     series = data.daily_net_sales(connection, company_id)
-                result = _train(settings, connection, model_key, company, series)
+                # Iteración declarada: las anomalías se buscan en pedidos por día (no en Bs).
+                model_series = data.daily_orders(connection, company_id) if model_key == "SALES_ANOMALIES" else series
+                result = _train(settings, connection, model_key, company, model_series)
                 _write_results(connection, model_key, run_id, company_id, result)
                 artifact = _save_artifact(settings, company_id, model_key, run_id, result.model)
                 data_from = getattr(result, "data_from", None)

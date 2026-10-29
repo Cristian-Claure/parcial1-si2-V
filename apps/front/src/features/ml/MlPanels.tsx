@@ -163,7 +163,7 @@ export function CancelRiskPanel({ data }: { data: MlCancelRisk }) {
             <thead><tr><th>Modelo</th><th className="num">ROC-AUC</th><th className="num">PR-AUC</th><th className="num">F1</th><th className="num">Brier</th></tr></thead>
             <tbody>{compare.filter(([, value]) => value).map(([name, value]) => <tr key={name}><td>{name}</td><td className="num">{number.format(value.roc_auc ?? 0)}</td><td className="num">{number.format(value.pr_auc ?? 0)}</td><td className="num">{number.format(value.f1 ?? 0)}</td><td className="num">{number.format(value.brier ?? 0)}</td></tr>)}</tbody>
           </table>
-          <p className="ml-footnote">Partición temporal: entrena hasta {String(m.split?.train_until ?? "").slice(0, 10)} y prueba desde {String(m.split?.test_from ?? "").slice(0, 10)}. El Brier alto refleja los pesos de clase (probabilidades no calibradas).</p>
+          <p className="ml-footnote">Partición temporal: entrena hasta {String(m.split?.train_until ?? "").slice(0, 10)} y prueba desde {String(m.split?.test_from ?? "").slice(0, 10)}.{m.calibration?.brier_calibrated !== undefined ? ` Probabilidades calibradas (Platt en validación): Brier ${number.format(m.calibration.brier_uncalibrated)} sin calibrar → ${number.format(m.calibration.brier_calibrated)}; el orden (ROC-AUC) no cambia.` : " El Brier alto refleja los pesos de clase (probabilidades no calibradas)."}</p>
         </section>
       </div>
       <div className="ml-grid-2">
@@ -206,6 +206,9 @@ export function AnomaliesPanel({ data }: { data: MlAnomalies }) {
   if (!data.run || data.run.status !== "SUCCEEDED") return <RunState run={data.run} label="Anomalías" />;
   const m = data.run.metrics as Metrics;
   const flagged = data.days.filter((day) => day.isAnomaly);
+  // Iteración de la Parte B: la serie es de pedidos por día (corridas anteriores: venta en Bs).
+  const orders = m.unit === "ORDERS";
+  const value = (amount: number) => (orders ? `${Math.round(amount)} pedidos` : bs(amount));
   return (
     <div className="ml-panel">
       <div className="ml-metrics">
@@ -215,7 +218,7 @@ export function AnomaliesPanel({ data }: { data: MlAnomalies }) {
         <MetricCard label="Umbral" value={`|z| ≥ ${m.threshold}`} hint="z robusto (mediana y MAD)" />
       </div>
       <section className="ml-card">
-        <h3>Venta diaria y días atípicos</h3>
+        <h3>{orders ? "Pedidos por día y días atípicos" : "Venta diaria y días atípicos"}</h3>
         <AnomalyChart days={data.days} />
         <p className="ml-legend"><i className="actual" />Real <i className="predicted" />Esperado <i className="marker up" />Alza <i className="marker down" />Baja</p>
       </section>
@@ -224,7 +227,7 @@ export function AnomaliesPanel({ data }: { data: MlAnomalies }) {
         {flagged.length === 0 ? <p className="ml-footnote">No hay días atípicos con el umbral actual.</p> : (
           <table className="ml-table">
             <thead><tr><th>Día</th><th className="num">Real</th><th className="num">Esperado</th><th className="num">z</th><th>Explicación</th></tr></thead>
-            <tbody>{flagged.map((day) => <tr key={day.day}><td>{day.day}</td><td className="num">{bs(day.actual)}</td><td className="num">{bs(day.expected)}</td><td className="num">{number.format(day.score)}</td><td>{day.explanation ?? "Sin explicación en el calendario"}</td></tr>)}</tbody>
+            <tbody>{flagged.map((day) => <tr key={day.day}><td>{day.day}</td><td className="num">{value(day.actual)}</td><td className="num">{value(day.expected)}</td><td className="num">{number.format(day.score)}</td><td>{day.explanation ?? "Sin explicación en el calendario"}</td></tr>)}</tbody>
           </table>
         )}
       </section>
@@ -235,7 +238,7 @@ export function AnomaliesPanel({ data }: { data: MlAnomalies }) {
           <tbody>{(m.seeded_detail ?? []).map((row: any) => <tr key={row.day}><td>{row.day}</td><td>{row.label}</td><td className="num">{number.format(row.z)}</td><td>{row.detected ? "Sí" : "No"}</td></tr>)}</tbody>
         </table>
       </section>
-      <HowToRead>La línea de color es la venta esperada para ese día de la semana y ese nivel de ventas. Un punto marca un día que se aleja demasiado de lo esperado (|z| ≥ {m.threshold}). Cada uno se explica con el calendario comercial; los que no tienen explicación merecen revisión (quiebre de stock, cierre, error de carga).</HowToRead>
+      <HowToRead>La línea de color es {orders ? "la cantidad de pedidos esperada" : "la venta esperada"} para ese día de la semana y ese nivel de ventas. Un punto marca un día que se aleja demasiado de lo esperado (|z| ≥ {m.threshold}). Cada uno se explica con el calendario comercial; los que no tienen explicación merecen revisión (quiebre de stock, cierre, error de carga).</HowToRead>
       <RunFooter run={data.run} />
     </div>
   );
