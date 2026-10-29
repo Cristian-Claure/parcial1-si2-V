@@ -52,13 +52,16 @@ function TransferInstructions({ settings, payment }: { settings: PlatformBilling
     <dl className="summary-list">
       <dt>Banco</dt><dd>{settings.bankName}</dd>
       <dt>Titular</dt><dd>{settings.accountHolder}</dd>
-      <dt>Cuenta</dt><dd>{settings.accountType} · <span className="mono">{settings.accountNumber}</span></dd>
+      <dt>Cuenta</dt><dd>{settings.accountType && settings.accountType !== "No especificado" ? `${settings.accountType} · ` : ""}<span className="mono">{settings.accountNumber}</span></dd>
       {settings.taxId ? <><dt>NIT/CI</dt><dd>{settings.taxId}</dd></> : null}
       <dt>Monto exacto</dt><dd>{formatMoney(payment.amount, payment.currency)}</dd>
       <dt>Glosa / referencia</dt><dd className="mono">{payment.reference}</dd>
     </dl>
+    {settings.qrImageUrl ? <>
+      <figure className="qr-figure"><img src={`${apiBaseUrl}${settings.qrImageUrl}`} alt={`QR de la cuenta ${settings.bankName}`} width={220} height={220} /></figure>
+      <Notice kind="warning">Este QR no trae monto. Ingresa exactamente {formatMoney(payment.amount, payment.currency)} y escribe la referencia <strong className="mono">{payment.reference}</strong> en la glosa.</Notice>
+    </> : <Notice>Ingresa exactamente {formatMoney(payment.amount, payment.currency)} y escribe la referencia <strong className="mono">{payment.reference}</strong> en la glosa.</Notice>}
     {settings.instructions ? <p className="field-hint">{settings.instructions}</p> : null}
-    {settings.qrImageUrl ? <figure className="qr-figure"><img src={`${apiBaseUrl}${settings.qrImageUrl}`} alt="QR de la cuenta de la plataforma" width={180} height={180} /></figure> : null}
   </div>;
 }
 
