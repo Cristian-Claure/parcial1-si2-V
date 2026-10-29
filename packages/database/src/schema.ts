@@ -5,6 +5,7 @@ import {
 
 import {
   bigint,
+  char,
   boolean,
   check,
   foreignKey,
@@ -14,6 +15,7 @@ import {
   numeric,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   unique,
@@ -4420,13 +4422,16 @@ export type DatabasePaymentMethod =
   | "CASH"
   | "CARD"
   | "WEB"
-  | "QR";
+  | "QR"
+  | "TRANSFER";
 
 export type DatabasePaymentStatus =
   | "PENDING"
+  | "PENDING_REVIEW"
   | "PAID"
   | "FAILED"
   | "CANCELLED"
+  | "EXPIRED"
   | "REFUNDED";
 
 export const orderInventoryAllocations =
@@ -4532,6 +4537,17 @@ export const payments =
             (): AnyPgColumn =>
               subscriptions.id,
           ),
+
+      // V35: plan comprado (pagos de suscripción) y referencia de pago (QR o glosa).
+      planId:
+        uuid("plan_id")
+          .references(
+            (): AnyPgColumn =>
+              plans.id,
+          ),
+
+      paymentReference:
+        varchar("payment_reference", { length: 24 }),
 
       method:
         varchar(
@@ -4772,7 +4788,8 @@ export const payments =
             'CASH',
             'CARD',
             'WEB',
-            'QR'
+            'QR',
+            'TRANSFER'
           )
         `,
       ),
@@ -4783,9 +4800,11 @@ export const payments =
           ${table.status}
           in (
             'PENDING',
+            'PENDING_REVIEW',
             'PAID',
             'FAILED',
             'CANCELLED',
+            'EXPIRED',
             'REFUNDED'
           )
         `,
@@ -4894,9 +4913,11 @@ export const paymentStatusHistory =
           ${table.fromStatus}
           in (
             'PENDING',
+            'PENDING_REVIEW',
             'PAID',
             'FAILED',
             'CANCELLED',
+            'EXPIRED',
             'REFUNDED'
           )
         `,
@@ -4908,9 +4929,11 @@ export const paymentStatusHistory =
           ${table.toStatus}
           in (
             'PENDING',
+            'PENDING_REVIEW',
             'PAID',
             'FAILED',
             'CANCELLED',
+            'EXPIRED',
             'REFUNDED'
           )
         `,
@@ -5139,3 +5162,58 @@ export const reportDefinitions = pgTable("report_definitions", {
 ]);
 
 export type ReportDefinitionRow = typeof reportDefinitions.$inferSelect;
+
+/** V35 · Cargo QR (DEMO firmado o proveedor bancario): solo se guarda el hash del token de un solo uso. */
+export const qrCharges = pgTable("qr_charges", {
+  id: uuid("id").primaryKey(),
+  paymentId: uuid("payment_id").notNull().unique().references(() => payments.id, { onDelete: "cascade" }),
+  provider: varchar("provider", { length: 12 }).$type<"DEMO" | "OPENBCB" | "BCP">().notNull(),
+  reference: varchar("reference", { length: 24 }).notNull().unique(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull(),
+  tokenHash: char("token_hash", { length: 64 }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true, mode: "date" }),
+  providerChargeId: varchar("provider_charge_id", { length: 120 }),
+  pollAttempts: integer("poll_attempts").notNull().default(0),
+  nextPollAt: timestamp("next_poll_at", { withTimezone: true, mode: "date" }),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
+});
+
+export type QrChargeRow = typeof qrCharges.$inferSelect;
+
+/** V35 · Datos de cobro por transferencia de la plataforma (fila única id = 1). */
+export const platformBillingSettings = pgTable("platform_billing_settings", {
+  id: smallint("id").primaryKey().default(1),
+  bankName: varchar("bank_name", { length: 120 }).notNull(),
+  accountHolder: varchar("account_holder", { length: 160 }).notNull(),
+  accountType: varchar("account_type", { length: 40 }).notNull(),
+  accountNumber: varchar("account_number", { length: 40 }).notNull(),
+  taxId: varchar("tax_id", { length: 30 }),
+  instructions: varchar("instructions", { length: 1000 }),
+  qrStorageKey: varchar("qr_storage_key", { length: 120 }),
+  isSample: boolean("is_sample").notNull().default(true),
+  updatedBy: uuid("updated_by").references(() => appUsers.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull(),
+});
+
+export type PlatformBillingSettingsRow = typeof platformBillingSettings.$inferSelect;
+
+/** V35 · Comprobantes de transferencia de pagos de plan (archivo privado). */
+export const paymentTransferProofs = pgTable("payment_transfer_proofs", {
+  id: uuid("id").primaryKey(),
+  paymentId: uuid("payment_id").notNull().references(() => payments.id, { onDelete: "cascade" }),
+  storageKey: varchar("storage_key", { length: 120 }).notNull().unique(),
+  contentType: varchar("content_type", { length: 40 }).$type<"image/png" | "image/jpeg" | "image/webp" | "application/pdf">().notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  operationNumber: varchar("operation_number", { length: 60 }).notNull(),
+  submittedBy: uuid("submitted_by").notNull().references(() => appUsers.id),
+  submittedAt: timestamp("submitted_at", { withTimezone: true, mode: "date" }).notNull(),
+  decision: varchar("decision", { length: 10 }).$type<"APPROVED" | "REJECTED">(),
+  reviewedBy: uuid("reviewed_by").references(() => appUsers.id),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true, mode: "date" }),
+  rejectionReason: varchar("rejection_reason", { length: 500 }),
+}, (table) => [index("idx_transfer_proofs_payment").on(table.paymentId, table.submittedAt)]);
+
+export type PaymentTransferProofRow = typeof paymentTransferProofs.$inferSelect;

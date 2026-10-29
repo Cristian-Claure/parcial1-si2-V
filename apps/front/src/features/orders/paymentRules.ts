@@ -4,5 +4,5 @@ export function paymentMethodsForOrder(order: Pick<OrderResponse, "fulfillmentTy
   return order.fulfillmentType === "DELIVERY" ? ["COD", "WEB", "CARD", "QR"] : ["CASH", "WEB", "CARD", "QR"];
 }
 export function paymentMethodLabel(method: PaymentMethod): string {
-  return ({ COD: "Contra entrega", CASH: "Efectivo en sucursal", CARD: "Tarjeta", WEB: "Stripe Checkout", QR: "QR" } as Record<PaymentMethod, string>)[method];
+  return ({ COD: "Contra entrega", CASH: "Efectivo en sucursal", CARD: "Tarjeta", WEB: "Stripe Checkout", QR: "QR", TRANSFER: "Transferencia" } satisfies Record<PaymentMethod, string>)[method];
 }

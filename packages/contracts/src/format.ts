@@ -58,9 +58,11 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
 
 export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   PENDING: "Pendiente",
+  PENDING_REVIEW: "En revisión",
   PAID: "Pagado",
   FAILED: "Fallido",
   CANCELLED: "Cancelado",
+  EXPIRED: "Vencido",
   REFUNDED: "Reembolsado",
 };
 
@@ -70,6 +72,7 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   CARD: "Tarjeta",
   WEB: "Pago en línea",
   QR: "QR",
+  TRANSFER: "Transferencia",
   DEMO: "Demo",
 };
 

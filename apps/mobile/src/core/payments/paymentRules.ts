@@ -9,11 +9,13 @@ export function paymentMethodsForOrder(
 }
 
 export function paymentMethodLabel(method: PaymentMethod): string {
-  return {
+  const labels: Record<PaymentMethod, string> = {
     COD: "Contra entrega",
     CASH: "Efectivo en sucursal",
     CARD: "Tarjeta",
     WEB: "Stripe Checkout",
     QR: "QR",
-  }[method];
+    TRANSFER: "Transferencia",
+  };
+  return labels[method];
 }
