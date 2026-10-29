@@ -22,7 +22,7 @@ interface CompanyState {
   companies: CompanyResponse[]; storefrontCompanyId: string | null; adminCompanyId: string | null;
   managerCompany: CompanyResponse | null; loading: boolean;
   /** Marca resuelta por /t/:slug (la tienda puede no estar en el listado cargado). */
-  tenantBrand: CompanyBrand | null; enterTenant: (brand: CompanyBrand) => void;
+  tenantBrand: CompanyBrand | null; enterTenant: (brand: CompanyBrand) => void; leaveTenant: () => void;
   initializePublic: () => Promise<void>; loadAdmin: () => Promise<void>; loadManager: () => Promise<void>;
   selectStorefront: (id: string) => void; selectAdmin: (id: string) => void;
   /** Logout: olvida empresa del panel y tienda activa (el tema vuelve a Trama). */
@@ -54,6 +54,8 @@ export const useCompanyStore = create<CompanyState>((set, get) => ({
     try { const company = await veloraApi.managerCompany(); localStorage.setItem(MANAGER_KEY, JSON.stringify(company)); set({ managerCompany: company }); }
     catch { set({ managerCompany: storedManagerCompany() }); }
   },
+  /** Al abrir otra /t/:slug: se suelta la marca anterior (en memoria) mientras carga la nueva. */
+  leaveTenant: () => set({ storefrontCompanyId: null, tenantBrand: null }),
   selectStorefront: (id) => { localStorage.setItem(STOREFRONT_KEY, id); set({ storefrontCompanyId: id }); },
   selectAdmin: (id) => { localStorage.setItem(ADMIN_KEY, id); set({ adminCompanyId: id }); },
   reset: () => {

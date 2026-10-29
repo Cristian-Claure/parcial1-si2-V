@@ -4,10 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { validateBrandPalette } from "@velora/contracts";
 import { veloraApi } from "../../core/api/veloraApi";
 import { useCompanyStore } from "../../core/company/companyStore";
-import { Notice } from "../../shared/feedback/Notice";
 import { PlanErrorNotice } from "./PlanErrorNotice";
 import { SlugHint } from "./SlugHint";
 import { slugify, useSlugAvailability } from "./slugTools";
+import { toast } from "../../shared/feedback/toastStore";
 
 /** "Crear empresa" y "Crear sucursal" del propietario; el backend aplica los límites del plan. */
 export function CompaniesPage() {
@@ -15,7 +15,7 @@ export function CompaniesPage() {
   const companies = useCompanyStore((state) => state.companies); const adminCompanyId = useCompanyStore((state) => state.adminCompanyId);
   const loadAdmin = useCompanyStore((state) => state.loadAdmin); const selectAdmin = useCompanyStore((state) => state.selectAdmin);
   const [draft, setDraft] = useState({ name: "", slug: "", tagline: "", accentColor: DEFAULT_BRAND_PALETTE.accent as string });
-  const [message, setMessage] = useState<string | null>(null);
+  const setMessage = (text: string | null) => { if (text) toast(text); }; // P3: aviso breve que se cierra solo
   const availability = useSlugAvailability(draft.slug);
   const issues = validateBrandPalette({ accent: draft.accentColor });
   const stores = useQuery({ queryKey: ["admin-stores", adminCompanyId], queryFn: () => veloraApi.adminStores(adminCompanyId!), enabled: Boolean(adminCompanyId) });
@@ -36,7 +36,7 @@ export function CompaniesPage() {
 
   return <section className="page">
     <div className="page-heading"><span className="eyebrow">MIS TIENDAS</span><h1>Tiendas y sucursales</h1><p>Administra varias tiendas desde una misma cuenta. Cada tienda nace con su sucursal principal, almacén por defecto y categorías base de moda.</p></div>
-    {message ? <Notice kind="success">{message}</Notice> : null}
+    
     <div className="two-columns">
       <form className="panel" onSubmit={(event) => { event.preventDefault(); setMessage(null); createCompany.mutate(); }}>
         <h2>Nueva tienda</h2>

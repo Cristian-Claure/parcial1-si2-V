@@ -1,1 +1,1 @@
-﻿export { Skeleton } from "./Skeleton";
+export { PageSkeleton, Skeleton } from "./Skeleton";

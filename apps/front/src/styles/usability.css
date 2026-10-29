@@ -76,3 +76,38 @@ input[aria-invalid="true"] { border-color: var(--error); }
   .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 90; background: rgba(var(--shadow-rgb), .45); }
 }
 @media (prefers-reduced-motion: reduce) { .app-shell .sidebar.sidebar { transition: none; } }
+
+/* P3 · avisos breves y esqueletos de página */
+.toaster { position: fixed; right: 16px; bottom: 16px; z-index: 80; display: grid; gap: .5rem; width: min(380px, calc(100vw - 32px)); }
+.toast { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; padding: .8rem 1rem; border-radius: var(--radius-md); background: var(--paper-raised); color: var(--ink); border: 1px solid var(--hairline); border-left: 4px solid var(--accent); box-shadow: var(--shadow-md); animation: toastIn .18s ease-out; }
+.toast-success { border-left-color: var(--success); }
+.toast-error { border-left-color: var(--error); }
+.toast-close { border: 0; background: transparent; color: var(--ink-soft); font-size: 1.2rem; line-height: 1; cursor: pointer; padding: 0 .2rem; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+.skeleton-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+
+/* P3 · tablas de detalle de reportes como tarjetas en pantallas angostas */
+@media (max-width: 640px) {
+  .report-table { min-width: 0; }
+  .report-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .report-table tr { display: grid; gap: .25rem; padding: .75rem 0; border-bottom: 1px solid var(--hairline); }
+  .report-table td { display: flex; justify-content: space-between; gap: 1rem; padding: .15rem 0; border: 0; text-align: right; }
+  .report-table td::before { content: attr(data-label); color: var(--ink-soft); font-size: .78rem; text-align: left; }
+  .report-table td[colspan] { justify-content: flex-start; text-align: left; }
+  .report-table td[colspan]::before { content: none; }
+}
+
+/* P3 · selector de empresa con logo (barra lateral) */
+.company-switcher { position: relative; display: grid; gap: .4rem; }
+.switcher-label { color: var(--sidebar-muted); font-size: .82rem; }
+.switcher-button { display: flex; align-items: center; gap: .6rem; width: 100%; padding: .55rem .7rem; border-radius: var(--radius-md); border: 1px solid var(--sidebar-line); background: var(--sidebar-bg-2); color: var(--sidebar-ink); font: inherit; text-align: left; cursor: pointer; }
+.switcher-button:focus-visible, .switcher-list:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.switcher-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+.switcher-caret { color: var(--sidebar-muted); }
+.switcher-logo { width: 26px; height: 26px; flex: none; border-radius: var(--radius-sm); object-fit: cover; background: var(--paper); }
+.switcher-monogram { display: inline-grid; place-items: center; background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: .8rem; }
+.switcher-list { position: absolute; z-index: 30; top: calc(100% + .3rem); left: 0; right: 0; margin: 0; padding: .3rem; list-style: none; border-radius: var(--radius-md); background: var(--paper-raised); color: var(--ink); border: 1px solid var(--hairline); box-shadow: var(--shadow-lg); max-height: 320px; overflow-y: auto; }
+.switcher-option { display: flex; align-items: center; gap: .6rem; padding: .5rem .55rem; border-radius: var(--radius-sm); cursor: pointer; }
+.switcher-option.active { background: var(--accent-soft); }
+.switcher-option.selected { font-weight: 750; }

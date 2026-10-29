@@ -81,6 +81,36 @@ def best_threshold(y: np.ndarray, probability: np.ndarray) -> float:
     return float(candidates[int(np.argmax(scores))]) if len(candidates) else 0.5
 
 
+class PlattCalibrated:
+    """Iteración declarada (Parte B): calibración de Platt (sigmoide) ajustada en la VALIDACIÓN temporal.
+
+    Los pesos de clase "balanced" inflan las probabilidades (Brier alto). La sigmoide es monótona, así que
+    no cambia el orden (ROC-AUC y PR-AUC iguales): solo vuelve interpretables las probabilidades.
+    """
+
+    def __init__(self, base, calibrator: LogisticRegression):
+        self.base = base
+        self.calibrator = calibrator
+        self.classes_ = getattr(base, "classes_", np.array([0, 1]))
+
+    @staticmethod
+    def _logit(probability: np.ndarray) -> np.ndarray:
+        clipped = np.clip(np.asarray(probability, dtype=float), 1e-6, 1 - 1e-6)
+        return np.log(clipped / (1 - clipped)).reshape(-1, 1)
+
+    @classmethod
+    def fit(cls, base, raw_validation: np.ndarray, y_validation: np.ndarray) -> "PlattCalibrated":
+        calibrator = LogisticRegression(C=1e6, max_iter=1000).fit(cls._logit(raw_validation), y_validation)
+        return cls(base, calibrator)
+
+    def map(self, probability: np.ndarray) -> np.ndarray:
+        return self.calibrator.predict_proba(self._logit(probability))[:, 1]
+
+    def predict_proba(self, X) -> np.ndarray:
+        calibrated = self.map(self.base.predict_proba(X)[:, 1])
+        return np.column_stack([1 - calibrated, calibrated])
+
+
 @dataclass
 class CancelRiskResult:
     metrics: dict
@@ -119,12 +149,23 @@ def train_cancel_risk(dataset: pd.DataFrame) -> CancelRiskResult:
     best_hgb = max(range(len(GRID)), key=lambda index: (scores[index], -index))
     best_logistic = max(range(len(GRID), len(candidates)), key=lambda index: (scores[index], -index))
 
-    def finalize(index: int) -> tuple[Pipeline, float, dict]:
+    calibration: dict = {}
+
+    def finalize(index: int) -> tuple[object, float, dict]:
         kind, params = candidates[index]
         validation_model = make_model(kind, params).fit(X_fit, y_fit)
-        threshold = best_threshold(y_val, validation_model.predict_proba(X_val)[:, 1])
+        raw_validation = validation_model.predict_proba(X_val)[:, 1]
         model = make_model(kind, params).fit(X_train, y_train)
-        return model, threshold, classification_metrics(y_test, model.predict_proba(X_test)[:, 1], threshold)
+        raw_test = model.predict_proba(X_test)[:, 1]
+        if y_val.sum() == 0 or y_val.sum() == len(y_val):
+            threshold = best_threshold(y_val, raw_validation)
+            return model, threshold, classification_metrics(y_test, raw_test, threshold)
+        # Calibración en validación; el umbral (máx. F1 en validación) se elige ya en escala calibrada.
+        calibrated = PlattCalibrated.fit(model, raw_validation, y_val)
+        threshold = best_threshold(y_val, calibrated.map(raw_validation))
+        metrics = classification_metrics(y_test, calibrated.map(raw_test), threshold)
+        calibration[index] = {"brier_uncalibrated": round(float(brier_score_loss(y_test, raw_test)), 4), "brier_calibrated": metrics["brier"]}
+        return calibrated, threshold, metrics
 
     hgb_model, hgb_threshold, hgb_test = finalize(best_hgb)
     logistic_model, logistic_threshold, logistic_test = finalize(best_logistic)
@@ -135,7 +176,8 @@ def train_cancel_risk(dataset: pd.DataFrame) -> CancelRiskResult:
     # El candidato (gradient boosting) se publica si no es peor que la logística en PR-AUC de validación.
     use_hgb = scores[best_hgb] >= scores[best_logistic]
     model, threshold, test = (hgb_model, hgb_threshold, hgb_test) if use_hgb else (logistic_model, logistic_threshold, logistic_test)
-    importance = permutation_importance(model, X_test, y_test, scoring="roc_auc", n_repeats=5, random_state=RANDOM_STATE)
+    # La sigmoide no cambia el orden: la importancia se mide sobre el modelo base.
+    importance = permutation_importance(getattr(model, "base", model), X_test, y_test, scoring="roc_auc", n_repeats=5, random_state=RANDOM_STATE)
     importances = sorted(({"feature": name, "importance": round(float(value), 4)} for name, value in zip(FEATURES, importance.importances_mean)), key=lambda item: -item["importance"])
 
     # Pedidos abiertos (RESERVED): se puntúan con el modelo elegido.
@@ -162,8 +204,9 @@ def train_cancel_risk(dataset: pd.DataFrame) -> CancelRiskResult:
             "cancel_rate_by_fulfillment": rates,
             "open_orders": int(len(open_orders)),
             "grid_size": len(candidates),
+            "calibration": {"method": "Platt (sigmoide) ajustada en validación temporal", **calibration.get(best_hgb if use_hgb else best_logistic, {})},
         },
-        params={"kind": selected_kind, **selected_params, "threshold": threshold, "class_weight": "balanced"},
+        params={"kind": selected_kind, **selected_params, "threshold": threshold, "class_weight": "balanced", "calibration": "platt"},
         scored=scored, rows_used=len(labeled),
         data_from=pd.Timestamp(labeled["created_at"].iloc[0]), data_to=pd.Timestamp(labeled["created_at"].iloc[-1]), model=model,
     )

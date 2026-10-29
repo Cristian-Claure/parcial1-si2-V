@@ -67,6 +67,11 @@ import {
   EmptyState,
   Notice,
 } from "../../shared/feedback/Notice";
+import { useUrlState } from "../../shared/hooks/useUrlState";
+import { Pagination } from "../../shared/ui/Pagination/Pagination";
+import { paginate } from "../../shared/ui/Pagination/paginate";
+
+const POS_PAGE_SIZE = 24;
 
 interface PosCatalogItem {
   variant: VariantResponse;
@@ -146,8 +151,10 @@ export function PosPage() {
   const [cart, setCart] =
     useState<PosCartLine[]>([]);
 
-  const [search, setSearch] =
-    useState("");
+  // P3 · UX_AUDIT: búsqueda y página del catálogo POS en la URL (?q=&pagina=).
+  const posFilters = useUrlState(["q"] as const);
+  const search = posFilters.values.q;
+  const setSearch = (value: string) => posFilters.set({ q: value });
 
   const [paymentMethod, setPaymentMethod] =
     useState<PosPaymentMethod>(
@@ -1500,7 +1507,7 @@ export function PosPage() {
                 </EmptyState>
               ) : (
                 <div className="pos-product-grid">
-                  {catalog.map(
+                  {paginate(catalog, posFilters.page, POS_PAGE_SIZE).items.map(
                     (item) => (
                       <button
                         type="button"
@@ -1524,6 +1531,7 @@ export function PosPage() {
                   )}
                 </div>
               )}
+              <Pagination page={paginate(catalog, posFilters.page, POS_PAGE_SIZE).page} pageCount={paginate(catalog, posFilters.page, POS_PAGE_SIZE).pageCount} total={catalog.length} onPage={posFilters.setPage} label="variantes" />
             </div>
 
             <div className="panel pos-cart-panel">

@@ -1,4 +1,7 @@
-"""U2 · Anomalías en la venta neta diaria (no supervisado).
+"""U2 · Anomalías en los pedidos por día (no supervisado).
+
+Iteración declarada (Parte B): la serie pasó de venta neta en Bs a NÚMERO DE PEDIDOS por día, porque los
+efectos del calendario se sembraron sobre la cantidad de pedidos y el ticket (100 a 1.000 Bs) los diluía.
 
 1) Demanda "normal" en escala raíz cuadrada: regresión robusta (Huber) con día de la semana y nivel local
    (mediana móvil centrada de 29 días), SIN fechas especiales ni quincena, para que esos efectos aparezcan
@@ -37,7 +40,7 @@ class AnomaliesResult:
     model: object = field(repr=False)
 
 
-def train_anomalies(series: pd.Series, threshold: float = THRESHOLD) -> AnomaliesResult:
+def train_anomalies(series: pd.Series, threshold: float = THRESHOLD, unit: str = "ORDERS") -> AnomaliesResult:
     series = series.astype(float).sort_index()
     if len(series) < MIN_DAYS or (series > 0).sum() < MIN_DAYS * 0.6:
         raise InsufficientData(f"Se necesitan al menos {MIN_DAYS} días con ventas para detectar anomalías (hay {(series > 0).sum()}).")
@@ -78,7 +81,9 @@ def train_anomalies(series: pd.Series, threshold: float = THRESHOLD) -> Anomalie
             "explained": int(len(flagged) - len(unexplained)),
             "unexplained_false_positives": int(len(unexplained)),
             "mad": round(mad, 4),
+            "unit": unit,
         },
-        params={"model": "Huber (raíz cuadrada) con día de semana y nivel local (mediana móvil 29 días)", "z": "robusto (MAD)", "threshold": threshold},
+        params={"model": "Huber (raíz cuadrada) con día de semana y nivel local (mediana móvil 29 días)", "z": "robusto (MAD)", "threshold": threshold,
+                "series": "pedidos por día" if unit == "ORDERS" else "venta neta diaria (Bs)"},
         days=days, rows_used=len(series), data_from=series.index[0], data_to=series.index[-1], model=model,
     )

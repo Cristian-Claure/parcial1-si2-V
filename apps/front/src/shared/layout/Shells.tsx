@@ -11,6 +11,7 @@ import { useOperationalBrand, useStorefrontBrand } from "../../core/company/useB
 import { SyncIndicator } from "../../features/sync/SyncIndicator";
 import { postLoginPath } from "../../core/auth/postLoginPath";
 import { PLATFORM_NAME, PLATFORM_TAGLINE, PlatformBrand, PlatformTheme } from "../platform/PlatformBrand";
+import { CompanySwitcher } from "./CompanySwitcher";
 
 const customerNav = [
   ["Catálogo", "/catalogo"], ["Probador", "/probador"], ["Favoritos", "/favoritos"], ["Mi bolsa", "/bolsa"], ["Mis pedidos", "/mis-pedidos"], ["Mi cuenta", "/mi-cuenta"],
@@ -139,7 +140,7 @@ export function OperationsShell({ role }: { role: "ADMIN" | "STORE_MANAGER" }) {
     <Link to={role === "ADMIN" ? "/admin" : "/sucursal"} aria-label="Inicio del panel"><Brand variant="mark" brand={brand} tone="dark" /></Link>
     <div className="sidebar-user"><span>{role === "ADMIN" ? "Propietario" : "Encargado de sucursal"}</span><strong>{user ? `${user.firstName} ${user.lastName}` : ""}</strong>{user?.storeName ? <small>{user.storeName}</small> : null}</div>
     {role === "ADMIN"
-      ? <label className="sidebar-select">Empresa<select value={adminCompanyId ?? ""} onChange={(event) => switchCompany(event.target.value)}><option value="" disabled>Elige una empresa</option>{companies.map((company) => <option key={company.id} value={company.id}>{company.brand?.name ?? company.displayName ?? company.name}</option>)}</select>{manyCompanies ? <Link className="switch-company" to={chooseCompanyPath(location.pathname)}>Cambiar de empresa</Link> : null}</label>
+      ? <div className="sidebar-select"><CompanySwitcher companies={companies} value={adminCompanyId} onChange={switchCompany} />{manyCompanies ? <Link className="switch-company" to={chooseCompanyPath(location.pathname)}>Cambiar de empresa</Link> : null}</div>
       : <div className="sidebar-company">{managerCompany?.brand?.name ?? managerCompany?.name ?? "Empresa de la sucursal"}</div>}
     <SyncIndicator centerPath={role === "ADMIN" ? "/admin/sincronizacion" : "/sucursal/sincronizacion"} />
     <nav aria-label="Panel"><NavItems items={items} locked={locked} /></nav>

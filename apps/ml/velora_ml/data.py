@@ -92,6 +92,27 @@ def daily_net_sales(connection: psycopg.Connection, company_id: str) -> pd.Serie
     return series
 
 
+DAILY_ORDERS_SQL = f"""
+select (o.created_at at time zone '{BUSINESS_TZ}')::date as day, count(*)::float8 as orders
+from {_COMPANY_ORDERS} where s.company_id = %(company_id)s group by 1 order by 1
+"""
+
+
+def daily_orders(connection: psycopg.Connection, company_id: str) -> pd.Series:
+    """Pedidos creados por día (incluye cancelados: la demanda existió), hasta AYER y con ceros explícitos."""
+    bounds = frame(connection, FIRST_ORDER_SQL, {"company_id": company_id})
+    if bounds.empty or pd.isna(bounds.loc[0, "first_day"]):
+        return pd.Series(dtype=float)
+    first, today = pd.Timestamp(bounds.loc[0, "first_day"]), pd.Timestamp(bounds.loc[0, "today"])
+    raw = frame(connection, DAILY_ORDERS_SQL, {"company_id": company_id})
+    index = pd.date_range(first, today - pd.Timedelta(days=1), freq="D")
+    series = pd.Series(0.0, index=index, name="orders")
+    if not raw.empty:
+        values = raw.assign(day=pd.to_datetime(raw["day"])).set_index("day")["orders"].astype(float)
+        series.loc[values.index.intersection(index)] = values.loc[values.index.intersection(index)]
+    return series
+
+
 def cancel_dataset(connection: psycopg.Connection, company_id: str) -> pd.DataFrame:
     return frame(connection, CANCEL_DATASET_SQL, {"company_id": company_id})
 

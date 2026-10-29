@@ -170,3 +170,26 @@ En U marca 8 días atípicos, 3 con explicación del calendario y 5 sin ella (1 
 - Cada empresa entrena en unos **20–30 s** y unos cientos de MB de RAM (joblib limitado a 2 núcleos). Se ejecuta un entrenamiento a la vez.
 - Se conservan las **últimas 5 corridas** por modelo y empresa; los artefactos `joblib` quedan en `apps/ml/artifacts/` (no versionado).
 - Pruebas: **pytest 15** (sin fuga, particiones temporales, métricas, k determinista, frontera de escritura y rol de BD) y backend (plan, A/B, ciclo con un doble, 409 y servicio caído).
+
+---
+
+## Parte B · reentrenamiento con los datos finales e iteración declarada (29-oct-2026)
+
+Se reentrenaron las tiendas MAX (VÉLORA, Urbano Boutique, Urbano Outlet, Casa Montalvo, Ímpetu Sport) con `pnpm ml:train -- --company <slug>`. Antes de cambiar nada, el riesgo de cancelación seguía débil (ROC-AUC 0,50–0,62) y las anomalías detectaban 0–2 fechas sembradas. Se aplicó **una sola iteración**, declarada aquí, con dos cambios y sin tocar umbrales mirando las fechas sembradas:
+
+1. **S2 · calibración de probabilidades.** Platt (sigmoide sobre el logit) ajustada en la **validación temporal**; el umbral de F1 se elige ya en escala calibrada. Es monótona: ROC-AUC y PR-AUC no cambian, solo vuelve interpretables las probabilidades.
+2. **U2 · anomalías sobre pedidos por día** (antes, venta neta en Bs). Los efectos del calendario se sembraron sobre la cantidad de pedidos; el ticket (100 a 1.000 Bs) los diluía.
+
+| Tienda | ROC-AUC (sin cambio) | Brier sin calibrar → calibrado | Anomalías antes (fechas detectadas · sin explicación) | Después |
+|---|---|---|---|---|
+| Urbano Boutique | 0,622 | 0,248 → **0,109** | 2/5 · 4 | **4/5 · 1** |
+| Urbano Outlet | 0,547 | 0,147 → **0,056** | 0/5 · 6 | 0/5 · 13 |
+| VÉLORA | 0,586 | 0,153 → **0,123** | 0/10 · 6 | 0/10 · 12 |
+| Casa Montalvo | 0,509 | 0,221 → **0,124** | 0/1 · 5 | 0/1 · 1 |
+| Ímpetu Sport | 0,501 | 0,178 → **0,111** | 0/1 · 0 | 0/1 · 2 |
+
+**Lectura honesta.**
+- La calibración cumple su objetivo en las cinco tiendas (Brier entre 20 % y 62 % menor). La capacidad de ordenar no mejora: la regla sembrada es débil y el techo del AUC es bajo. Montalvo e Ímpetu tienen pocos cancelados en la prueba y su AUC (≈ 0,50) no supera al azar.
+- Las anomalías por pedidos mejoran mucho donde hay volumen (Urbano Boutique: 4 de 5 fechas fuertes y un solo falso positivo). En tiendas con 2–4 pedidos diarios (VÉLORA en 2024–2025, Outlet), la serie de conteos es discreta y el z robusto marca más días sin explicación. No se ajustó el umbral para ocultarlo.
+- Pronóstico: Casa Montalvo e Ímpetu siguen sin pronóstico (172 días < 300 mínimos): es una regla del modelo, no un error.
+- El servicio ML en 127.0.0.1:8090 se inició antes del cambio: para que "Reentrenar" desde la web use el código nuevo hay que reiniciarlo (`pnpm dev:ml`). Los resultados mostrados ya son los de esta iteración (entrenados por CLI).

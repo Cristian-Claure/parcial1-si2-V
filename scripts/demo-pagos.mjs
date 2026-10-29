@@ -173,6 +173,12 @@ async function main() {
     check("sesión de Stripe Checkout (modo test) con monto del servidor", /^https:\/\/checkout\.stripe\.com\//.test(session.checkoutUrl ?? ""), "se cancela sin pagar");
     const cancelled = await ok("POST", `/api/admin/plan/payments/${session.payment.id}/cancel`, { token: owner.token });
     check("intento cancelado sin cambiar el plan", cancelled.payment.status === "CANCELLED");
+    // Pedido: sesión de Checkout real (modo test) sin completar el pago; luego se cancela el intento.
+    const stripeOrder = await newOrder(customer, owner.companyId, shop);
+    const orderSession = await ok("POST", `/api/customer/orders/${stripeOrder.id}/payments/stripe-checkout`, { token: customer, body: {} });
+    check("sesión de Stripe Checkout para un pedido (sin pagar)", /^https:\/\/checkout\.stripe\.com\//.test(orderSession.checkoutUrl ?? ""));
+    await api("POST", `/api/customer/payments/${orderSession.payment.id}/cancel`, { token: customer, body: { reason: "Demo: sesión sin pagar." } });
+    await api("POST", `/api/customer/orders/${stripeOrder.id}/cancel`, { token: customer });
   } else {
     check("sin clave válida: Stripe aparece deshabilitado con aviso", /no configurada/i.test(stripe.reason ?? ""));
     check("crear un pago Stripe responde 503", (await api("POST", "/api/admin/plan/payments", { token: owner.token, body: { planCode: target, method: "STRIPE" } })).status === 503);

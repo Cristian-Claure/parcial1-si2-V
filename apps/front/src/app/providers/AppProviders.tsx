@@ -1,6 +1,7 @@
 import { useEffect, type PropsWithChildren } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
+import { Toaster } from "../../shared/feedback/Toaster";
 import { useAuthStore } from "../../core/auth/authStore";
 import { useCompanyStore } from "../../core/company/companyStore";
 import { syncOfflineOrders } from "../../core/offline/syncOfflineOrders";
@@ -41,5 +42,5 @@ function Bootstrap({ children }: PropsWithChildren) {
 }
 
 export function AppProviders({ children }: PropsWithChildren) {
-  return <BrowserRouter><QueryClientProvider client={queryClient}><Bootstrap>{children}</Bootstrap></QueryClientProvider></BrowserRouter>;
+  return <BrowserRouter><QueryClientProvider client={queryClient}><Bootstrap>{children}<Toaster /></Bootstrap></QueryClientProvider></BrowserRouter>;
 }

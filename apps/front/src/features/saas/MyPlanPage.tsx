@@ -5,10 +5,11 @@ import type { AdminPlanResponse, Plan } from "@velora/contracts";
 import { ApiClientError } from "../../core/api/apiClient";
 import { veloraApi } from "../../core/api/veloraApi";
 import { Notice } from "../../shared/feedback/Notice";
-import { PageLoader } from "../../shared/ui/PageLoader";
 import { limitLabel, planHighlights, priceLabel } from "./planCopy";
 import { PlanErrorNotice } from "./PlanErrorNotice";
 import { PlanPaymentFlow, PlanPaymentHistory, PlanPaymentResult } from "./PlanPayments";
+import { PageSkeleton } from "../../shared/ui/Skeleton";
+import { toast } from "../../shared/feedback/toastStore";
 
 const STATUS_LABEL = { TRIAL: "PRUEBA", ACTIVE: "ACTIVA", PAST_DUE: "VENCIDA", CANCELLED: "CANCELADA" } as const;
 
@@ -30,7 +31,7 @@ export function MyPlanPage() {
   const [search, setSearch] = useSearchParams();
   // Retorno de Stripe (?pago=<id>) o "Continuar" desde el historial: muestra el resultado del pago.
   const [activePayment, setActivePayment] = useState<string | null>(() => search.get("pago"));
-  const [done, setDone] = useState<string | null>(null);
+  const setDone = (text: string | null) => { if (text) toast(text); }; // P3: aviso breve
   const closePayment = () => { setActivePayment(null); if (search.has("pago")) { search.delete("pago"); search.delete("stripe"); search.delete("session_id"); setSearch(search, { replace: true }); } };
   // Solo los planes gratuitos se cambian sin pago; los pagos van por PlanPaymentFlow (el plan cambia al confirmarse).
   const change = useMutation({
@@ -38,7 +39,7 @@ export function MyPlanPage() {
     onSuccess: async (result: AdminPlanResponse) => { setDone(`Tu plan ahora es ${result.effectivePlan.name}.`); setTarget(null); client.setQueryData(["admin-plan"], result); await client.invalidateQueries({ queryKey: ["admin-reports"] }); },
   });
 
-  if (summary.isLoading || plans.isLoading) return <PageLoader />;
+  if (summary.isLoading || plans.isLoading) return <PageSkeleton />;
   if (!summary.data) return <section className="page"><Notice kind="error">No se pudo cargar tu plan.</Notice></section>;
   const { effectivePlan, subscription, restricted, usage } = summary.data;
   const excess = change.error instanceof ApiClientError && change.error.code === "PLAN_DOWNGRADE_EXCEEDS" ? (change.error.details.excess as { resource: string; limit: number; used: number; companyId?: string }[] | undefined) ?? [] : [];
@@ -48,7 +49,6 @@ export function MyPlanPage() {
   return <section className="page">
     <div className="page-heading row"><div><span className="eyebrow">MI PLAN</span><h1>{effectivePlan.name}</h1><p>{effectivePlan.description}</p></div>{subscription ? <span className={subscription.status === "PAST_DUE" || subscription.status === "CANCELLED" ? "plan-status warn" : "plan-status"}>{STATUS_LABEL[subscription.status]}</span> : null}</div>
     {welcome ? <Notice kind="success">¡Listo! Tu tienda {welcome} fue creada con su sucursal principal, almacén y categorías base.</Notice> : null}
-    {done ? <Notice kind="success">{done}</Notice> : null}
     {restricted ? <Notice kind="error">Tu suscripción {subscription?.planCode} no está vigente: aplican los límites de {effectivePlan.name} y no puedes crear nuevos recursos. Nada de lo existente se borra ni se oculta. Renueva o cambia de plan para continuar.</Notice> : null}
     <div className="two-columns">
       <div className="panel"><h2>Suscripción</h2><dl className="summary-list">

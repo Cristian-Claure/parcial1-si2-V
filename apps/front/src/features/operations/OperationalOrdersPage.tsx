@@ -10,13 +10,14 @@ import { Notice } from "../../shared/feedback/Notice";
 import { useUrlState } from "../../shared/hooks/useUrlState";
 import { Pagination } from "../../shared/ui/Pagination/Pagination";
 import { paginate } from "../../shared/ui/Pagination/paginate";
+import { toast } from "../../shared/feedback/toastStore";
 
 const PAGE_SIZE = 20;
 const PAYMENT_FILTERS = ["PENDING", "PAID", "FAILED", "CANCELLED", "REFUNDED"] as const;
 const ORDER_FILTERS = ["RESERVED", "FULFILLED", "CANCELLED"] as const;
 
 export function OperationalOrdersPage() {
-  const user = useAuthStore((state) => state.user)!; const companyId = useOperationalCompanyId(); const client = useQueryClient(); const [confirm, setConfirm] = useState<ConfirmDialogState | null>(null); const [message, setMessage] = useState<string | null>(null);
+  const user = useAuthStore((state) => state.user)!; const companyId = useOperationalCompanyId(); const client = useQueryClient(); const [confirm, setConfirm] = useState<ConfirmDialogState | null>(null); const setMessage = (text: string | null) => { if (text) toast(text); }; // P3: aviso breve que se cierra solo
   const { values, set, page, setPage } = useUrlState(["q", "pago", "estado", "sucursal"] as const);
   const role = user.role as "ADMIN" | "STORE_MANAGER";
   const orders = useQuery({ queryKey: ["operational-orders", role, companyId], queryFn: () => veloraApi.operationalOrders(role, companyId ?? undefined), enabled: Boolean(companyId) });
@@ -39,7 +40,7 @@ export function OperationalOrdersPage() {
   const hasFilters = Boolean(values.q || values.pago || values.estado || values.sucursal);
   return <section className="page">
     <div className="page-heading"><span className="eyebrow">PEDIDOS Y VENTAS</span><h1>Pedidos</h1><p>Confirma pagos, entrega pedidos o reembolsa antes de la entrega. Solo ves los pedidos de tus sucursales.</p></div>
-    {message ? <Notice kind="success">{message}</Notice> : null}
+    
     <div className="toolbar" role="search">
       <input type="search" aria-label="Buscar pedidos" placeholder="Pedido, cliente o sucursal…" value={values.q} onChange={(event) => set({ q: event.target.value })} />
       <select aria-label="Estado del pedido" value={values.estado} onChange={(event) => set({ estado: event.target.value })}><option value="">Todos los pedidos</option>{ORDER_FILTERS.map((code) => <option key={code} value={code}>{labelFor(ORDER_STATUS_LABELS, code)}</option>)}</select>

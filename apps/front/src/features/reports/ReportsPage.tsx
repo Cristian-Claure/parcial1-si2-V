@@ -1262,7 +1262,7 @@ export function ReportsPage() {
                   {table.title}
                 </h2>
                 <div className="table-wrap">
-                  <table>
+                  <table className="report-table">
                     <thead>
                       <tr>
                         {table.columns.map(
@@ -1309,6 +1309,7 @@ export function ReportsPage() {
                                 ) => (
                                   <td
                                     key={`${rowIndex}-${cellIndex}`}
+                                    data-label={table.columns[cellIndex]}
                                   >
                                     {cell}
                                   </td>
