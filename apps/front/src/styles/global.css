@@ -327,6 +327,12 @@ th { color: var(--ink-soft); font-size: .78rem; text-transform: uppercase; lette
 .pwa-update-banner p { margin: 0; font-weight: 650; }
 .pwa-update-actions { display: flex; gap: .5rem; }
 .pwa-update-actions .button.secondary { border-color: color-mix(in srgb, var(--on-primary) 40%, transparent); color: var(--on-primary); }
+/* "Instalar Trama": objetivo táctil de 44px; en tiendas hereda los tokens del tema de la tienda. */
+.install-app-button { min-height: 44px; gap: .4rem; }
+.install-app-nav { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; margin-top: auto; }
+.install-app-nav + .nav-button { margin-top: 0; }
+.install-app-icon { flex: none; }
+.install-ios ol { margin: .5rem 0 1rem; padding-left: 1.25rem; display: grid; gap: .5rem; }
 
 .assistant-fab { position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 95; width: 60px; height: 60px; border-radius: var(--radius-full); border: none; background: var(--paper); box-shadow: var(--shadow-lg); cursor: pointer; display: grid; place-items: center; transition: transform .18s ease; }
 .assistant-fab:hover { transform: translateY(-2px); }
