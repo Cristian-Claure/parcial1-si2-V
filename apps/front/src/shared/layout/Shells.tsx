@@ -12,6 +12,7 @@ import { SyncIndicator } from "../../features/sync/SyncIndicator";
 import { postLoginPath } from "../../core/auth/postLoginPath";
 import { PLATFORM_NAME, PLATFORM_TAGLINE, PlatformBrand, PlatformTheme } from "../platform/PlatformBrand";
 import { CompanySwitcher } from "./CompanySwitcher";
+import { InstallAppButton } from "../../pwa/InstallAppButton";
 
 const customerNav = [
   ["Catálogo", "/catalogo"], ["Probador", "/probador"], ["Favoritos", "/favoritos"], ["Mi bolsa", "/bolsa"], ["Mis pedidos", "/mis-pedidos"], ["Mi cuenta", "/mi-cuenta"],
@@ -68,7 +69,7 @@ function useLogout() {
 export function PublicShell() {
   const user = useAuthStore((state) => state.user); const brand = useStorefrontBrand();
   const home = brand ? `/t/${brand.slug}` : "/tiendas";
-  return <TenantTheme brand={brand}><header className="public-header"><Link to={home} aria-label="Inicio de la tienda"><Brand variant="lockup" brand={brand} showTagline /></Link><nav aria-label="Tienda"><NavLink to="/catalogo">Catálogo</NavLink>{user?.role === "CUSTOMER" ? <NavLink to="/bolsa">Mi bolsa</NavLink> : null}<NavLink to="/tiendas">Otras tiendas</NavLink></nav><div className="header-actions">{user ? <RoleLink role={user.role} /> : <><Link to="/login">Ingresar</Link><Link className="button small" to="/registro">Crear cuenta</Link></>}</div></header><Outlet /><footer className="public-footer"><Brand variant="wordmark" brand={brand} /><span>{brand ? <>Tienda en <Link to="/tiendas">{PLATFORM_NAME}</Link></> : <Link to="/tiendas">Ver tiendas en {PLATFORM_NAME}</Link>}</span></footer></TenantTheme>;
+  return <TenantTheme brand={brand}><header className="public-header"><Link to={home} aria-label="Inicio de la tienda"><Brand variant="lockup" brand={brand} showTagline /></Link><nav aria-label="Tienda"><NavLink to="/catalogo">Catálogo</NavLink>{user?.role === "CUSTOMER" ? <NavLink to="/bolsa">Mi bolsa</NavLink> : null}<NavLink to="/tiendas">Otras tiendas</NavLink></nav><div className="header-actions"><InstallAppButton />{user ? <RoleLink role={user.role} /> : <><Link to="/login">Ingresar</Link><Link className="button small" to="/registro">Crear cuenta</Link></>}</div></header><Outlet /><footer className="public-footer"><Brand variant="wordmark" brand={brand} /><span>{brand ? <>Tienda en <Link to="/tiendas">{PLATFORM_NAME}</Link></> : <Link to="/tiendas">Ver tiendas en {PLATFORM_NAME}</Link>}</span><InstallAppButton /></footer></TenantTheme>;
 }
 
 function RoleLink({ role }: { role: UserRole }) {
@@ -87,12 +88,13 @@ export function PlatformPublicShell() {
         <NavLink to="/planes">Planes</NavLink>
         <NavLink to="/crear-tienda">Abre tu tienda</NavLink>
       </nav>
-      <div className="header-actions">{user ? <RoleLink role={user.role} /> : <><Link className="button secondary small" to="/login">Ingresar</Link><Link className="button primary small" to="/registro">Crear cuenta</Link></>}</div>
+      <div className="header-actions"><InstallAppButton />{user ? <RoleLink role={user.role} /> : <><Link className="button secondary small" to="/login">Ingresar</Link><Link className="button primary small" to="/registro">Crear cuenta</Link></>}</div>
     </header>
     <Outlet />
     <footer className="platform-footer">
       <PlatformBrand showTagline />
       <nav aria-label="Enlaces de la plataforma"><Link to="/tiendas">Tiendas</Link><Link to="/planes">Planes</Link><Link to="/registro">Crear cuenta</Link></nav>
+      <InstallAppButton />
       <span>© 2026 {PLATFORM_NAME} · {PLATFORM_TAGLINE}</span>
     </footer>
   </PlatformTheme>;
@@ -104,7 +106,7 @@ export function PlatformAppShell() {
   return <PlatformTheme>
     <header className="platform-header">
       <Link to="/" aria-label={`${PLATFORM_NAME}: inicio`}><PlatformBrand /></Link>
-      <div className="header-actions">{user ? <span className="header-user">{user.firstName} {user.lastName}</span> : null}<button className="button secondary small" type="button" onClick={logout}>Cerrar sesión</button></div>
+      <div className="header-actions">{user ? <span className="header-user">{user.firstName} {user.lastName}</span> : null}<InstallAppButton /><button className="button secondary small" type="button" onClick={logout}>Cerrar sesión</button></div>
     </header>
     <Outlet />
   </PlatformTheme>;
@@ -117,6 +119,7 @@ export function CustomerShell() {
     <div className="sidebar-user"><span>Cliente</span><strong>{user ? `${user.firstName} ${user.lastName}` : ""}</strong></div>
     <nav aria-label="Mi cuenta"><NavItems items={customerNav} /></nav>
     <Link className="nav-link" to="/tiendas">Cambiar de tienda</Link>
+    <InstallAppButton variant="nav" />
     <button className="nav-button" type="button" onClick={logout}>Cerrar sesión</button>
   </>}><Outlet /></SidebarFrame></TenantTheme>;
 }
@@ -144,6 +147,7 @@ export function OperationsShell({ role }: { role: "ADMIN" | "STORE_MANAGER" }) {
       : <div className="sidebar-company">{managerCompany?.brand?.name ?? managerCompany?.name ?? "Empresa de la sucursal"}</div>}
     <SyncIndicator centerPath={role === "ADMIN" ? "/admin/sincronizacion" : "/sucursal/sincronizacion"} />
     <nav aria-label="Panel"><NavItems items={items} locked={locked} /></nav>
+    <InstallAppButton variant="nav" />
     <button className="nav-button" type="button" onClick={logout}>Cerrar sesión</button>
   </>}>{noCompanies && !allowedWithoutCompany ? <NoCompaniesNotice /> : <Outlet />}</SidebarFrame>;
 }
@@ -165,6 +169,7 @@ export function PlatformShell() {
     <Link to="/plataforma" aria-label={`${PLATFORM_NAME}: inicio`}><PlatformBrand variant="mark" tone="dark" /></Link>
     <div className="sidebar-user"><span>Plataforma {PLATFORM_NAME}</span><strong>{user ? `${user.firstName} ${user.lastName}` : ""}</strong></div>
     <nav aria-label="Plataforma"><NavItems items={[["Plataforma", "/plataforma"], ["Pagos", "/plataforma/pagos"], ["Cobros", "/plataforma/cobros"], ["Tiendas", "/tiendas"], ["Planes públicos", "/planes"]] as const} /></nav>
+    <InstallAppButton variant="nav" />
     <button className="nav-button" type="button" onClick={logout}>Cerrar sesión</button>
   </>}><PlatformTheme><Outlet /></PlatformTheme></SidebarFrame>;
 }

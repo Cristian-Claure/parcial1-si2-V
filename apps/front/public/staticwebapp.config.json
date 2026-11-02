@@ -7,8 +7,19 @@
       "/firebase-cloud-messaging-push-scope/*",
       "/manifest.webmanifest",
       "/sw.js",
-      "/workbox-*"
+      "/workbox-*",
+      "/registerSW.js"
     ]
+  },
+  "routes": [
+    { "route": "/sw.js", "headers": { "Cache-Control": "no-cache, no-store, must-revalidate", "Service-Worker-Allowed": "/" } },
+    { "route": "/registerSW.js", "headers": { "Cache-Control": "no-cache" } },
+    { "route": "/manifest.webmanifest", "headers": { "Cache-Control": "no-cache" } },
+    { "route": "/index.html", "headers": { "Cache-Control": "no-cache" } },
+    { "route": "/assets/*", "headers": { "Cache-Control": "public, max-age=31536000, immutable" } }
+  ],
+  "mimeTypes": {
+    ".webmanifest": "application/manifest+json"
   },
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",

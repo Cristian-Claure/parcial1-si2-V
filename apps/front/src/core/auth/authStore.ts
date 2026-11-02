@@ -5,6 +5,7 @@ import { veloraApi } from "../api/veloraApi";
 import { webPush } from "../push/webPush";
 import { useCompanyStore } from "../company/companyStore";
 import { resetStoreTheme } from "../theme/themeScope";
+import { clearPwaDataCaches } from "../../pwa/pwaCaches";
 
 type AuthStatus = "checking" | "anonymous" | "authenticated";
 interface StoredAuth { accessToken: string; user: UserProfile; }
@@ -37,7 +38,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
   const stored = readStored();
   return {
     status: stored ? "checking" : "anonymous", accessToken: stored?.accessToken ?? null, user: stored?.user ?? null, sessionExpired: false,
-    expire: () => { if (!get().user) return; localStorage.removeItem(AUTH_STORAGE_KEY); set({ status: "anonymous", accessToken: null, user: null, sessionExpired: true }); },
+    expire: () => { if (!get().user) return; localStorage.removeItem(AUTH_STORAGE_KEY); void clearPwaDataCaches(); set({ status: "anonymous", accessToken: null, user: null, sessionExpired: true }); },
     restore: async () => {
       const current = readStored();
       if (!current) { set({ status: "anonymous", accessToken: null, user: null }); return; }
@@ -59,7 +60,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       const response = await veloraApi.register(request); persist(response);
       set({ status: "authenticated", accessToken: response.accessToken, user: response.user }); if (response.user.role === "CUSTOMER") void webPush.syncIfPermissionGranted(); return response.user;
     },
-    logout: async () => { try { await webPush.revokeForLogout(); } finally { localStorage.removeItem(AUTH_STORAGE_KEY); useCompanyStore.getState().reset(); resetStoreTheme(); set({ status: "anonymous", accessToken: null, user: null, sessionExpired: false }); } },
+    logout: async () => { try { await webPush.revokeForLogout(); } finally { localStorage.removeItem(AUTH_STORAGE_KEY); void clearPwaDataCaches(); useCompanyStore.getState().reset(); resetStoreTheme(); set({ status: "anonymous", accessToken: null, user: null, sessionExpired: false }); } },
     adopt: (response) => { persist(response); set({ status: "authenticated", accessToken: response.accessToken, user: response.user }); },
     replaceUser: (user) => {
       const token = get().accessToken;

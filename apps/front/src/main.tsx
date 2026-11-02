@@ -7,9 +7,12 @@ import "./styles/saas.css";
 import "./styles/payments.css";
 import "./styles/usability.css";
 import { applyCachedThemeBeforePaint } from "./core/theme/themeScope";
+import { startPwaInstallCapture } from "./pwa/pwaInstall";
 
 // Tema de la última tienda antes del primer render (sin parpadeo arena → color de la tienda).
 applyCachedThemeBeforePaint(window.location.pathname);
+// "Instalar Trama": beforeinstallprompt puede llegar antes de que monte el botón.
+startPwaInstallCapture(window);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
