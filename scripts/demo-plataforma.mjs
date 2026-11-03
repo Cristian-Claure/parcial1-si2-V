@@ -50,6 +50,7 @@ const STORES = {
   "casa-montalvo": { name: "Casa Montalvo", segment: "HOMBRE", accent: "#8C2F39", banner: true },
   "impetu-sport": { name: "Ímpetu Sport", segment: "DEPORTIVA", accent: "#C2410C", banner: true },
   solana: { name: "Solana", segment: "MUJER", accent: "#B8432F", banner: false },
+  brote: { name: "Brote", segment: "INFANTIL", accent: "#3F7F20", banner: true },
 };
 
 async function main() {
@@ -67,6 +68,8 @@ async function main() {
   const search = await api("GET", "/api/companies/directory?q=lino");
   check("filtro por segmento y búsqueda", men.data.some((entry) => entry.slug === "casa-montalvo") && !men.data.some((entry) => entry.slug === "solana") && search.data.some((entry) => entry.slug === "solana"),
     `HOMBRE → ${men.data.map((entry) => entry.name).join(", ")} · "lino" → ${search.data.map((entry) => entry.name).join(", ")}`);
+  const kids = await api("GET", "/api/companies/directory?segment=INFANTIL");
+  check("filtro Infantil muestra Brote", kids.data.length >= 1 && kids.data.every((entry) => entry.segment === "INFANTIL") && kids.data.some((entry) => entry.slug === "brote"), `INFANTIL → ${kids.data.map((entry) => entry.name).join(", ")}`);
 
   console.log("\n2) Tiendas con su marca");
   for (const [slug, expected] of Object.entries(STORES)) {

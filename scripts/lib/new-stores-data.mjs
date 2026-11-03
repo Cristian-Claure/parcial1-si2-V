@@ -3,10 +3,13 @@
 
 const S_XL = ["S", "M", "L", "XL"];
 const XS_L = ["XS", "S", "M", "L"];
+const KIDS = ["2A", "4A", "6A", "8A", "10A", "12A"]; // tallas por edad (años)
+const BABY = ["6M", "12M", "18M", "24M"]; // bodys (meses)
 
 export const OWNERS = {
   rodrigo: { firstName: "Rodrigo", lastName: "Salvatierra", email: "rodrigo.salvatierra@trama.seed.local", plan: "MAX" },
   daniela: { firstName: "Daniela", lastName: "Ferrufino", email: "daniela.ferrufino@trama.seed.local", plan: "PLUS" },
+  mariana: { firstName: "Mariana", lastName: "Egüez", email: "mariana.eguez@trama.seed.local", plan: "MAX" },
 };
 
 export const CUSTOMER = { firstName: "Camila", lastName: "Demo", email: "cliente.demo@trama.seed.local" };
@@ -161,6 +164,74 @@ export const STORES = [
         products: ["Sombrero Solsticio", "Sombrero Pampa"],
         extra: [
           { name: "Bolso Totora", art: "tote", sizes: ["Única"], price: [180, 280], colors: ["Arena", "Terracota"], composition: "Totora del lago Titicaca y asas de cuero", care: "Limpiar con paño seco." },
+        ] },
+    ],
+  },
+  {
+    // Tienda infantil unisex (Fase 5). Paleta elegida con scripts/verify-theme.mjs: acento verde hoja (100°) y
+    // barra baya (350°), los únicos matices a ≥ 40° de las otras 8 tiendas; ver docs/TEMA_PALETAS.md.
+    slug: "brote", name: "Brote", owner: "mariana", tagline: "Ropa infantil para todos los peques", segment: "INFANTIL", logo: "brote", sku: "BRT",
+    palette: { paper: "#FBF7EE", ink: "#2A1A1F", primary: "#50141E", accent: "#3F7F20" },
+    contact: { phone: "+591 71234504", email: "hola@brote.bo", address: "Av. Héroes del Pacífico 1450, Miraflores, La Paz", socials: { instagram: "@brote.peques" } },
+    branches: [
+      { code: "BRT-MIR", name: "Miraflores", city: "La Paz", address: "Av. Héroes del Pacífico 1450, Miraflores, La Paz", manager: ["Carla", "Villarroel"] },
+      { code: "BRT-PAL", name: "Las Palmas", city: "Santa Cruz", address: "Av. Doble Vía La Guardia 3er anillo, Las Palmas, Santa Cruz", manager: ["Ignacio", "Montaño"] },
+    ],
+    colors: { "Mostaza": "#D9A21B", "Azul": "#3B7DD8", "Verde": "#3E9B6A", "Coral": "#EE7A5F", "Gris": "#9AA3AE", "Crema": "#F1E7CF" },
+    stock: { min: 6, max: 40 },
+    categories: [
+      { name: "Camisetas y polos", slug: "camisetas-y-polos", art: "tshirt", sizes: KIDS, price: [45, 110], colors: ["Mostaza", "Azul", "Verde", "Coral", "Crema"],
+        composition: "100% algodón peinado", care: "Lavar a 30 °C del revés; no usar blanqueador.",
+        lines: ["de algodón suave con cuello redondo reforzado", "estampada con colores que no se destiñen", "de corte holgado para jugar todo el día"],
+        closers: ["Resiste lavados frecuentes sin perder forma.", "Fresca para el colegio y el parque.", "Costuras planas que no raspan la piel."],
+        products: ["Camiseta Cometa", "Camiseta Girasol", "Camiseta Burbuja"],
+        extra: [
+          { name: "Polo Chispa", art: "polo", sizes: KIDS, price: [70, 120], colors: ["Azul", "Verde", "Mostaza"], composition: "100% algodón piqué", care: "Lavar a 30 °C; planchar a temperatura media." },
+          { name: "Polo Trébol", art: "polo", sizes: KIDS, price: [70, 120], colors: ["Coral", "Gris", "Crema"], composition: "100% algodón piqué", care: "Lavar a 30 °C; planchar a temperatura media." },
+        ] },
+      { name: "Buzos y hoodies", slug: "buzos-y-hoodies", art: "hoodie", sizes: KIDS, price: [130, 220], colors: ["Gris", "Azul", "Verde", "Mostaza"],
+        composition: "80% algodón, 20% poliéster; interior perchado", care: "Lavar del revés a 30 °C.",
+        lines: ["con capucha forrada y bolsillo canguro", "de felpa abrigada", "con puños elásticos que no aprietan", "de cierre completo fácil de poner"],
+        closers: ["Abriga en las mañanas frías sin dar calor.", "Ideal para el recreo y los paseos.", "Se pone y se saca sin ayuda.", "Tela suave que aguanta el juego."],
+        products: ["Buzo Nube", "Hoodie Trueno", "Buzo Pampa", "Hoodie Galaxia"] },
+      { name: "Pantalones y joggers", slug: "pantalones-y-joggers", art: "joggers", sizes: KIDS, price: [90, 180], colors: ["Gris", "Azul", "Verde", "Crema"],
+        composition: "75% algodón, 25% poliéster", care: "Lavar en frío; no usar secadora.",
+        lines: ["con cintura elástica y cordón", "de rodillas reforzadas", "de corte cómodo para correr y trepar"],
+        closers: ["Aguanta rodillazos y carreras.", "Cintura que crece con los peques.", "Bolsillos para guardar tesoros."],
+        products: ["Jogger Rayo", "Jogger Brincos", "Jogger Charco"],
+        extra: [
+          { name: "Pantalón Explorador", art: "cargo", sizes: KIDS, price: [120, 180], colors: ["Verde", "Crema", "Gris"], composition: "100% algodón gabardina", care: "Lavar en frío del revés." },
+        ] },
+      { name: "Shorts y bermudas", slug: "shorts-y-bermudas", art: "shorts", sizes: KIDS, price: [60, 130], colors: ["Azul", "Coral", "Mostaza", "Verde", "Gris"],
+        composition: "100% algodón", care: "Lavar a 30 °C.",
+        lines: ["con cintura elástica", "de tela liviana y fresca", "con bolsillos laterales", "de largo a la rodilla"],
+        closers: ["Perfecto para los días de sol.", "Libertad total para jugar.", "Se seca rápido después del parque.", "Combina con todas las camisetas."],
+        products: ["Short Salto", "Bermuda Pinta", "Short Remolino", "Bermuda Lagartija"] },
+      { name: "Abrigos y cortavientos", slug: "abrigos-y-cortavientos", art: "windbreaker", sizes: KIDS, price: [180, 260], colors: ["Coral", "Azul", "Mostaza", "Verde"],
+        composition: "100% poliéster con forro polar", care: "Lavar a mano en agua fría.",
+        lines: ["repelente al agua con capucha", "liviano que se guarda en la mochila", "con detalles reflectantes"],
+        closers: ["Protege del viento en la salida del colegio.", "Cierre con protector para la barbilla.", "Abriga sin pesar."],
+        products: ["Cortavientos Remolino", "Cortavientos Brisa"],
+        extra: [
+          { name: "Parka Copito", art: "parka", sizes: KIDS, price: [210, 260], colors: ["Azul", "Mostaza", "Gris"], composition: "Exterior de poliéster acolchado, forro polar", care: "Lavar a mano; secar colgado." },
+          { name: "Chaqueta Pompón", art: "puffer", sizes: KIDS, price: [190, 250], colors: ["Coral", "Verde", "Crema"], composition: "Exterior de nailon, relleno de fibra hueca", care: "Lavar a mano; secar colgado." },
+        ] },
+      { name: "Pijamas y bodys", slug: "pijamas-y-bodys", art: "pajama", sizes: KIDS, price: [90, 160], colors: ["Crema", "Azul", "Gris", "Coral"],
+        composition: "100% algodón interlock", care: "Lavar a 30 °C; secar a la sombra.",
+        lines: ["de dos piezas con puños suaves", "estampado de lunares suaves"],
+        closers: ["Para dormir abrigados toda la noche.", "Suave al tacto, sin etiquetas que molesten."],
+        products: ["Pijama Luna", "Pijama Estrella"],
+        extra: [
+          { name: "Body Semilla", art: "bodysuit", sizes: BABY, price: [45, 80], colors: ["Crema", "Verde", "Mostaza"], composition: "100% algodón orgánico", care: "Lavar a 30 °C con jabón neutro." },
+          { name: "Body Gotita", art: "bodysuit", sizes: BABY, price: [45, 80], colors: ["Azul", "Coral", "Gris"], composition: "100% algodón orgánico", care: "Lavar a 30 °C con jabón neutro." },
+        ] },
+      { name: "Accesorios", slug: "accesorios", art: "beanie", sizes: ["Única"], price: [45, 90], colors: ["Mostaza", "Coral", "Azul", "Gris"],
+        composition: "Acrílico suave hipoalergénico", care: "Lavar a mano en agua fría.",
+        lines: ["tejido con pompón", "de punto doble abrigado"],
+        closers: ["Abriga las orejas en el invierno.", "Se ajusta a cabezas de 2 a 12 años."],
+        products: ["Gorro Pompón", "Gorro Copo"],
+        extra: [
+          { name: "Medias Saltarinas", art: "socks", sizes: ["2-4A", "6-8A", "10-12A"], price: [45, 70], colors: ["Mostaza", "Verde", "Coral"], composition: "80% algodón, 17% poliamida, 3% elastano", care: "Lavar a 30 °C." },
         ] },
     ],
   },

@@ -21,6 +21,14 @@ La regla de diversidad pide que ningún par de tiendas comparta matiz de acento 
 - **Primer Paso**: con un azul `#2563EB` como único color, la barra derivada (221°) quedaba a 1° de Ímpetu y a 9° de Casa Montalvo. Pasó a violeta (263°).
 - **Urbano Boutique**: la barra `#0E2B25` (168°) quedaba a 8° de Solana. Pasó a un verde bosque (131°) con el mismo esmeralda.
 
+### Brote (MAX, Fase 5): tienda infantil nueva
+
+Fondo crema `#FBF7EE` · texto `#2A1A1F` · primario baya `#50141E` · acento verde hoja `#3F7F20`. Es "alegre pero sobria": la hoja nueva (el brote) sobre un vino profundo y un papel cálido, sin los colores de caramelo típicos de lo infantil, que chocarían con Solana y Primer Paso.
+
+- **Por qué estos matices.** Con 8 tiendas, los únicos huecos que cumplen ≥ 40° con todas son el acento verde (~100°, entre VÉLORA 37° y Urbano Boutique 164°) y la barra baya (~350°, entre Andina 309° y VÉLORA 30°). Brote queda a 63° de acento de su vecina más cercana y a 40° de barra de VÉLORA y Andina.
+- **Acento.** El primer verde, `#478F24`, cumplía todos los pares derivados, pero el backend lo rechazó (`BRAND_CONTRAST`): el texto blanco sobre el botón daba 4,13:1. Se oscureció a `#3F7F20` (mismo matiz de 100°, 4,92:1).
+- **Verificación.** `node scripts/verify-theme.mjs` con 9 tiendas: AA y diversidad correctos.
+
 **Límite:** las cuatro tiendas conservadas ya tenían acentos cercanos entre sí (Solana 9°, Ímpetu 17°, VÉLORA 37° y Casa Montalvo 354°), y Casa e Ímpetu comparten una barra azul marino. Con ellas intactas, la regla no se puede cumplir entre esos pares. `verify-theme.mjs` los informa como aviso; cualquier par que incluya una tienda modificada debe cumplir los 40°.
 
 ## Tokens derivados
@@ -35,6 +43,7 @@ La regla de diversidad pide que ningún par de tiendas comparta matiz de acento 
 | Urbano Outlet | FULL | #F4F5F2 | #16180F | #2E3612 | #1D5FA3 (210°) | #2E3612 → #3B4517 (73°) | #29413B / #267DD7 | #174B80 | #6F706A | #1D5FA3 #2120B6 #1A9293 #A62726 #7C7D1C #5B6B24 |
 | Andina Moda | FULL_PALETTE | #F8F2F6 | #2A1426 | #3E1838 | #9A1F86 (310°) | #3E1838 → #4D1E45 (309°) | #581A4E / #C428AB | #781868 | #746471 | #9A1F86 #B22454 #691D90 #509F28 #1F7A5B #67285D |
 | Primer Paso | BASIC | #F7F5F9 | #191127 | #2C1452 | #7238CF (263°) | #2C1452 → #351862 (263°) | #401E75 / #8351D5 | #5F2BB3 | #726C7B | #7238CF #9D2AAD #222E8C #9A8D2D #2C7722 #3E1C73 |
+| Brote | FULL | #FBF7EE | #2A1A1F | #50141E | #3F7F20 (100°) | #50141E → #601824 (350°) | #4B321F / #418321 | #2F5E18 | #76696A | #3F7F20 #29A33E #798B23 #422F9D #762367 #721D2B |
 
 | Tienda | texto/fondo | texto suave/fondo | blanco/accent-deep | botón/acento | texto/primario | barra texto | barra activo | barra secundario | indicador | gráfico mín. |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -46,6 +55,7 @@ La regla de diversidad pide que ningún par de tiendas comparta matiz de acento 
 | Urbano Outlet | 16.38 | 4.57 | 8.92 | 6.53 | 12.71 | 11.9 | 10.28 | 5.8 | 3.02 | 3.44 |
 | Andina Moda | 15.51 | 5 | 9.86 | 7.21 | 15.08 | 13.67 | 11.38 | 6.2 | 3.04 | 3 |
 | Primer Paso | 16.84 | 4.67 | 8.46 | 6.6 | 15.8 | 14.22 | 11.38 | 6.47 | 3.09 | 3.12 |
+| Brote | 15.51 | 4.91 | 7.68 | 4.92 | 14.38 | 13.01 | 10.7 | 5.86 | 3.08 | 3.07 |
 
 Umbrales: texto ≥ 4,5:1 (AA). Indicador de la barra y series de gráficos ≥ 3:1 (componentes no textuales, WCAG 1.4.11). En «botón/acento», el texto del botón es blanco o el `ink`, el que contraste más.
 

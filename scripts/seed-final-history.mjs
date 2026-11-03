@@ -88,6 +88,11 @@ const COMPANIES = [
     old: ["seed-20251001-trama.json", "trama-rodrigo", "impetu-sport"], backfill: { from: "2026-05-10", to: "2026-07-22", customers: 35 }, redateInitialStock: true },
   { key: "solana", owner: "daniela.ferrufino@trama.seed.local", ownerPasswordEnv: "VELORA_TRAMA_OWNER_PASSWORD", city: "Santa Cruz", ecommerce: 0.65, delivery: 0.5, growth: 0, solana: true,
     old: ["seed-20251001-trama.json", "trama-daniela", "solana"] },
+  // Brote (infantil, Fase 5): tienda NUEVA sin pedidos previos. `fresh` arranca el historial el 1-jun-2026 con
+  // `perDay` pedidos/día y crece `growth` mensual; clientes propios (familias), canastas de 2 a 4 prendas,
+  // estacionalidad infantil (kidsSeason) y más cancelación en DELIVERY y tickets > highTicket.
+  { key: "brote", owner: "mariana.eguez@trama.seed.local", ownerPasswordEnv: "VELORA_TRAMA_OWNER_PASSWORD", city: "La Paz", ecommerce: 0.55, delivery: 0.5, growth: 0.05,
+    kids: true, highTicket: 450, fresh: { from: "2026-06-01", perDay: 3.5, customers: 190, joinUntil: "2026-10-25", minBuyers: 155 }, redateInitialStock: true, old: null },
 ];
 
 // ------------------------------------------------------------------ PRNG y calendario
@@ -133,8 +138,20 @@ function paydayFactor(day) {
   if (date >= last - 1 || date === 1) return 1.2;
   return 1;
 }
-function seasonFactor(categoryName, day) {
+/**
+ * Estacionalidad infantil (Brote): abrigos y cortavientos fuertes de junio a agosto y a la baja en
+ * septiembre-octubre; camisetas, polos, shorts y bermudas al alza desde septiembre; pijamas y bodys estables.
+ */
+function kidsSeason(name, month) {
+  if (/abrigo|cortaviento|parka|chaqueta/.test(name)) return { 6: 2.4, 7: 2.6, 8: 2.2, 9: 1.1, 10: 0.65, 11: 0.5 }[month] ?? 1;
+  if (/camiseta|polo|short|bermuda/.test(name)) return { 6: 0.6, 7: 0.55, 8: 0.7, 9: 1.2, 10: 1.6, 11: 1.9 }[month] ?? 1;
+  if (/buzo|hoodie/.test(name)) return { 6: 1.5, 7: 1.6, 8: 1.4, 9: 1.0, 10: 0.8, 11: 0.75 }[month] ?? 1;
+  if (/gorro|medias/.test(name)) return month >= 6 && month <= 8 ? 1.8 : 0.7;
+  return 1; // pijamas, bodys y pantalones
+}
+function seasonFactor(categoryName, day, company = {}) {
   const month = Number(day.slice(5, 7)); const name = categoryName.toLowerCase();
+  if (company.kids) return kidsSeason(name, month);
   const winter = month >= 6 && month <= 8; const summer = month >= 11 || month <= 2;
   if (/abrigo|tejido|chompa|chaqueta|parka/.test(name)) return winter ? 2.6 : 0.6;
   if (/vestido|sandalia|lente/.test(name)) return summer ? 2.2 : winter ? 0.5 : 1;
@@ -190,6 +207,7 @@ function loadProgress() {
 }
 function saveProgress(progress) { mkdirSync(PROGRESS_DIR, { recursive: true }); writeFileSync(PROGRESS_FILE, JSON.stringify(progress)); }
 function oldState(company) {
+  if (!company.old) return null;
   const [file, tenant, key] = company.old;
   const path = join(PROGRESS_DIR, file);
   if (!existsSync(path)) return null;
@@ -293,6 +311,13 @@ async function setupCompany(company, saved, ownerEmail, client) {
     const avg = (from, to) => range(from, to).reduce((sum, day) => sum + (counts.get(day) ?? 0), 0) / Math.max(1, daysBetween(from, to) + 1);
     saved.anchor = { day: addDays(saved.lastDay, -14), perDay: avg(addDays(saved.lastDay, -27), saved.lastDay) };
     saved.firstAnchor = { day: addDays(saved.firstDay, 14), perDay: avg(saved.firstDay, addDays(saved.firstDay, 27)) };
+    if (company.fresh && !rows.length) {
+      // Tienda nueva: el historial empieza en fresh.from con el ritmo configurado (no hay pedidos que medir).
+      saved.firstDay = company.fresh.from;
+      saved.lastDay = addDays(company.fresh.from, -1);
+      saved.anchor = { day: company.fresh.from, perDay: company.fresh.perDay };
+      saved.firstAnchor = saved.anchor;
+    }
   }
 }
 
@@ -309,6 +334,20 @@ async function setupCustomers(company, saved, client) {
         const first = ["Ana", "Lucía", "Camila", "Valentina", "Sofía", "Daniela", "Mariana", "Gabriela", "Paola", "Andrea", "Diego", "Luis", "Jorge", "Marco"][Math.floor(rng() * 14)];
         const last = ["Gutiérrez", "Mamani", "Flores", "Vargas", "Rojas", "Choque", "Quispe", "Suárez", "Paz", "Medina", "Cuéllar"][Math.floor(rng() * 11)];
         saved.customers.push({ email: `${company.key}.historico${String(index + 1).padStart(4, "0")}@clientes.seed.velora.local`, firstName: first, lastName: last, segment, joinDay, churnDay: segment === "CHURN_RISK" ? addDays(joinDay, 60 + Math.floor(rng() * 120)) : null, id: null, addressId: null, orders: 0, historic: true });
+      }
+    }
+    if (company.fresh) {
+      // Familias clientes de una tienda nueva: las primeras 12 llegan el día de apertura; el resto, con más
+      // altas a medida que la tienda crece (exponente < 1 → más altas hacia el final).
+      const rng = rngFor("familias", company.key);
+      const span = daysBetween(company.fresh.from, company.fresh.joinUntil);
+      const firstNames = ["Ana", "Lucía", "Camila", "Valentina", "Sofía", "Daniela", "Mariana", "Gabriela", "Paola", "Andrea", "Carla", "Diego", "Luis", "Jorge", "Marco", "Rodrigo", "Pablo", "Fernanda", "Natalia", "Javier"];
+      const lastNames = ["Gutiérrez", "Mamani", "Flores", "Vargas", "Rojas", "Choque", "Quispe", "Suárez", "Paz", "Medina", "Cuéllar", "Aguilar", "Torrico", "Zeballos", "Saavedra"];
+      for (let index = 0; index < company.fresh.customers; index += 1) {
+        const segment = pickWeighted(rng, SEGMENTS, (candidate) => candidate.share).key;
+        const joinDay = index < 12 ? company.fresh.from : addDays(company.fresh.from, Math.floor(span * rng() ** 0.8));
+        saved.customers.push({ email: `${company.key}.familia${String(index + 1).padStart(4, "0")}@clientes.seed.velora.local`, firstName: firstNames[Math.floor(rng() * firstNames.length)], lastName: lastNames[Math.floor(rng() * lastNames.length)],
+          segment, joinDay, churnDay: segment === "CHURN_RISK" ? addDays(joinDay, 45 + Math.floor(rng() * 70)) : null, id: null, addressId: null, orders: 0 });
       }
     }
   }
@@ -350,11 +389,13 @@ function planDay(company, saved, day, forcedCount = null, tag = forcedCount === 
     if (channel === "ECOMMERCE" && !customer) continue;
     if (customer) { usedToday.add(customer.email); customer.orders += 1; }
     const segment = SEGMENTS.find((candidate) => candidate.key === customer?.segment) ?? SEGMENTS[1];
-    const lines = Math.min(4, 1 + (rng() < 0.32 + 0.25 * growth ? 1 : 0) + (rng() < 0.1 + 0.1 * growth ? 1 : 0) + (segment.itemsBoost && rng() < 0.5 ? 1 : 0));
+    // Brote: compras de familia, 2 a 4 prendas por pedido.
+    const lines = company.kids ? 2 + (rng() < 0.45 ? 1 : 0) + (rng() < 0.2 ? 1 : 0)
+      : Math.min(4, 1 + (rng() < 0.32 + 0.25 * growth ? 1 : 0) + (rng() < 0.1 + 0.1 * growth ? 1 : 0) + (segment.itemsBoost && rng() < 0.5 ? 1 : 0));
     const items = new Map();
     for (let line = 0; line < lines; line += 1) {
       const preference = Math.min(0.95, segment.pricePreference + 0.3 * growth);
-      const variant = pickWeighted(rng, saved.variants, (candidate) => candidate.paretoWeight * seasonFactor(candidate.category, day) * (candidate.price > 300 ? 0.6 + preference : 1.4 - preference));
+      const variant = pickWeighted(rng, saved.variants, (candidate) => candidate.paretoWeight * seasonFactor(candidate.category, day, company) * (candidate.price > 300 ? 0.6 + preference : 1.4 - preference));
       items.set(variant.id, (items.get(variant.id) ?? 0) + (rng() < 0.12 ? 2 : 1));
     }
     const hour = localHour(rng, channel); const minute = Math.floor(rng() * 60);
@@ -364,7 +405,7 @@ function planDay(company, saved, day, forcedCount = null, tag = forcedCount === 
     const method = channel === "POS" ? pickWeighted(rng, [["CASH", 0.55], ["QR", 0.3], ["CARD", 0.15]], (entry) => entry[1])[0]
       : fulfillment === "DELIVERY" ? pickWeighted(rng, [["COD", 0.42], ["QR", 0.38], ["CARD", 0.2]], (entry) => entry[1])[0]
         : pickWeighted(rng, [["CASH", 0.38], ["QR", 0.42], ["CARD", 0.2]], (entry) => entry[1])[0];
-    const cancelProbability = channel === "POS" ? 0 : 0.04 + (fulfillment === "DELIVERY" ? 0.06 : 0) + (ticket > 600 ? 0.05 : 0) + (method === "COD" ? 0.05 : method === "QR" ? 0.015 : 0);
+    const cancelProbability = channel === "POS" ? 0 : 0.04 + (fulfillment === "DELIVERY" ? 0.06 : 0) + (ticket > (company.highTicket ?? 600) ? 0.05 : 0) + (method === "COD" ? 0.05 : method === "QR" ? 0.015 : 0);
     const recent = day >= addDays(UNTIL, -1) && UNTIL >= TODAY;
     const outcome = rng() < cancelProbability ? "CANCELLED" : recent && channel === "ECOMMERCE" && rng() < 0.5 ? "PENDING" : "FULFILLED";
     orders.push({
@@ -488,10 +529,10 @@ async function rewriteDates(client, orders, sessions, restockWarehouses, day) {
   });
 }
 
-/** Stock inicial (y su fila de stock) un día antes del nuevo primer pedido. */
-async function redateInitialStock(client, saved, start) {
+/** Stock inicial (y su fila de stock) un día antes del nuevo primer pedido (tienda nueva: la mañana de apertura). */
+async function redateInitialStock(client, saved, start, fresh = false) {
   const warehouses = saved.stores.map((store) => store.warehouseId);
-  const at = localTime(addDays(start, -1), 8).toISOString();
+  const at = (fresh ? localTime(start, 7, 30) : localTime(addDays(start, -1), 8)).toISOString();
   await withDateTx(client, async () => {
     await client.query("update inventory_movements set created_at = $2 where reference_type = 'INITIAL_STOCK' and warehouse_id = any($1::uuid[])", [warehouses, at]);
     await client.query("update inventory_stocks set created_at = least(created_at, $2::timestamptz) where warehouse_id = any($1::uuid[])", [warehouses, at]);
@@ -565,7 +606,8 @@ async function remapSolana(client, saved) {
 async function alignCreationDates(client, company, saved) {
   const first = (await client.query(`select min(o.created_at) as first from orders o join warehouses w on w.id = o.warehouse_id join stores s on s.id = w.store_id where s.company_id = $1`, [saved.companyId])).rows[0]?.first;
   if (!first) return;
-  const exact = company.solana ? localTime(SOLANA_START, 7).toISOString() : null;
+  // Solana y Brote: alta en una fecha exacta (inicio de su historial); las demás, ≤ 7 días antes del primer pedido.
+  const exact = company.solana ? localTime(SOLANA_START, 7).toISOString() : company.fresh ? localTime(company.fresh.from, 7).toISOString() : null;
   const at = exact ?? new Date(first.getTime() - 7 * 86_400_000).toISOString();
   const set = exact ? "$2::timestamptz" : "least(created_at, $2::timestamptz)";
   await withDateTx(client, async () => {
@@ -662,8 +704,8 @@ async function main() {
         saved.remapped = SOLANA_REMAP_VERSION; saved.lastDay ??= addDays(TODAY, -1); if (saved.lastDay < addDays(TODAY, -1) && !saved.forwardDone) saved.lastDay = addDays(TODAY, -1); saveProgress(progress);
         console.log(`  ✔ solana: ${moved} pedidos re-fechados al tramo ${SOLANA_START} → ${saved.lastDay} (base ${saved.solanaBase.toFixed(2)}/día)`);
       }
-      if (company.redateInitialStock && company.backfill && !saved.stockRedated && !DRY_RUN) {
-        await redateInitialStock(client, saved, company.backfill.from); saved.stockRedated = true; saveProgress(progress);
+      if (company.redateInitialStock && (company.backfill || company.fresh) && !saved.stockRedated && !DRY_RUN) {
+        await redateInitialStock(client, saved, company.backfill?.from ?? company.fresh.from, Boolean(company.fresh)); saved.stockRedated = true; saveProgress(progress);
       }
     }
 
@@ -751,6 +793,31 @@ async function main() {
       if (!DRY_RUN) saveProgress(progress);
     }
     for (const [key, total] of forwardTotals) console.log(`  ${key}: continuación hasta ${UNTIL} · ${total} pedidos`);
+
+    // 2b) Tienda nueva: al menos fresh.minBuyers clientes con compra. Familias registradas que aún no compraron
+    // hacen un pedido real (ecommerce) en un día de los últimos 80 dentro de su vida como clientes.
+    for (const entry of active.filter((candidate) => candidate.company.fresh?.minBuyers && !candidate.saved.buyersDone)) {
+      if (DRY_RUN || outOfTime()) break;
+      const { company, saved } = entry;
+      const sql = `from orders o join warehouses w on w.id = o.warehouse_id join stores s on s.id = w.store_id where s.company_id = $1 and o.customer_id is not null`;
+      const buyers = Number((await client.query(`select count(distinct o.customer_id)::int n ${sql} and o.status <> 'CANCELLED'`, [saved.companyId])).rows[0].n);
+      const bought = new Set((await client.query(`select distinct o.customer_id ${sql}`, [saved.companyId])).rows.map((row) => row.customer_id));
+      const yesterday = addDays(UNTIL >= TODAY ? TODAY : UNTIL, -1);
+      const needed = Math.max(0, company.fresh.minBuyers - buyers);
+      const rng = rngFor("compradores", company.key);
+      let added = 0;
+      for (const customer of saved.customers.filter((candidate) => candidate.id && !bought.has(candidate.id) && candidate.joinDay <= yesterday).slice(0, Math.ceil(needed * 1.3))) {
+        const last = customer.churnDay && customer.churnDay <= yesterday ? addDays(customer.churnDay, -1) : yesterday;
+        const from = customer.joinDay > addDays(yesterday, -80) ? customer.joinDay : addDays(yesterday, -80);
+        if (from > last) continue;
+        const day = addDays(from, Math.floor(rng() * (daysBetween(from, last) + 1)));
+        const orders = planDay({ ...company, ecommerce: 1 }, { ...saved, customers: [customer] }, day, 1, "comprador");
+        await runOrders(entry, orders, day);
+        added += orders.filter((order) => order.orderId).length;
+      }
+      saved.buyersDone = true; saveProgress(progress);
+      console.log(`  ${company.key}: ${buyers} compradores; ${added} pedidos de familias que aún no compraban (objetivo ${company.fresh.minBuyers})`);
+    }
 
     // 3) Huecos: ≥ 1 pedido por día (VÉLORA desde 2025-01-01; las demás, últimos 90 días; FREE excluida).
     if (!DRY_RUN && !outOfTime()) {

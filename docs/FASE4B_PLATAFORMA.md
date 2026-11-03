@@ -101,7 +101,8 @@ Para recrear las tiendas desde cero: `node scripts/seed-new-stores.mjs` (idempot
 | Cliente | `cliente.demo@trama.seed.local` | `SeedCliente2026` |
 | Dueño con 2 empresas (MAX) | `rodrigo.salvatierra@trama.seed.local` | `SeedPropietario2026` |
 | Dueña de 1 empresa (PLUS) | `daniela.ferrufino@trama.seed.local` | `SeedPropietario2026` |
-| Encargado | `encargado.casa-montalvo.calacoto@seed.local` (también `.equipetrol` y `.cala-cala`; `encargado.impetu-sport.sopocachi`/`.urubo`; `encargado.solana.equipetrol`/`.sopocachi`/`.zona-norte`) | `SeedEncargado2026` |
+| Dueña de Brote, infantil (MAX) · `/t/brote` | `mariana.eguez@trama.seed.local` | `SeedPropietario2026` |
+| Encargado | `encargado.casa-montalvo.calacoto@seed.local` (también `.equipetrol` y `.cala-cala`; `encargado.impetu-sport.sopocachi`/`.urubo`; `encargado.solana.equipetrol`/`.sopocachi`/`.zona-norte`; `encargado.brote.miraflores`/`.las-palmas`) | `SeedEncargado2026` |
 | Plataforma | `BOOTSTRAP_PLATFORM_ADMIN_EMAIL` de tu `.env` local | la de tu `.env` |
 
 ### Recorrido
