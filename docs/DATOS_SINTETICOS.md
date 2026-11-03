@@ -107,6 +107,7 @@ Mismo principio: **todo por HTTP real** (carrito, pedido, pago, confirmación, e
 | Casa Montalvo, Ímpetu Sport | Retroceso **2026-05-10 → 2026-07-22** (≈ 6 meses al 11-nov); el stock inicial se re-fecha al día anterior al nuevo primer pedido. |
 | Solana | Sus 451 pedidos existentes se **re-fechan** al tramo 12-oct → ayer (desplazamiento por pedido o por sesión de caja aplicado a todas sus fechas: pagos, historial, movimientos, carrito). Cada semana (lunes a domingo) vale un **10 % más** que la anterior; dentro de la semana, la demanda se reparte por fin de semana y promociones (24-oct y 7-nov), y los tickets más altos van más tarde. Luego sigue la misma curva, con más recompra (clientes con compras previas ×3) y ticket creciente. Empresa, sucursales, catálogo, stock, propietaria, encargados y suscripción quedan dados de alta el 12-oct. |
 | Primer Paso (FREE) | Continúa; excluida de la regla de continuidad. |
+| Brote (MAX, infantil) | Tienda **nueva** (`fresh`): historial desde el **2026-06-01** sin pedidos previos. Ver la sección "Brote" más abajo. |
 
 - **Día en curso**: solo se ejecutan los pedidos cuya hora ya pasó; el resto queda pendiente para la siguiente corrida con `--resume`. Nunca hay pedidos en el futuro.
 - **Huecos**: ≥ 1 pedido diario en los últimos 90 días (VÉLORA desde el 2024-11-11).
@@ -141,3 +142,31 @@ Mismo principio: **todo por HTTP real** (carrito, pedido, pago, confirmación, e
 **VÉLORA por mes**: nov-24 19 · dic 48 · ene-25 44 … may 46 · jun 51 · jul 68 · … · ago-26 255. **Limitación honesta**: de enero a mayo de 2025 la curva es casi plana (~1,4 pedidos/día), porque el mínimo de un pedido diario domina sobre el 4 %/mes de una base tan baja.
 
 Segmentos de clientes (todas las tiendas): 588 con 1 compra, 231 con 2–3, 305 con 4–9 y 265 con 10 o más.
+
+## Brote: tienda infantil (Fase 5, 3-nov-2026)
+
+**Alta** por `scripts/seed-new-stores.mjs --only brote`, con el flujo real: onboarding MAX de Mariana Egüez, marca, 2 sucursales (Miraflores en La Paz y Las Palmas en Santa Cruz) con almacén y encargado, 7 categorías, 28 productos, 403 variantes (`BRT-…`, tallas 2A–12A y 6M–24M para bodys) y 800 movimientos `ENTRY` de 6 a 40 unidades. Algunas variantes quedan con stock ≤ 3 y 3 agotadas. La suscripción pasó a ACTIVE hasta el 2027-01-31 por `PATCH /api/platform/subscriptions/:id`.
+
+**Historial** por `scripts/seed-final-history.mjs --only brote` (configuración `brote` en `COMPANIES`):
+
+| Parámetro | Valor |
+|---|---|
+| `fresh.from` / `perDay` / `growth` | 2026-06-01 · 3,5 pedidos/día · 5 % mensual, con ruido log-normal |
+| Clientes (`fresh.customers`, `joinUntil`, `minBuyers`) | 190 familias (12 el día de apertura; el resto con más altas hacia el final, hasta el 25-oct) · mínimo 155 compradores |
+| Canal / entrega | 55 % ecommerce (50 % DELIVERY) y POS con sesión de caja |
+| Canasta | 2 a 4 prendas por pedido (`kids`), 12 % de líneas con 2 unidades |
+| Estacionalidad (`kidsSeason`) | Abrigos y cortavientos ×2,2–2,6 de junio a agosto, ×1,1 en septiembre, ×0,65 en octubre · camisetas, polos, shorts y bermudas ×0,6 en invierno → ×1,6–1,9 en octubre-noviembre · pijamas y bodys estables |
+| Cancelación | 4 % base + 6 % en DELIVERY + 5 % si el ticket supera `highTicket` = 450 Bs + COD/QR |
+| Descuento MAX | Automático por el flujo real (fidelidad por compras entregadas en la ventana del plan) |
+| Fechas | Empresa, sucursales, almacenes, catálogo, stock inicial, dueña, encargados y suscripción alineados al 1-jun-2026 a las 7:00 |
+
+**Resultado:**
+
+- **651 pedidos**: jun 115 · jul 116 · ago 124 · sep 133 · oct 153. El crecimiento observado (~7 %/mes) supera el 5 % configurado porque el paso de "mínimo de compradores" sumó 24 pedidos en sep-oct.
+- **Ticket y canasta**: ticket medio 359 Bs, 2,99 prendas por pedido.
+- **Cancelaciones**: 5,2 % en total. En DELIVERY es 9,8 % y sube a 18 % con ticket alto; en PICKUP es 3,1 %.
+- **Descuentos**: 162 pedidos con descuento MAX.
+- **Clientes**: 156 compraron y el 44,9 % repite. El fin de semana vende 1,63× lo de lunes a jueves, y no hay días vacíos en los últimos 90.
+- **Estacionalidad** (unidades por mes, de junio a octubre): abrigos 52 · 55 · 45 · 18 · 14; camisetas y shorts 113 · 117 · 139 · 229 · 300; pijamas entre 29 y 40.
+- **Coherencia** (`--verify`): stock negativo, totales descuadrados, cruces entre empresas y pedidos en el futuro, todos en 0.
+- **10-nov**: `node scripts/seed-final-history.mjs --until 2026-11-11 --resume` completa también a Brote.

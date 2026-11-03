@@ -61,15 +61,36 @@ US$ 1,00). Se generaron 37 imágenes con el tope; en total se aprobaron y subier
 | VÉLORA | sin cambios (fotos reales) | 5 (sin cambios) |
 
 **Se descartaron 13 imágenes:** fondo gris en prendas blancas o crema (4), pantalones generados como conjunto o
-mono (5), prenda cortada o fondo oscuro (3) y color equivocado (1). **Siguen con mockup o imagen por defecto
-(220):** el resto del catálogo de las 7 tiendas, por presupuesto, más *Set Capri* de VÉLORA (descartado
-por fondo gris; no quedó presupuesto para reintentarlo). El detalle está en `manifest.json` → `pending`.
+mono (5), prenda cortada o fondo oscuro (3) y color equivocado (1). **Tras la IA quedaron 220 sin imagen de IA:**
+el resto del catálogo de las 7 tiendas, por presupuesto, más *Set Capri* de VÉLORA (descartado por fondo gris).
+De ellos, los 153 que no tenían ninguna imagen recibieron ilustraciones planas (ver más abajo); los demás
+conservan su ilustración de la Fase 4B. El detalle está en `manifest.json` → `pending`.
 En los productos sobrescritos, el `altText` antiguo ("… (ilustración)") se conserva porque no hay endpoint
 para editarlo.
 
 **Lecciones:** las prendas claras salen sobre fondo gris (colores claros al final de la cola); a los
 pantalones les falta un prompt propio para que no generen un conjunto (pendiente); los colores vivos
 (azul eléctrico) a veces tiñen el fondo.
+
+## Ilustraciones para lo que no tenía imagen (Fase 5, 3-nov-2026, sin IA)
+
+`scripts/illustrate-missing-products.mjs` creó **153 ilustraciones planas** (SVG → PNG 1122×1402 con sharp, sin
+texto ni logos) para los productos activos sin imagen principal: Andina Moda 46, Primer Paso 14, Urbano
+Boutique 56, Urbano Outlet 36 y *Set Capri* de VÉLORA 1. Se subieron por `POST …/assets` (`GALLERY`, principal,
+"<nombre> (ilustración)") con la cuenta de cada tienda. No se tocaron las fotos de VÉLORA, las 28 imágenes de IA
+ni las ilustraciones de Casa Montalvo, Ímpetu y Solana.
+
+- **Plantillas** (`scripts/lib/garment-art.mjs`): a las 24 de la Fase 4B se suman suéter, cárdigan, chaleco,
+  poncho, parka, trench, chaqueta acolchada, jean, cargo, palazzo, lentes, bandolera, clutch, mochila y
+  conjunto, más las infantiles de Brote (polo, pijama, body, gorro y medias). `artFor()` elige la plantilla
+  por palabras del nombre y luego de la categoría; si no encuentra ninguna, usa `cardSvg()` (tarjeta
+  tipográfica). En esta corrida, los 153 productos tuvieron plantilla.
+- **Color**: el color principal de cada producto (las variantes sembradas sin `colorHex` usan un mapa de
+  nombre a hex). El fondo es el tono `paper` de la marca de cada tienda.
+- **Idempotente**: un producto que ya tiene imagen GALLERY no se vuelve a subir. `--resume` salta lo que el
+  manifest marca como subido; `--dry-run --sample` solo genera hojas de control. Los PNG están en
+  `Documents\imagenes-trama\ilustraciones\<tienda>\` y el estado, en `manifest.json` → `illustrations`.
+- **Resultado:** ningún producto activo de las 9 tiendas queda sin imagen principal.
 
 ## Regenerar
 

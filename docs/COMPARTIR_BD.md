@@ -94,7 +94,9 @@ $env:VELORA_DEMO_API_BASE="http://127.0.0.1:18080"   # para los scripts de demo
 | Dueño con 2 empresas (MAX) | `rodrigo.salvatierra@trama.seed.local` | `SeedPropietario2026` |
 | Dueña PLUS | `daniela.ferrufino@trama.seed.local` | `SeedPropietario2026` |
 | Dueños de Urbano, Andina y Primer Paso | `lucia.arce@urbano.seed.velora.local`, `mateo.quispe@andina.seed.velora.local`, `valeria.rojas@primerpaso.seed.velora.local` | `SeedPropietario2026` |
+| Dueña de Brote, tienda infantil (MAX) | `mariana.eguez@trama.seed.local` · `/t/brote`, `/admin`, `/admin/ml` | `SeedPropietario2026` |
 | Encargado | `encargado.casa-montalvo.calacoto@seed.local` | `SeedEncargado2026` |
+| Encargados de Brote | `encargado.brote.miraflores@seed.local` (La Paz), `encargado.brote.las-palmas@seed.local` (Santa Cruz) · `/sucursal` | `SeedEncargado2026` |
 | Plataforma y dueño de VÉLORA | Los de §4 (por privado) | — |
 
 ## 6. Problemas frecuentes

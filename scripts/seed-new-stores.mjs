@@ -212,7 +212,8 @@ async function stock(store, email, companyId, state) {
     for (const [index, variant] of variants.entries()) {
       if (soldOut.has(variant.id) || current.some((row) => row.variantId === variant.id && row.physicalQuantity > 0)) continue;
       const random = rng(`${variant.sku}:${branch.name}`);
-      const quantity = index % 29 === 7 ? 1 + Math.floor(random() * 3) : 8 + Math.floor(random() * 33);
+      const { min = 8, max = 40 } = store.stock ?? {};
+      const quantity = index % 29 === 7 ? 1 + Math.floor(random() * 3) : min + Math.floor(random() * (max - min + 1));
       jobs.push({ warehouseId: branch.warehouseId, variantId: variant.id, quantity });
     }
   }
