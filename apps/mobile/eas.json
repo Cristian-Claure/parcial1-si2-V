@@ -10,8 +10,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://velora-back-v2.azurewebsites.net",
-        "EXPO_PUBLIC_STOREFRONT_COMPANY_ID": "10000000-0000-0000-0000-000000000001"
+        "EXPO_PUBLIC_API_BASE_URL": "https://trama-back-2e5347.azurewebsites.net",
+        "EXPO_PUBLIC_WEB_URL": "https://orange-field-02809c21e.4.azurestaticapps.net"
       }
     }
   },

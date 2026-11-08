@@ -1,156 +1,125 @@
-# Despliegue VÉLORA en Azure
+# Despliegue de TRAMA en Azure (demo)
 
-## Topología objetivo
+Demo temporal para la presentación. Todo vive en el grupo **`rg-trama-demo`** (región **westus2**) y se
+borra con `scripts/azure/teardown.ps1`.
 
-- API: Azure App Service Linux / Node.js.
-- Web: Azure Static Web Apps.
-- Base de datos: Azure Database for PostgreSQL Flexible Server.
-- Assets administrados: Azure Blob Storage.
-- Mobile: Expo/Android apuntando al API HTTPS.
-- Push: Firebase Cloud Messaging HTTP v1.
+## URLs públicas
 
-## 1. PostgreSQL Flexible Server
+| Servicio | URL |
+| --- | --- |
+| Web + PWA (Static Web Apps) | https://orange-field-02809c21e.4.azurestaticapps.net |
+| Backend (App Service) | https://trama-back-2e5347.azurewebsites.net — salud: `/api/health` |
+| Servicio ML (App Service, interno) | https://trama-ml-2e5347.azurewebsites.net (`/health` público; `/train` y `/status` exigen token) |
+| Webhook de Stripe (modo prueba) | https://trama-back-2e5347.azurewebsites.net/api/payments/stripe/webhook |
 
-Crea un servidor PostgreSQL y una base nueva para VÉLORA. Usa una cadena con TLS, por ejemplo:
+## Recursos
 
-```text
-postgresql://<user>:<password>@<server>.postgres.database.azure.com:5432/velora_db?sslmode=verify-full
-```
+| Recurso | Nombre | SKU |
+| --- | --- | --- |
+| App Service Plan Linux | `plan-trama-demo` | B1 (B2 solo durante el build) |
+| Web App Node 22 (backend) | `trama-back-2e5347` | en el plan B1 |
+| Web App Python 3.12 (ML) | `trama-ml-2e5347` | en el mismo plan B1 |
+| Static Web App | `trama-web-2e5347` | Free |
+| PostgreSQL Flexible Server 17 | `trama-pg-2e5347` (BD `velora_db`) | Burstable B1ms, 32 GB, `azure.extensions=PGCRYPTO` |
+| Storage Account | `tramast2e5347` (contenedor privado `velora-assets`) | Standard LRS |
 
-Desde un entorno con acceso de red al servidor:
+Región: centralus, eastus y eastus2 no tienen cuota de VMs B1 en esta suscripción; por eso todo está en
+westus2 (el nombre del grupo conserva la ubicación de metadatos `centralus`, sin efecto en los recursos).
 
-```powershell
-$env:DATABASE_URL="<cadena-Azure>"
-pnpm db:migrate:fresh
-```
+## Secretos
 
-El runner usa `packages/database/migrations/V1-V25` y se niega a ejecutarse si el schema `public` ya contiene tablas.
+Todos los valores viven en **`.env.azure.local`** (ignorado por Git) y los scripts los leen sin imprimirlos:
+`AZ_*` (cuenta de servicio), `AZURE_POSTGRES_ADMIN_*`, `DATABASE_URL`, `VELORA_ML_DATABASE_URL`,
+`VELORA_ML_DB_PASSWORD`, `AZURE_STORAGE_CONNECTION_STRING`, `VELORA_JWT_SECRET`, `VELORA_QR_SIGNING_SECRET`,
+`VELORA_ML_TOKEN`, `STRIPE_SECRET_KEY` (prueba), `STRIPE_WEBHOOK_SECRET`, cuentas `BOOTSTRAP_*` y las
+contraseñas de demostración (`VELORA_TRAMA_*`). JWT, firma de QR, token de ML y contraseñas de PostgreSQL se
+generaron nuevos para la nube. La nube **no** usa OpenAI ni Replicate (Try-On en `LOCAL`) y el límite de
+intentos de login queda en el valor por defecto del código.
 
-## 2. Azure Blob Storage
+## Procedimiento (PowerShell, desde la raíz del repo)
 
-Crea un Storage Account y el contenedor `velora-assets`. Configura en App Service:
-
-```text
-VELORA_ASSET_STORAGE_PROVIDER=AZURE_BLOB
-AZURE_STORAGE_CONNECTION_STRING=<secret>
-VELORA_AZURE_BLOB_CONTAINER=velora-assets
-```
-
-## 3. API en App Service
-
-Build:
-
-```powershell
-pnpm install --frozen-lockfile
-pnpm build:azure:back
-```
-
-Startup command:
-
-```text
-pnpm start:azure:back
-```
-
-Nest consume `PORT` y escucha en `0.0.0.0`.
-
-App Settings mínimos:
-
-- `DATABASE_URL`
-- `VELORA_JWT_SECRET`
-- `VELORA_CORS_ALLOWED_ORIGINS`
-- `VELORA_RATE_LIMIT_TRUST_PROXY_HEADERS=true`
-- `VELORA_PUBLIC_BACKEND_URL`
-- Stripe: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_SUCCESS_URL`, `STRIPE_CANCEL_URL`
-- variables Azure Blob
-- Firebase backend si Push queda habilitado: `VELORA_PUSH_FIREBASE_ENABLED=true`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (las cuatro son requeridas juntas para que el push se active)
-- `OPENAI_API_KEY` / `REPLICATE_API_TOKEN` si esas funciones estarán activas (el resto de variables de tuning de IA y Try-On tienen defaults razonables en `packages/config`; solo se sobreescriben si hace falta)
-- Bootstrap ADMIN solo durante el aprovisionamiento inicial si se necesita
-
-Health check:
-
-```text
-/api/health
-```
-
-## 4. Web en Static Web Apps
-
-Build:
+El `az login` de usuario está bloqueado (AADSTS530035); los scripts entran con la cuenta de servicio
+(`az login --service-principal`) de forma automática.
 
 ```powershell
-pnpm build:azure:front
+.\scripts\azure\provision.ps1        # grupo, plan B1, Web Apps, SWA, PostgreSQL + pgcrypto, Storage (idempotente)
+.\scripts\azure\upload-assets.ps1    # sube apps/back/storage/assets al Blob y compara cantidades
+.\scripts\azure\restore-db.ps1 -FromContainer velora-local-v25   # dump nuevo de la BD local + restauración
+.\scripts\azure\deploy-back.ps1 -Ml  # App Settings + ZIP del backend y del ML (build Oryx, B2 temporal)
+.\scripts\azure\deploy-front.ps1     # build de la web/PWA con la URL del backend y publicación en SWA
+.\scripts\azure\stripe-webhook.ps1   # webhook de Stripe (prueba) + secreto + reinicio + evento firmado
+.\scripts\azure\verify.ps1           # 12 comprobaciones HTTP
+.\scripts\azure\teardown.ps1         # borra el grupo (pide escribir "CONFIRMO BORRAR")
 ```
 
-Output:
+### Volver a subir la base de datos
 
-```text
-apps/front/dist
+`restore-db.ps1` es re-ejecutable: **borra y recrea** `velora_db` en Azure, hace `pg_restore` del dump,
+recrea el rol `velora_ml` (SELECT en tablas operativas, DML solo en `ml_*`, `statement_timeout` 45 min) y
+aplica las migraciones pendientes (`pnpm db:migrate:up`). La BD local solo se lee (`pg_dump`).
+
+```powershell
+# Dump nuevo desde el contenedor local
+.\scripts\azure\restore-db.ps1 -FromContainer velora-local-v25 -SourceDb velora_migrated_v25
+# o desde un dump existente (formato custom de pg_dump)
+.\scripts\azure\restore-db.ps1 -DumpPath C:\ruta\trama.dump
 ```
 
-Build-time variables:
+Usa `postgres:17-alpine` como cliente (Docker). El firewall de PostgreSQL permite servicios de Azure y la IP
+del operador al momento de `provision.ps1`; si tu IP cambió, vuelve a ejecutar `provision.ps1`.
 
-```text
-VITE_API_BASE_URL=https://<api>.azurewebsites.net
-VITE_STOREFRONT_COMPANY_ID=
+### Backend (App Service + Oryx)
+
+- ZIP creado con `scripts/azure/zipdir.py` (Python `zipfile`, rutas con `/`): `package.json`,
+  `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `packages/*`, `apps/back` y los
+  `package.json` de `apps/front`/`apps/mobile` (para que el workspace coincida con el lockfile). Nunca
+  incluye `.env*`, `node_modules`, `dist` ni `storage`.
+- `CUSTOM_BUILD_COMMAND` de Oryx:
+  `corepack enable && corepack prepare pnpm@11.24.0 --activate && pnpm install --frozen-lockfile --filter "@velora/back..." && pnpm build:azure:back`
+  (`build:azure:back` compila `@velora/config`, `contracts` y `database` antes del backend; el
+  `postinstall` raíz hace lo mismo en instalaciones completas).
+- Arranque: `cd apps/back && node dist/main.js` (Nest escucha `PORT` en `0.0.0.0`).
+- El plan sube a **B2 solo durante el build** y vuelve a **B1** al terminar (también si falla).
+- Activos y comprobantes: `VELORA_ASSET_STORAGE_PROVIDER=AZURE_BLOB`. `ManagedAssetStorageService`
+  guarda imágenes y comprobantes PDF en el contenedor **privado** `velora-assets`; el backend los sirve
+  (los comprobantes solo por rutas autenticadas).
+- URLs públicas: `VELORA_PUBLIC_BACKEND_URL`, `VELORA_PUBLIC_WEB_URL` (enlaces del QR del Banco demo),
+  `VELORA_CORS_ALLOWED_ORIGINS` = URL de la SWA, `STRIPE_SUCCESS_URL`/`STRIPE_CANCEL_URL` hacia la web.
+
+### Servicio ML
+
+Segunda Web App Python en el mismo plan (ZIP de `apps/ml` + `seed-labels.json`), arranque
+`python -m uvicorn velora_ml.api:app --host 0.0.0.0 --port 8000`. Usa el rol `velora_ml` por SSL
+(`VELORA_ML_DATABASE_URL`) y guarda modelos en `/home/data/ml-artifacts` (persistente). El backend lo llama
+con `VELORA_ML_URL` + `VELORA_ML_TOKEN`. Si el servicio no responde, "Entrenar de nuevo" devuelve
+`ML_SERVICE_UNAVAILABLE` y se siguen viendo los últimos resultados guardados.
+
+### Web + PWA (Static Web Apps)
+
+`deploy-front.ps1` compila con `VITE_API_BASE_URL` = backend de Azure y publica `apps/front/dist` con la SWA
+CLI (token de despliegue por variable de entorno). `apps/front/public/staticwebapp.config.json` aporta el
+fallback SPA y `Cache-Control: no-cache` para `sw.js`, `registerSW.js`, `manifest.webmanifest` e `index.html`.
+
+### Stripe (modo prueba)
+
+`stripe-webhook.ps1` crea el endpoint por la API con la clave de prueba y los eventos que maneja
+`stripe-webhook.service.ts`: `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+`checkout.session.async_payment_failed`, `checkout.session.expired`. Guarda el secreto en
+`STRIPE_WEBHOOK_SECRET`, lo aplica, reinicia y envía un evento firmado de prueba. Al hacer teardown, borra
+también el endpoint en el panel de Stripe.
+
+### Móvil (APK con EAS)
+
+`apps/mobile/eas.json` (perfil `production`, `buildType: apk`) fija `EXPO_PUBLIC_API_BASE_URL` y
+`EXPO_PUBLIC_WEB_URL` con las URLs de arriba (EAS no sube `.env.production` porque está en `.gitignore`).
+Sin `EXPO_PUBLIC_STOREFRONT_COMPANY_ID`, la app muestra el directorio de tiendas.
+
+```powershell
+cd apps/mobile
+npx eas-cli build --platform android --profile production
 ```
 
-`apps/front/public/staticwebapp.config.json` provee el fallback SPA para React Router y debe quedar dentro de `dist`.
+## Cuentas de demostración
 
-Actualiza CORS del API con el hostname HTTPS real de Static Web Apps.
-
-## 5. Mobile
-
-Configura antes del build:
-
-```text
-EXPO_PUBLIC_API_BASE_URL=https://<api>.azurewebsites.net
-EXPO_PUBLIC_STOREFRONT_COMPANY_ID=
-```
-
-Mantén `google-services.json` como configuración cliente Firebase; las credenciales privadas de servicio FCM pertenecen únicamente al backend.
-
-## 6. Admin Bootstrap
-
-Para el aprovisionamiento inicial:
-
-```text
-BOOTSTRAP_ADMIN_ENABLED=true
-BOOTSTRAP_ADMIN_EMAIL=<email>
-BOOTSTRAP_ADMIN_PASSWORD=<secret>
-BOOTSTRAP_ADMIN_FIRST_NAME=Admin
-BOOTSTRAP_ADMIN_LAST_NAME=Velora
-```
-
-Después de confirmar la cuenta, puede deshabilitarse `BOOTSTRAP_ADMIN_ENABLED`.
-
-## 7. Smoke público
-
-Valida:
-
-1. `GET /api/health`.
-2. Login ADMIN.
-3. Registro/login CUSTOMER.
-4. Companies y catálogo.
-5. carrito y checkout.
-6. PICKUP con Warehouse default.
-7. DELIVERY.
-8. pedidos y pagos.
-9. POS.
-10. Push Web/Android.
-11. Try-On y Azure Blob.
-12. rutas Web al refrescar directamente.
-
-## 8. Secretos
-
-No guardes en Git:
-
-- passwords;
-- `DATABASE_URL` real;
-- `VELORA_JWT_SECRET`;
-- Stripe secrets;
-- `OPENAI_API_KEY`;
-- `REPLICATE_API_TOKEN`;
-- `AZURE_STORAGE_CONNECTION_STRING`;
-- `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`;
-- password del bootstrap.
-
-Usa App Settings/secretos de Azure y variables de build seguras.
+Ver `docs/FASE4B_PLATAFORMA.md` (cliente `cliente.demo@trama.seed.local`, propietario MAX
+`rodrigo.salvatierra@trama.seed.local`, etc.). Están en la BD restaurada.
