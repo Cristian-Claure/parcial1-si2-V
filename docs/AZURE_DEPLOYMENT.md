@@ -32,9 +32,39 @@ Todos los valores viven en **`.env.azure.local`** (ignorado por Git) y los scrip
 `AZ_*` (cuenta de servicio), `AZURE_POSTGRES_ADMIN_*`, `DATABASE_URL`, `VELORA_ML_DATABASE_URL`,
 `VELORA_ML_DB_PASSWORD`, `AZURE_STORAGE_CONNECTION_STRING`, `VELORA_JWT_SECRET`, `VELORA_QR_SIGNING_SECRET`,
 `VELORA_ML_TOKEN`, `STRIPE_SECRET_KEY` (prueba), `STRIPE_WEBHOOK_SECRET`, cuentas `BOOTSTRAP_*` y las
-contraseñas de demostración (`VELORA_TRAMA_*`). JWT, firma de QR, token de ML y contraseñas de PostgreSQL se
-generaron nuevos para la nube. La nube **no** usa OpenAI ni Replicate (Try-On en `LOCAL`) y el límite de
-intentos de login queda en el valor por defecto del código.
+contraseñas de demostración (`VELORA_TRAMA_*`), `OPENAI_API_KEY` y `REPLICATE_API_TOKEN` (una sola línea por
+variable, con la clave validada). JWT, firma de QR, token de ML y contraseñas de PostgreSQL se generaron nuevos
+para la nube. El límite de intentos de login queda en el valor por defecto del código.
+
+## IA (asistentes, dictado y Try-On)
+
+`deploy-back.ps1` aplica como App Settings del backend las variables de `packages/config` que existan en
+`.env.azure.local` (solo nombres):
+
+| Uso | Variables |
+| --- | --- |
+| OpenAI (asistente de reportes, asistente de productos, transcripción) | `OPENAI_API_KEY`, `VELORA_AI_MODEL`, `VELORA_AI_TRANSCRIBE_MODEL`, `VELORA_AI_MAX_CATALOG_PRODUCTS`, `VELORA_OPENAI_BASE_URL` |
+| Try-On | `VELORA_TRYON_PROVIDER`, `REPLICATE_API_TOKEN`, `VELORA_REPLICATE_BASE_URL`, `VELORA_TRYON_REPLICATE_MODEL`, `VELORA_TRYON_MAX_INPUT_BYTES`, `VELORA_TRYON_PROVIDER_TIMEOUT_SECONDS`, `VELORA_TRYON_RESULT_MAX_BYTES`, `VELORA_TRYON_LOCAL_URL`, `VELORA_TRYON_LOCAL_MODEL` |
+
+- **Interruptor LOCAL/REPLICATE**: `VELORA_TRYON_PROVIDER=REPLICATE` por defecto. Para volver a `LOCAL` sin
+  redesplegar (requiere `VELORA_TRYON_LOCAL_URL`; sin ella el probador responde 503 "El proveedor LOCAL no está
+  configurado"):
+  `az webapp config appsettings set -g rg-trama-demo -n trama-back-2e5347 --settings VELORA_TRYON_PROVIDER=LOCAL`
+  (y `=REPLICATE` para regresar). El cambio reinicia la Web App (~1 min).
+- Replicate recibe la foto y la prenda (`TRY_ON_GARMENT`, leída del Blob privado) por su **Files API**; no
+  necesita descargar nada desde `VELORA_PUBLIC_BACKEND_URL`. Foto máxima 5 MB; cada llamada al proveedor
+  tiene 30 s y la generación sigue de forma asíncrona (la app consulta el estado del trabajo).
+- **Costo**: `prunaai/p-image-try-on` cobra US$ 0,015 por generación con una prenda. OpenAI se cobra por
+  tokens/minutos de audio en la cuenta de la clave.
+- **Planes** (decisión D3, intencional): el asistente de productos del cliente funciona en todas las tiendas;
+  la consulta y narración con IA de reportes, desde PLUS; el dictado de reportes, solo en MAX (FREE/PLUS
+  responden 402 con el plan requerido). Cuota del probador por cliente y tienda: FREE 3, PLUS 20, MAX ilimitado
+  al mes.
+- **Dictado**: la web graba con `MediaRecorder` y transcribe en el backend (`/reports/voice-transcribe` con
+  OpenAI); no usa el reconocimiento de voz del navegador, así que funciona en Brave. Sin micrófono o sin
+  permiso muestra el motivo y la consulta escrita sigue disponible.
+- **APK**: Expo 57 usa `expo/fetch` como `fetch` global, que no admite partes `{ uri }` en `FormData`; el
+  probador envía la foto como multipart armado en `apps/mobile/src/features/try-on/tryOnUpload.ts`.
 
 ## Procedimiento (PowerShell, desde la raíz del repo)
 
