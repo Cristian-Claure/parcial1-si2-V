@@ -51,8 +51,9 @@ $back = @{
   VELORA_AZURE_BLOB_CONTAINER            = $c.BlobContainer
   VELORA_QR_PROVIDER                     = "DEMO"
   VELORA_QR_SIGNING_SECRET               = $e.VELORA_QR_SIGNING_SECRET
-  VELORA_TRYON_PROVIDER                  = "LOCAL"
-  VELORA_ML_TOKEN                        = $e.VELORA_ML_TOKEN
+  # Try-On: REPLICATE por defecto; LOCAL queda como alternativa cambiando solo este App Setting.
+  VELORA_TRYON_PROVIDER                  = $(if ($e.VELORA_TRYON_PROVIDER) { $e.VELORA_TRYON_PROVIDER.ToUpper() } else { "REPLICATE" })
+  VELORA_ML_TOKEN                       = $e.VELORA_ML_TOKEN
   VELORA_ML_URL                          = $(if ($mlDeployed) { $mlUrl } else { "http://127.0.0.1:8090" })
 }
 if ($e.STRIPE_WEBHOOK_SECRET) { $back.STRIPE_WEBHOOK_SECRET = $e.STRIPE_WEBHOOK_SECRET }
@@ -60,7 +61,12 @@ foreach ($k in "BOOTSTRAP_ADMIN_ENABLED", "BOOTSTRAP_ADMIN_EMAIL", "BOOTSTRAP_AD
   "BOOTSTRAP_PLATFORM_ADMIN_ENABLED", "BOOTSTRAP_PLATFORM_ADMIN_EMAIL", "BOOTSTRAP_PLATFORM_ADMIN_PASSWORD") {
   if ($e[$k]) { $back[$k] = $e[$k] }
 }
-# Sin OpenAI ni Replicate en la nube: no se configuran sus claves.
+# IA (asistentes, dictado y Try-On): claves y ajustes de packages/config que existan en .env.azure.local.
+foreach ($k in "OPENAI_API_KEY", "VELORA_AI_MODEL", "VELORA_AI_TRANSCRIBE_MODEL", "VELORA_AI_MAX_CATALOG_PRODUCTS", "VELORA_OPENAI_BASE_URL",
+  "REPLICATE_API_TOKEN", "VELORA_REPLICATE_BASE_URL", "VELORA_TRYON_REPLICATE_MODEL", "VELORA_TRYON_MAX_INPUT_BYTES",
+  "VELORA_TRYON_PROVIDER_TIMEOUT_SECONDS", "VELORA_TRYON_RESULT_MAX_BYTES", "VELORA_TRYON_LOCAL_URL", "VELORA_TRYON_LOCAL_MODEL") {
+  if ($e[$k]) { $back[$k] = $e[$k] }
+}
 # El limite de intentos de login queda en el valor por defecto del codigo (no se sube).
 Set-AppSettings $c.BackApp $back
 Write-Host "App Settings del backend aplicados ($($back.Count))."

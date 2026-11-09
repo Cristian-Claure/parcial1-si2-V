@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+import { Image as ExpoImage } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 
 import {
@@ -62,6 +63,7 @@ import {
 } from "@/shared/ui";
 
 import { remainingTryOns, tryOnErrorMessage } from "@/features/try-on/tryOnQuota";
+import { TRY_ON_MAX_PHOTO_BYTES, base64ToBytes, buildTryOnMultipart, safeFilename } from "@/features/try-on/tryOnUpload";
 import { cachedFetch } from "@/core/offline/cachedFetch";
 const terminal =
   (
@@ -385,8 +387,12 @@ export default function TryOnScreen() {
           .launchImageLibraryAsync({
             allowsEditing:
               false,
+            // JPEG re-codificado (< 5 MB del backend) y en base64: expo/fetch no admite
+            // partes { uri } en FormData (ver features/try-on/tryOnUpload.ts).
             quality:
-              1,
+              0.8,
+            base64:
+              true,
           });
 
       if (
@@ -427,41 +433,62 @@ export default function TryOnScreen() {
       );
 
       try {
-        const form =
-          new FormData();
+        if (
+          !photo.base64
+        ) {
+          throw new Error(
+            "No se pudo leer la foto. Vuelva a elegirla.",
+          );
+        }
 
-        form.append(
-          "productId",
-          selectedProduct.id,
-        );
+        const bytes =
+          base64ToBytes(
+            photo.base64,
+          );
+
+        if (
+          bytes.length >
+          TRY_ON_MAX_PHOTO_BYTES
+        ) {
+          throw new Error(
+            "La foto supera 5 MB. Elija una foto más liviana.",
+          );
+        }
+
+        const contentType =
+          photo.mimeType ??
+          "image/jpeg";
+
+        // Se ejecuta al enviar (manejador), no durante el render.
+        // eslint-disable-next-line react-hooks/purity
+        const boundary = `----trama-tryon-${Date.now().toString(16)}`;
+
+        const fields: Record<string, string> = {
+          productId:
+            selectedProduct.id,
+        };
 
         if (
           selectedVariant
         ) {
-          form.append(
-            "variantId",
-            selectedVariant.id,
-          );
+          fields.variantId =
+            selectedVariant.id;
         }
 
-        const filename =
-          photo.fileName ??
-          // Se ejecuta al enviar (manejador), no durante el render.
-          // eslint-disable-next-line react-hooks/purity
-          `person-${Date.now()}.jpg`;
-
-        form.append(
-          "person",
-          {
-            uri:
-              photo.uri,
-            name:
-              filename,
-            type:
-              photo.mimeType ??
-              "image/jpeg",
-          } as unknown as Blob,
-        );
+        const body =
+          buildTryOnMultipart({
+            boundary,
+            fields,
+            photo: {
+              bytes,
+              filename:
+                safeFilename(
+                  photo.fileName,
+                  contentType,
+                ),
+              contentType,
+            },
+          });
 
         const created =
           await apiRequest<
@@ -471,8 +498,12 @@ export default function TryOnScreen() {
             {
               method:
                 "POST",
+              headers: {
+                "Content-Type":
+                  `multipart/form-data; boundary=${boundary}`,
+              },
               body:
-                form,
+                body as unknown as BodyInit,
             },
           );
 
@@ -880,9 +911,13 @@ export default function TryOnScreen() {
         {
           resultSource
             ? (
-                <Image
+                // expo-image (Glide) envía la cabecera Authorization del resultado; el Image de
+                // React Native en Android (nueva arquitectura) no la enviaba y quedaba en blanco.
+                <ExpoImage
                   source={resultSource}
-                  resizeMode="contain"
+                  contentFit="contain"
+                  cachePolicy="none"
+                  accessibilityLabel="Resultado del probador virtual"
                   style={{
                     width:
                       "100%",
