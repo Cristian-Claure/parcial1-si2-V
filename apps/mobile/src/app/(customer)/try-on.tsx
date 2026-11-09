@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+import { Image as ExpoImage } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 
 import {
@@ -910,9 +911,13 @@ export default function TryOnScreen() {
         {
           resultSource
             ? (
-                <Image
+                // expo-image (Glide) envía la cabecera Authorization del resultado; el Image de
+                // React Native en Android (nueva arquitectura) no la enviaba y quedaba en blanco.
+                <ExpoImage
                   source={resultSource}
-                  resizeMode="contain"
+                  contentFit="contain"
+                  cachePolicy="none"
+                  accessibilityLabel="Resultado del probador virtual"
                   style={{
                     width:
                       "100%",
