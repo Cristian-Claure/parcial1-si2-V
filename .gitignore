@@ -64,3 +64,5 @@ backups/
 backups-velora/
 paquete-companero*/
 apps/back/storage/assets/
+
+*.apk
