@@ -1,5 +1,9 @@
 # Despliegue de TRAMA en Azure (demo)
 
+> **Demo eliminada el 18/11/2026; las URLs de abajo son históricas y ya no existen.** Para volver a
+> desplegar: crear una cuenta de servicio nueva, guardar sus datos en `.env.azure.local` y ejecutar los
+> scripts de `scripts/azure`.
+
 Demo temporal para la presentación. Todo vive en el grupo **`rg-trama-demo`** (región **westus2**) y se
 borra con `scripts/azure/teardown.ps1`.
 
@@ -141,7 +145,8 @@ también el endpoint en el panel de Stripe.
 ### Móvil (APK con EAS)
 
 `apps/mobile/eas.json` (perfil `production`, `buildType: apk`) fija `EXPO_PUBLIC_API_BASE_URL` y
-`EXPO_PUBLIC_WEB_URL` con las URLs de arriba (EAS no sube `.env.production` porque está en `.gitignore`).
+`EXPO_PUBLIC_WEB_URL` con las URLs de arriba, que ya no existen: antes de compilar un APK nuevo hay que
+apuntarlas al nuevo despliegue (EAS no sube `.env.production` porque está en `.gitignore`).
 Sin `EXPO_PUBLIC_STOREFRONT_COMPANY_ID`, la app muestra el directorio de tiendas.
 
 ```powershell
